@@ -1,0 +1,25 @@
+---
+description: rbmap 프로젝트 워크플로우 — 수정 후 배포, Supabase DB 권한
+alwaysApply: true
+---
+
+# rbmap 워크플로우 룰
+
+## 1. 수정·생성 후 반드시 배포
+
+- **코드·파일 수정이나 생성이 있으면 항상 배포까지 진행한다.**
+- 배포 절차:
+  1. `git add -A && git commit -m "메시지"` → `git push origin main`
+  2. 서버 SSH 접속 후: `cd /var/www/rbmap && git pull && npm ci && npm run build && pm2 restart rbmap`
+- SSH 호스트: `rbmap` (152.42.216.40)
+
+## 2. Supabase DB 권한
+
+- **서버 접속이 가능한 상태라면, Supabase 대시보드/API를 통해 DB 추가·수정이 가능하다.**
+- Supabase 프로젝트: hmuefzrorckwvexmened.supabase.co
+- 테이블 생성, 컬럼 추가, RLS 정책, 데이터 마이그레이션 등 DB 작업 수행 가능
+
+## 3. 환경 변수 (.env.local)
+
+- 서버 `/var/www/rbmap/.env.local` 에 Supabase URL·키 등 필수 값 보관
+- 로컬 수정 시 서버에도 동일 값 반영 필요 (gitignore 대상이므로 수동 복사)

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import RegionNavDropdown from "./RegionNavDropdown";
+import LogoWithAdminTrigger from "./LogoWithAdminTrigger";
 
 interface NavItem {
   label: string;
@@ -31,13 +32,11 @@ export default function Header({ data }: { data?: HeaderData | null }) {
   const nav = DEFAULT.nav ?? [];
   return (
     <header className="header-main">
-      <Link href="/" className="logo">
-        <div className="logo-icon">{d.logo_icon}</div>
-        <div>
-          <div className="logo-text">{d.logo_text}</div>
-          <div className="logo-sub">{d.logo_sub}</div>
-        </div>
-      </Link>
+      <LogoWithAdminTrigger
+        logoIcon={d.logo_icon ?? ""}
+        logoText={d.logo_text ?? ""}
+        logoSub={d.logo_sub ?? ""}
+      />
       <nav className="nav-main">
         <RegionNavDropdown />
         {nav.map((item) => (

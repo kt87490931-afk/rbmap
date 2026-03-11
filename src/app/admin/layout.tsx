@@ -58,10 +58,13 @@ export default async function AdminLayout({
   }
 
   const isOtpVerified = await verifyOtpSession(session.user.id)
+  if (!isOtpVerified) {
+    redirect('/admin/verify-otp')
+  }
 
   return (
     <div className="admin-layout">
-      <AdminSidebar disabled={!isOtpVerified} />
+      <AdminSidebar disabled={false} />
       <div className="admin-content">
         {children}
       </div>

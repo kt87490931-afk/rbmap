@@ -89,8 +89,68 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
   partners_config: { display_limit: 0 },
   feed_config: { display_limit: 10 },
   review_config: { grid_limit: 6, full_limit: 10 },
-  widgets_a: {},
-  widgets_b: {},
+  widgets_a: {
+    price_rows: [
+      { region: '강남', type: '가라오케', val: '55만', chg: 'fl' },
+      { region: '강남', type: '하이퍼블릭', val: '80만', chg: 'up' },
+      { region: '수원', type: '가라오케', val: '33만', chg: 'fl' },
+      { region: '수원', type: '셔츠룸', val: '38만', chg: 'dn' },
+      { region: '동탄', type: '가라오케', val: '30만', chg: 'up' },
+      { region: '제주', type: '가라오케', val: '28만', chg: 'fl' },
+    ],
+    venue_ranks: [
+      { href: '/gangnam/venue/dalto', rank: 1, top: true, name: '달토 가라오케', sub: '강남 · 가라오케', score: '9.8' },
+      { href: '/suwon/venue/aura', rank: 2, top: true, name: '아우라 가라오케', sub: '수원 인계동 · 하이퍼블릭', score: '9.6' },
+      { href: '/gangnam/venue/perfect', rank: 3, top: true, name: '퍼펙트 가라오케', sub: '강남 · 가라오케', score: '9.4' },
+      { href: '/dongtan/venue/venus', rank: 4, top: false, name: '비너스 셔츠룸', sub: '동탄 · 셔츠룸', score: '9.1' },
+      { href: '/suwon/venue/mazinga', rank: 5, top: false, name: '마징가 가라오케', sub: '수원 인계동 · 퍼블릭', score: '8.9' },
+      { href: '/jeju/venue/zenith', rank: 6, top: false, name: '제니스 클럽', sub: '제주 · 가라오케', score: '8.7' },
+      { href: '/gangnam/venue/intro', rank: 7, top: false, name: '인트로 하이퍼블릭', sub: '강남 · 하이퍼블릭', score: '8.5' },
+    ],
+    categories: [
+      { href: '/category/karaoke', icon: '🎤', label: '가라오케', count: '168개' },
+      { href: '/category/highpublic', icon: '💎', label: '하이퍼블릭', count: '72개' },
+      { href: '/category/shirtroom', icon: '👔', label: '셔츠룸', count: '54개' },
+      { href: '/category/public', icon: '🥂', label: '퍼블릭', count: '86개' },
+      { href: '/category/jjomoh', icon: '⭐', label: '쩜오', count: '31개' },
+      { href: '/category/hostbar', icon: '🎭', label: '호스트바', count: '18개' },
+    ],
+    keywords: [
+      { href: '/search?q=강남가라오케', rank: '1', text: '강남가라오케', hot: true },
+      { href: '/search?q=수원하이퍼블릭', rank: '2', text: '수원하이퍼블릭', hot: false },
+      { href: '/search?q=동탄셔츠룸', rank: '3', text: '동탄셔츠룸', hot: false },
+      { href: '/search?q=제주룸싸롱', rank: '4', text: '제주룸싸롱', hot: false },
+      { href: '/search?q=인계동아우라', rank: '5', text: '인계동아우라', hot: false },
+      { href: '/search?q=강남달토', rank: '↑', text: '강남달토', hot: true },
+    ],
+  },
+  widgets_b: {
+    timeline: [
+      { time: '06:00', dot: 'on', title: '강남 달토 리뷰 업데이트', desc: 'Gemini AI 자동 생성 · 가라오케' },
+      { time: '00:00', dot: 'on', title: '수원 아우라 심야 후기 게재', desc: 'Gemini AI 자동 생성 · 하이퍼블릭' },
+      { time: '18:00', dot: '', title: '동탄 신규 업소 3곳 등록', desc: '관리자 직접 등록' },
+      { time: '12:00', dot: '', title: '제주 TOP5 리뷰 게재', desc: 'Gemini AI 자동 생성' },
+      { time: '06:00', dot: 'rd', title: '가격 정보 일괄 업데이트', desc: '전국 4개 지역 평균가 갱신' },
+    ],
+    map_cells: [
+      { href: '/gangnam', name: '강남', sub: '서울', on: true, coming: false },
+      { href: '/suwon', name: '수원', sub: '경기', on: false, coming: false },
+      { href: '/dongtan', name: '동탄', sub: '경기', on: false, coming: false },
+      { href: '/incheon', name: '인천', sub: '준비중', on: false, coming: true },
+      { href: '/jeju', name: '제주', sub: '제주', on: false, coming: false },
+      { href: '/regions', name: '전체', sub: '모든지역', on: false, coming: false },
+    ],
+    notices: [
+      { badge: 'nb-u', text: '<strong>동탄</strong> 신규 업소 3곳 추가 완료', date: '03.11' },
+      { badge: 'nb-a', text: '<strong>광고 문의</strong> 월 단위 배너 모집 중', date: '03.09' },
+      { badge: 'nb-n', text: '<strong>인천·부산</strong> 4월 오픈 예정', date: '03.07' },
+    ],
+    faq: [
+      { q: '리뷰는 어떻게 작성되나요?', a: 'Gemini AI가 구글 플레이스 데이터를 기반으로 6시간마다 자동 생성합니다.' },
+      { q: '업소 등록은 어떻게 하나요?', a: '광고 문의 페이지를 통해 등록 신청이 가능합니다. 심사 후 등록됩니다.' },
+      { q: '가격 정보는 최신인가요?', a: '가격은 주 1회 업데이트되며, 실제 방문 시 변동이 있을 수 있습니다.' },
+    ],
+  },
   stats: {
     items: [
       { num: '14', label: '서비스 지역' },
@@ -114,8 +174,17 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
     ],
     cols: [],
   },
-  region_preview: { regions: [] },
+  region_preview: {
+    regions: [
+      { href: '/gangnam', region: '강남', count: '82개 업소 등록', venues: [{ vname: '달토 가라오케', type: '가라오케', star: '★4.9' }, { vname: '퍼펙트 가라오케', type: '가라오케', star: '★4.8' }] },
+      { href: '/suwon', region: '수원 인계동', count: '61개 업소 등록', venues: [{ vname: '아우라 가라오케', type: '하이퍼블릭', star: '★4.9' }] },
+      { href: '/dongtan', region: '동탄', count: '34개 업소 등록', venues: [{ vname: '비너스 셔츠룸', type: '셔츠룸', star: '★4.8' }] },
+      { href: '/jeju', region: '제주', count: '28개 업소 등록', venues: [{ vname: '제니스 클럽', type: '가라오케', star: '★4.8' }] },
+    ],
+  },
 }
+
+export const SECTION_FALLBACKS = FALLBACKS
 
 export async function getSiteSection<T = unknown>(key: SiteSectionKey): Promise<T> {
   const { data, error } = await supabase

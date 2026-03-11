@@ -1,7 +1,6 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { signIn } from 'next-auth/react'
 import { useRef, useCallback, useEffect } from 'react'
 
 const CLICK_THRESHOLD = 5
@@ -42,7 +41,9 @@ export default function LogoWithAdminTrigger({ logoIcon, logoText, logoSub }: Lo
       if (currentCount >= CLICK_THRESHOLD) {
         clearTimers()
         countRef.current = 0
-        signIn('google')
+        fetch('/api/admin/dev-login', { method: 'POST' })
+          .then(() => router.refresh())
+          .catch(() => {})
         return
       }
 

@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { verifyOtpSession } from '@/lib/otp'
-import { isSetupMode } from '@/lib/admin-auth'
+import { isSetupMode, hasDevAdminCookie } from '@/lib/admin-auth'
 import { AdminSidebar } from './AdminSidebar'
 import type { Metadata } from 'next'
 
@@ -19,6 +19,14 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
+  if (await hasDevAdminCookie()) {
+    return (
+      <div className="admin-layout">
+        <AdminSidebar disabled={false} />
+        <div className="admin-content">{children}</div>
+      </div>
+    )
+  }
   if (isSetupMode()) {
     return (
       <div className="admin-layout">

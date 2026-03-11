@@ -19,14 +19,17 @@ import { getFeedItems } from "@/lib/data/feed";
 import { getReviews } from "@/lib/data/reviews";
 import { getSiteSection } from "@/lib/data/site";
 import { authOptions } from "@/lib/auth";
+import { hasDevAdminCookie } from "@/lib/admin-auth";
 
 export default async function Home() {
-  let isAdmin = false;
-  try {
-    const session = await getServerSession(authOptions);
-    isAdmin = session?.user?.role === "admin";
-  } catch {
-    // NEXTAUTH_SECRET 미설정 등 NextAuth 초기화 실패 시 톱니바퀴 비표시
+  let isAdmin = await hasDevAdminCookie();
+  if (!isAdmin) {
+    try {
+      const session = await getServerSession(authOptions);
+      isAdmin = session?.user?.role === "admin";
+    } catch {
+      // NEXTAUTH_SECRET 미설정 등
+    }
   }
   const [
     partners,

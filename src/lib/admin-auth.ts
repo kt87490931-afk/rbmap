@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { verifyOtpSession } from '@/lib/otp'
+import { cookies } from 'next/headers'
+
+/**
+ * 로고 5클릭 dev-admin 쿠키 있으면 즉시 어드민 통과 (Google/OTP 없음)
+ */
+export async function hasDevAdminCookie(): Promise<boolean> {
+  const c = await cookies()
+  return c.get('rbmap_dev_admin')?.value === '1'
+}
 
 /**
  * Google OAuth가 설정되지 않았으면 "설정 모드"로 인증 없이 허용
@@ -15,9 +24,10 @@ export function isSetupMode() {
 }
 
 /**
- * 어드민 API용: 설정 모드면 통과, 아니면 세션+OTP 검증
+ * 어드민 API용: dev 쿠키/설정 모드면 통과, 아니면 세션+OTP 검증
  */
 export async function requireAdminOrSetup(): Promise<NextResponse | null> {
+  if (await hasDevAdminCookie()) return null
   if (isSetupMode()) {
     return null
   }

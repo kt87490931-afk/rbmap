@@ -12,11 +12,17 @@ export interface FeedItem {
   sort_order: number
 }
 
-export async function getFeedItems(): Promise<FeedItem[]> {
-  const { data, error } = await supabase
+/** limit: 0 = 전체, N = 상위 N개, 미지정 = 10 */
+export async function getFeedItems(limit?: number): Promise<FeedItem[]> {
+  let q = supabase
     .from('feed_items')
     .select('*')
     .order('sort_order', { ascending: true })
+  const effectiveLimit = limit === 0 ? undefined : (limit ?? 10)
+  if (effectiveLimit != null && effectiveLimit > 0) {
+    q = q.limit(effectiveLimit)
+  }
+  const { data, error } = await q
 
   if (error) return []
   return data ?? []

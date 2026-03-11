@@ -2,7 +2,9 @@ import { getServerSession } from "next-auth";
 import Header from "@/components/Header";
 import Ticker from "@/components/Ticker";
 import Hero from "@/components/Hero";
-import SeoSection from "@/components/SeoSection";
+import AboutSection from "@/components/AboutSection";
+import RegionGuideSection from "@/components/RegionGuideSection";
+import CategoryGuideSection from "@/components/CategoryGuideSection";
 import PartnerSection from "@/components/PartnerSection";
 import SectionWithSettings from "@/components/SectionWithSettings";
 import LiveFeedSection from "@/components/LiveFeedSection";
@@ -21,6 +23,10 @@ import { getSiteSection } from "@/lib/data/site";
 import { authOptions } from "@/lib/auth";
 import { hasDevAdminCookie } from "@/lib/admin-auth";
 
+type PartnersConfig = { display_limit?: number };
+type FeedConfig = { display_limit?: number };
+type ReviewConfig = { grid_limit?: number; full_limit?: number };
+
 export default async function Home() {
   let isAdmin = await hasDevAdminCookie();
   if (!isAdmin) {
@@ -31,35 +37,37 @@ export default async function Home() {
       // NEXTAUTH_SECRET 미설정 등
     }
   }
-  const [
-    partners,
-    feedItems,
-    reviews,
-    hero,
-    ticker,
-    header,
-    seo,
-    widgetsA,
-    widgetsB,
-    stats,
-    cta,
-    footer,
-    regionPreview,
-  ] = await Promise.all([
-    getPartners(),
-    getFeedItems(),
-    getReviews(),
-    getSiteSection<Parameters<typeof Hero>[0]["data"]>('hero'),
-    getSiteSection<Parameters<typeof Ticker>[0]["data"]>('ticker'),
-    getSiteSection<Parameters<typeof Header>[0]["data"]>('header'),
-    getSiteSection<Parameters<typeof SeoSection>[0]["data"]>('seo'),
-    getSiteSection<Parameters<typeof WidgetRowA>[0]["data"]>('widgets_a'),
-    getSiteSection<Parameters<typeof WidgetRowB>[0]["data"]>('widgets_b'),
-    getSiteSection<Parameters<typeof StatsBar>[0]["data"]>('stats'),
-    getSiteSection<Parameters<typeof CTAStrip>[0]["data"]>('cta'),
-    getSiteSection<Parameters<typeof Footer>[0]["data"]>('footer'),
-    getSiteSection<Parameters<typeof RegionPreview>[0]["data"]>('region_preview'),
+
+  const [partnersConfig, feedConfig, reviewConfig, hero, ticker, header, about, regionGuide, categoryGuide, widgetsA, widgetsB, stats, cta, footer, regionPreview] = await Promise.all([
+    getSiteSection<PartnersConfig>("partners_config"),
+    getSiteSection<FeedConfig>("feed_config"),
+    getSiteSection<ReviewConfig>("review_config"),
+    getSiteSection<Parameters<typeof Hero>[0]["data"]>("hero"),
+    getSiteSection<Parameters<typeof Ticker>[0]["data"]>("ticker"),
+    getSiteSection<Parameters<typeof Header>[0]["data"]>("header"),
+    getSiteSection<Parameters<typeof AboutSection>[0]["data"]>("about"),
+    getSiteSection<Parameters<typeof RegionGuideSection>[0]["data"]>("region_guide"),
+    getSiteSection<Parameters<typeof CategoryGuideSection>[0]["data"]>("category_guide"),
+    getSiteSection<Parameters<typeof WidgetRowA>[0]["data"]>("widgets_a"),
+    getSiteSection<Parameters<typeof WidgetRowB>[0]["data"]>("widgets_b"),
+    getSiteSection<Parameters<typeof StatsBar>[0]["data"]>("stats"),
+    getSiteSection<Parameters<typeof CTAStrip>[0]["data"]>("cta"),
+    getSiteSection<Parameters<typeof Footer>[0]["data"]>("footer"),
+    getSiteSection<Parameters<typeof RegionPreview>[0]["data"]>("region_preview"),
   ]);
+
+  const pLimit = partnersConfig?.display_limit ?? 0;
+  const feedLimit = feedConfig?.display_limit ?? 10;
+  const gridLimit = reviewConfig?.grid_limit ?? 6;
+  const fullLimit = reviewConfig?.full_limit ?? 10;
+
+  const [partners, feedItems, reviews] = await Promise.all([
+    getPartners(pLimit === 0 ? undefined : pLimit),
+    getFeedItems(feedLimit),
+    getReviews(),
+  ]);
+
+  const partnerList = pLimit > 0 ? partners.slice(0, pLimit) : partners;
 
   return (
     <>
@@ -73,13 +81,19 @@ export default async function Home() {
         <Hero data={hero} />
       </SectionWithSettings>
       <div className="divider" />
-      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="seo">
-        <SeoSection data={seo} />
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="about">
+        <AboutSection data={about} />
       </SectionWithSettings>
-      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="partners" adminLink="/admin/partners">
-        <PartnerSection partners={partners} />
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="region_guide">
+        <RegionGuideSection data={regionGuide} />
       </SectionWithSettings>
-      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="feed" adminLink="/admin/live-feed">
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="category_guide">
+        <CategoryGuideSection data={categoryGuide} />
+      </SectionWithSettings>
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="partners_config" sectionLabel="4. 제휴업체 (노출개수)" adminLink="/admin/partners">
+        <PartnerSection partners={partnerList} />
+      </SectionWithSettings>
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="feed_config" sectionLabel="5. 실시간 최신 업데이트" adminLink="/admin/live-feed">
         <LiveFeedSection items={feedItems} />
       </SectionWithSettings>
       <div className="page-wrap">
@@ -89,8 +103,8 @@ export default async function Home() {
         <SectionWithSettings isAdmin={!!isAdmin} sectionKey="region_preview">
           <RegionPreview data={regionPreview} />
         </SectionWithSettings>
-        <SectionWithSettings isAdmin={!!isAdmin} sectionKey="reviews" adminLink="/admin/reviews">
-          <ReviewGrid reviews={reviews} />
+        <SectionWithSettings isAdmin={!!isAdmin} sectionKey="review_config" sectionLabel="8. 6시간마다 최신리뷰" adminLink="/admin/reviews">
+          <ReviewGrid reviews={reviews} displayLimit={gridLimit} />
         </SectionWithSettings>
         <SectionWithSettings isAdmin={!!isAdmin} sectionKey="widgets_b">
           <WidgetRowB data={widgetsB} />
@@ -102,8 +116,8 @@ export default async function Home() {
           <CTAStrip data={cta} />
         </SectionWithSettings>
       </div>
-      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="reviews" adminLink="/admin/reviews">
-        <FullReviewSection reviews={reviews} />
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="review_config" sectionLabel="최신 리뷰 전문" adminLink="/admin/reviews">
+        <FullReviewSection reviews={reviews} displayLimit={fullLimit} />
       </SectionWithSettings>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="footer">
         <Footer data={footer} />

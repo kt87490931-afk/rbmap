@@ -13,7 +13,7 @@ interface PartnerSectionProps {
 }
 
 export default function PartnerSection({ partners }: PartnerSectionProps) {
-  const list = (partners?.length ? partners : FALLBACK_PARTNERS);
+  const list = partners?.length ? partners : FALLBACK_PARTNERS;
 
   return (
     <section className="partner-section section" aria-label="제휴 업체">

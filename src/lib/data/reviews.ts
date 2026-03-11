@@ -15,11 +15,16 @@ export interface Review {
   char_count?: string
 }
 
-export async function getReviews(): Promise<Review[]> {
-  const { data, error } = await supabase
+/** limit: 미지정 = 전체, N = 상위 N개만 */
+export async function getReviews(limit?: number): Promise<Review[]> {
+  let q = supabase
     .from('reviews')
     .select('*')
     .order('sort_order', { ascending: true })
+  if (limit != null && limit > 0) {
+    q = q.limit(limit)
+  }
+  const { data, error } = await q
 
   if (error) return []
   return (data ?? []).map((r) => ({

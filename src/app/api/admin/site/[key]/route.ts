@@ -5,8 +5,9 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 export const dynamic = 'force-dynamic'
 
 const VALID_KEYS = [
-  'hero', 'ticker', 'header', 'seo', 'widgets_a', 'widgets_b',
-  'stats', 'cta', 'footer', 'region_preview',
+  'hero', 'ticker', 'header', 'about', 'region_guide', 'category_guide',
+  'widgets_a', 'widgets_b', 'stats', 'cta', 'footer', 'region_preview',
+  'partners_config', 'feed_config', 'review_config',
 ] as const
 
 export async function GET(

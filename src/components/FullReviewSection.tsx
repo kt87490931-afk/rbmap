@@ -11,8 +11,8 @@ function starsToNum(stars: string): string {
   return `${n}.0 / 5.0`;
 }
 
-export default function FullReviewSection({ reviews }: { reviews: Review[] }) {
-  const items = reviews.slice(0, 10);
+export default function FullReviewSection({ reviews, displayLimit = 10 }: { reviews: Review[]; displayLimit?: number }) {
+  const items = displayLimit > 0 ? reviews.slice(0, displayLimit) : reviews;
   return (
     <section className="full-review-section section" aria-label="최신 리뷰 전문">
       <div className="page-wrap">

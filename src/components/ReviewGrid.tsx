@@ -12,10 +12,12 @@ const FALLBACK_REVIEWS: Review[] = [
 
 interface ReviewGridProps {
   reviews?: Review[];
+  displayLimit?: number; /** 0 = 전체, 미지정 = 6 */
 }
 
-export default function ReviewGrid({ reviews }: ReviewGridProps) {
-  const list = (reviews?.length ? reviews : FALLBACK_REVIEWS);
+export default function ReviewGrid({ reviews, displayLimit = 6 }: ReviewGridProps) {
+  const raw = reviews?.length ? reviews : FALLBACK_REVIEWS;
+  const list = displayLimit > 0 ? raw.slice(0, displayLimit) : raw;
 
   return (
     <section className="section">

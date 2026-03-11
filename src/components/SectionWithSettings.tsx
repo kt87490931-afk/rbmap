@@ -4,24 +4,28 @@ import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 
 const SECTION_LABELS: Record<string, string> = {
-  hero: '히어로',
-  ticker: '티커',
+  hero: '0. 히어로',
+  about: '1. about 룸빵여지도',
+  region_guide: '2. 지역별 완전가이드',
+  category_guide: '3. 업종별 완전 이해',
+  partners: '4. 제휴업체',
+  feed: '5. 실시간 최신 업데이트',
+  widgets_a: '6. 평균가격·위젯·랭킹·트랜드',
+  region_preview: '7. 지역별 주요업소',
+  reviews: '8. 6시간마다 최신리뷰',
+  widgets_b: '9. 타임라인·지역빠른이동·공지·FAQ',
+  stats: '10. 통계',
+  cta: '11. 광고 및 등록 문의',
   header: '헤더',
-  seo: 'SEO/지역가이드',
-  widgets_a: '위젯 A',
-  widgets_b: '위젯 B',
-  stats: '통계',
-  cta: 'CTA',
+  ticker: '티커',
   footer: '푸터',
-  region_preview: '지역 미리보기',
-  partners: '제휴업체',
-  feed: '라이브피드',
-  reviews: '리뷰',
+  reviews_full: '최신 리뷰 전문',
 }
 
 const SITE_SECTION_KEYS = [
-  'hero', 'ticker', 'header', 'seo', 'widgets_a', 'widgets_b',
-  'stats', 'cta', 'footer', 'region_preview',
+  'hero', 'ticker', 'header', 'about', 'region_guide', 'category_guide',
+  'widgets_a', 'widgets_b', 'stats', 'cta', 'footer', 'region_preview',
+  'partners_config', 'feed_config', 'review_config',
 ] as const
 
 interface SectionWithSettingsProps {
@@ -127,10 +131,10 @@ function SectionSettingsModal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {adminLink ? (
+        {adminLink && !isSiteSection ? (
           <AdminLinkContent sectionLabel={sectionLabel} adminLink={adminLink} onClose={onClose} />
         ) : isSiteSection ? (
-          <SiteSectionEditor sectionKey={sectionKey} sectionLabel={sectionLabel} onClose={onClose} />
+          <SiteSectionEditor sectionKey={sectionKey} sectionLabel={sectionLabel} onClose={onClose} adminLink={adminLink} />
         ) : (
           <div style={{ padding: 24 }}>
             <p style={{ color: 'var(--muted)' }}>이 섹션은 별도 설정이 없습니다.</p>
@@ -183,10 +187,12 @@ function SiteSectionEditor({
   sectionKey,
   sectionLabel,
   onClose,
+  adminLink,
 }: {
   sectionKey: string
   sectionLabel: string
   onClose: () => void
+  adminLink?: string
 }) {
   const [content, setContent] = useState('{}')
   const [loading, setLoading] = useState(true)
@@ -280,7 +286,7 @@ function SiteSectionEditor({
           spellCheck={false}
         />
       )}
-      <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+      <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
         <button className="btn-save" onClick={save} disabled={saving || loading}>
           {saving ? '저장 중...' : '저장'}
         </button>
@@ -291,6 +297,11 @@ function SiteSectionEditor({
         >
           닫기
         </button>
+        {adminLink && (
+          <Link href={adminLink} target="_blank" rel="noopener noreferrer" className="btn-save" style={{ textDecoration: 'none', marginLeft: 'auto' }}>
+            관리 페이지 →
+          </Link>
+        )}
       </div>
     </div>
   )

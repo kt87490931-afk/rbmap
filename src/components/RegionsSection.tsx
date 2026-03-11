@@ -23,7 +23,7 @@ export default function RegionsSection({ regions }: RegionsSectionProps) {
         <div>
           <p className="sec-label">REGIONS</p>
           <h2 className="sec-title">
-            지역을 <span>선택</span>하세요
+            지역별 <span>정보</span>
           </h2>
         </div>
         <Link href="/regions" className="see-all">

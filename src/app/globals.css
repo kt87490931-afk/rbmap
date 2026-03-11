@@ -190,6 +190,68 @@ body::after {
   background: var(--gold-lt) !important;
 }
 
+/* 지역 드롭다운 */
+.nav-dropdown-wrap {
+  position: relative;
+}
+.nav-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 5px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+.nav-dropdown-trigger:hover {
+  color: var(--text);
+  background: var(--card);
+}
+.nav-dropdown-arrow {
+  font-size: 8px;
+  transition: transform 0.2s;
+}
+.nav-dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+.nav-dropdown-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 160px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 6px 0;
+  z-index: 900;
+}
+.nav-dropdown-item {
+  display: block;
+  font-size: 12px;
+  color: var(--text);
+  padding: 8px 14px;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+.nav-dropdown-item:hover {
+  background: var(--deep);
+  color: var(--gold);
+}
+.nav-dropdown-all {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 10px;
+  color: var(--gold);
+  font-weight: 600;
+}
+
 .hide-sm {
   display: none;
 }

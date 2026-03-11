@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/admin/partners', icon: '🤝', label: '제휴업체 관리' },
   { href: '/admin/live-feed', icon: '📡', label: 'Live Feed 관리' },
   { href: '/admin/reviews', icon: '⭐', label: '리뷰 관리' },
+  { href: '/admin/reviews/write', icon: '✍️', label: '리뷰 작성' },
 ]
 
 export function AdminSidebar({ disabled, setupMode }: { disabled?: boolean; setupMode?: boolean }) {

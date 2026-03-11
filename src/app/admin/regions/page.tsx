@@ -1,0 +1,202 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+
+interface RegionItem {
+  id: string
+  slug: string
+  name: string
+  short: string
+  thumb_class: string
+  tags: string[]
+  venues: number
+  reviews: number
+  badge: string | null
+  coming: boolean
+  sort_order: number
+}
+
+const THUMB_CLASSES = ['gangnam', 'suwon', 'dongtan', 'jeju', 'incheon', 'busan', 'default']
+
+export default function AdminRegionsPage() {
+  const [items, setItems] = useState<RegionItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [msg, setMsg] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState({ slug: '', name: '', short: '', thumb_class: 'gangnam', tags: '', venues: 0, reviews: 0, badge: '', coming: false })
+  const [editingTags, setEditingTags] = useState<Record<string, string>>({})
+  const [editing, setEditing] = useState<Record<string, Partial<RegionItem>>>({})
+
+  const fetchItems = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/regions')
+      const data = await res.json()
+      setItems(Array.isArray(data) ? data : [])
+    } catch { /* ignore */ }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { fetchItems() }, [fetchItems])
+
+  function showMsg(text: string) {
+    setMsg(text)
+    setTimeout(() => setMsg(''), 3000)
+  }
+
+  async function addItem() {
+    if (!form.slug || !form.name || !form.short) return
+    setAdding(true)
+    try {
+      const res = await fetch('/api/admin/regions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          tags: form.tags ? form.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setItems((prev) => [...prev, data])
+        setForm({ slug: '', name: '', short: '', thumb_class: 'gangnam', tags: '', venues: 0, reviews: 0, badge: '', coming: false })
+        showMsg('추가 완료!')
+      } else {
+        const err = await res.json()
+        showMsg(err.error || '추가 실패')
+      }
+    } catch {
+      showMsg('추가 실패')
+    }
+    setAdding(false)
+  }
+
+  async function updateItem(id: string, field: string, value: unknown) {
+    const item = items.find((r) => r.id === id)
+    if (!item) return
+    const payload = { ...item, [field]: value }
+    const res = await fetch(`/api/admin/regions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setItems((prev) => prev.map((r) => (r.id === id ? data : r)))
+      showMsg('저장 완료!')
+    }
+  }
+
+  async function deleteItem(id: string, name: string) {
+    if (!confirm(`"${name}" 지역을 삭제하시겠습니까?`)) return
+    const res = await fetch(`/api/admin/regions/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setItems((prev) => prev.filter((r) => r.id !== id))
+      showMsg('삭제 완료!')
+    } else {
+      const err = await res.json()
+      showMsg(err.error || '삭제 실패')
+    }
+  }
+
+  if (loading) return <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
+
+  return (
+    <>
+      <div className="admin-header">
+        <h1 className="admin-title">지역 관리</h1>
+        <p className="admin-subtitle">메인 페이지 지역 카드 관리</p>
+      </div>
+
+      {msg && (
+        <div style={{ padding: '10px 16px', marginBottom: 14, borderRadius: 8, fontSize: 13, fontWeight: 600, background: 'rgba(46,204,113,.1)', color: 'var(--green)', border: '1px solid rgba(46,204,113,.3)' }}>{msg}</div>
+      )}
+
+      <div className="card-box" style={{ marginBottom: 16 }}>
+        <div className="card-box-title">➕ 지역 추가</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <input className="form-input" placeholder="slug (예: gangnam)" value={form.slug} onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))} />
+          <input className="form-input" placeholder="이름" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+          <input className="form-input" placeholder="short (예: GN)" value={form.short} onChange={(e) => setForm((f) => ({ ...f, short: e.target.value }))} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <select className="form-input" value={form.thumb_class} onChange={(e) => setForm((f) => ({ ...f, thumb_class: e.target.value }))}>
+            {THUMB_CLASSES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <input className="form-input" type="number" placeholder="업소 수" value={form.venues || ''} onChange={(e) => setForm((f) => ({ ...f, venues: parseInt(e.target.value, 10) || 0 }))} />
+          <input className="form-input" type="number" placeholder="리뷰 수" value={form.reviews || ''} onChange={(e) => setForm((f) => ({ ...f, reviews: parseInt(e.target.value, 10) || 0 }))} />
+          <select className="form-input" value={form.badge} onChange={(e) => setForm((f) => ({ ...f, badge: e.target.value || '' }))}>
+            <option value="">없음</option>
+            <option value="HOT">HOT</option>
+            <option value="NEW">NEW</option>
+          </select>
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input className="form-input" style={{ flex: 1, minWidth: 200 }} placeholder="태그 (쉼표 구분)" value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+            <input type="checkbox" checked={form.coming} onChange={(e) => setForm((f) => ({ ...f, coming: e.target.checked }))} />
+            준비중
+          </label>
+          <button className="btn-save" onClick={addItem} disabled={adding}>추가</button>
+        </div>
+      </div>
+
+      <div className="card-box">
+        <div className="card-box-title">📋 등록된 지역</div>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>slug</th>
+                <th>이름</th>
+                <th>short</th>
+                <th>태그</th>
+                <th>업소</th>
+                <th>리뷰</th>
+                <th>badge</th>
+                <th>준비중</th>
+                <th>작업</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((r) => (
+                <tr key={r.id}>
+                  <td><input className="form-input" style={{ width: 90, padding: 6 }} value={editing[r.id]?.slug ?? r.slug} onChange={(e) => setEditing((p) => ({ ...p, [r.id]: { ...p[r.id], slug: e.target.value } }))} onBlur={(e) => { updateItem(r.id, 'slug', e.target.value); setEditing((p) => { const n = { ...p }; delete n[r.id]; return n }) }} /></td>
+                  <td><input className="form-input" style={{ width: 70, padding: 6 }} value={editing[r.id]?.name ?? r.name} onChange={(e) => setEditing((p) => ({ ...p, [r.id]: { ...p[r.id], name: e.target.value } }))} onBlur={(e) => { updateItem(r.id, 'name', e.target.value); setEditing((p) => { const n = { ...p }; delete n[r.id]; return n }) }} /></td>
+                  <td><input className="form-input" style={{ width: 50, padding: 6 }} value={editing[r.id]?.short ?? r.short} onChange={(e) => setEditing((p) => ({ ...p, [r.id]: { ...p[r.id], short: e.target.value } }))} onBlur={(e) => { updateItem(r.id, 'short', e.target.value); setEditing((p) => { const n = { ...p }; delete n[r.id]; return n }) }} /></td>
+                  <td>
+                    <input
+                      className="form-input"
+                      style={{ width: 120, padding: 6 }}
+                      value={editingTags[r.id] ?? (r.tags || []).join(', ')}
+                      onChange={(e) => setEditingTags((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                      onFocus={(e) => setEditingTags((prev) => ({ ...prev, [r.id]: (r.tags || []).join(', ') }))}
+                      onBlur={(e) => {
+                        const val = e.target.value.split(',').map((s) => s.trim()).filter(Boolean)
+                        updateItem(r.id, 'tags', val)
+                        setEditingTags((prev) => { const n = { ...prev }; delete n[r.id]; return n })
+                      }}
+                    />
+                  </td>
+                  <td><input className="form-input" type="number" style={{ width: 60, padding: 6 }} value={editing[r.id]?.venues ?? r.venues} onChange={(e) => setEditing((p) => ({ ...p, [r.id]: { ...p[r.id], venues: parseInt(e.target.value, 10) || 0 } }))} onBlur={(e) => { updateItem(r.id, 'venues', parseInt(e.target.value, 10) || 0); setEditing((p) => { const n = { ...p }; delete n[r.id]; return n }) }} /></td>
+                  <td><input className="form-input" type="number" style={{ width: 60, padding: 6 }} value={editing[r.id]?.reviews ?? r.reviews} onChange={(e) => setEditing((p) => ({ ...p, [r.id]: { ...p[r.id], reviews: parseInt(e.target.value, 10) || 0 } }))} onBlur={(e) => { updateItem(r.id, 'reviews', parseInt(e.target.value, 10) || 0); setEditing((p) => { const n = { ...p }; delete n[r.id]; return n }) }} /></td>
+                  <td>
+                    <select className="form-input" style={{ width: 70, padding: 6 }} value={r.badge || ''} onChange={(e) => updateItem(r.id, 'badge', e.target.value || null)}>
+                      <option value="">없음</option>
+                      <option value="HOT">HOT</option>
+                      <option value="NEW">NEW</option>
+                    </select>
+                  </td>
+                  <td><input type="checkbox" checked={!!r.coming} onChange={(e) => updateItem(r.id, 'coming', e.target.checked)} /></td>
+                  <td><button className="btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => deleteItem(r.id, r.name)}>삭제</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {items.length === 0 && <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 24 }}>등록된 지역이 없습니다. Supabase에 supabase-sections.sql을 실행했는지 확인하세요.</p>}
+      </div>
+    </>
+  )
+}

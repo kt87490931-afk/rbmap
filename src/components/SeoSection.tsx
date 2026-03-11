@@ -4,34 +4,38 @@ import React from "react";
 import Link from "next/link";
 import { useState } from "react";
 
-const REGION_TABS = [
+interface SeoData {
+  intro_label?: string;
+  intro_text?: string;
+  cards?: { icon?: string; title?: string; desc?: string }[];
+  region_tabs?: { id?: string; label?: string }[];
+  region_panels?: Record<string, { title?: string; cols?: { h4?: string; ps?: string[] }[] }>;
+  type_cards?: { icon?: string; title?: string; desc?: string; href?: string }[];
+  kw_links?: { href?: string; text?: string }[];
+}
+
+const DEFAULT_TABS = [
   { id: "tab-gangnam", label: "강남" },
   { id: "tab-suwon", label: "수원 인계동" },
   { id: "tab-dongtan", label: "동탄" },
   { id: "tab-jeju", label: "제주" },
 ];
 
-const SEO_CARDS = [
-  {
-    icon: "🤖",
-    title: "AI 기반 자동 업데이트",
-    desc: "Gemini AI가 구글 플레이스 데이터를 분석해 6시간마다 리뷰와 업소 정보를 자동 생성합니다. 수동으로 작성된 후기와 달리 편향 없이 객관적인 정보를 제공하며, 신규 업소도 빠르게 반영됩니다. 업소 현황이 바뀌면 다음 업데이트 사이클에 즉시 반영됩니다.",
-  },
-  {
-    icon: "📍",
-    title: "전국 지역별 맞춤 정보",
-    desc: "강남·수원 인계동·동탄·제주를 시작으로 전국 14개 지역으로 확장 중입니다. 지역마다 업소 분포, 평균 가격, 인기 업종이 다릅니다. 룸빵여지도는 지역 특성에 맞는 맞춤 정보를 제공해 처음 방문하는 지역도 자신 있게 이용할 수 있도록 안내합니다.",
-  },
-  {
-    icon: "💰",
-    title: "투명한 가격 정보 공개",
-    desc: "지역별·업종별 1인 평균 주대를 주 1회 업데이트합니다. 숨겨진 추가 비용 여부, 정찰제 운영 여부까지 리뷰를 통해 파악할 수 있습니다. 불필요한 비용 지출 없이 합리적인 선택을 할 수 있도록 가격 투명성을 최우선 가치로 삼습니다.",
-  },
+const DEFAULT_CARDS = [
+  { icon: "🤖", title: "AI 기반 자동 업데이트", desc: "Gemini AI가 구글 플레이스 데이터를 분석해 6시간마다 리뷰와 업소 정보를 자동 생성합니다." },
+  { icon: "📍", title: "전국 지역별 맞춤 정보", desc: "강남·수원 인계동·동탄·제주를 시작으로 전국 14개 지역으로 확장 중입니다." },
+  { icon: "💰", title: "투명한 가격 정보 공개", desc: "지역별·업종별 1인 평균 주대를 주 1회 업데이트합니다." },
 ];
 
-const REGION_PANELS: Record<string, { titleJsx: React.ReactNode; cols: { h4: string; ps: string[] }[] }> = {
+function parseTitle(s: string): React.ReactNode {
+  if (!s) return null;
+  const parts = s.split(/_([^_]+)_/g);
+  return parts.map((p, i) => (i % 2 === 1 ? <em key={i}>{p}</em> : p));
+}
+
+const DEFAULT_PANELS: Record<string, { title: string; cols: { h4: string; ps: string[] }[] }> = {
   "tab-gangnam": {
-    titleJsx: <>강남 <em>유흥 완전 가이드</em> — 가라오케·하이퍼블릭·쩜오</>,
+    title: "강남 _유흥 완전 가이드_ — 가라오케·하이퍼블릭·쩜오",
     cols: [
       {
         h4: "강남 가라오케란?",
@@ -50,7 +54,7 @@ const REGION_PANELS: Record<string, { titleJsx: React.ReactNode; cols: { h4: str
     ],
   },
   "tab-suwon": {
-    titleJsx: <>수원 인계동 <em>유흥 완전 가이드</em> — 경기도 최대 유흥가</>,
+    title: "수원 인계동 _유흥 완전 가이드_ — 경기도 최대 유흥가",
     cols: [
       {
         h4: "수원 인계동이란?",
@@ -69,7 +73,7 @@ const REGION_PANELS: Record<string, { titleJsx: React.ReactNode; cols: { h4: str
     ],
   },
   "tab-dongtan": {
-    titleJsx: <>동탄 <em>유흥 완전 가이드</em> — 신도시 유흥의 빠른 성장</>,
+    title: "동탄 _유흥 완전 가이드_ — 신도시 유흥의 빠른 성장",
     cols: [
       {
         h4: "동탄 유흥가 특징",
@@ -88,7 +92,7 @@ const REGION_PANELS: Record<string, { titleJsx: React.ReactNode; cols: { h4: str
     ],
   },
   "tab-jeju": {
-    titleJsx: <>제주 <em>유흥 완전 가이드</em> — 관광지 특성의 독특한 유흥 문화</>,
+    title: "제주 _유흥 완전 가이드_ — 관광지 특성의 독특한 유흥 문화",
     cols: [
       {
         h4: "제주 유흥의 특징",
@@ -108,14 +112,14 @@ const REGION_PANELS: Record<string, { titleJsx: React.ReactNode; cols: { h4: str
   },
 };
 
-const TYPE_CARDS = [
-  { icon: "🎤", title: "가라오케", desc: "노래방 형태의 룸에서 파트너와 함께 즐기는 가장 보편적인 업종입니다. 초이스 후 담당 파트너가 배정되며 주대와 화대로 구성됩니다. 전국 168개 업소 등록.", href: "/category/karaoke" },
-  { icon: "💎", title: "하이퍼블릭", desc: "퍼블릭보다 밀착 서비스가 강화된 프리미엄 형태입니다. 강남·수원에 특히 집중 분포하며 1인 평균 주대가 가장 높습니다. 전국 72개 업소 등록.", href: "/category/highpublic" },
-  { icon: "👔", title: "셔츠룸", desc: "파트너의 환복 이벤트가 포함된 서비스입니다. 수원 인계동·동탄에 많이 분포하며 퍼블릭보다 다양한 이벤트를 즐길 수 있습니다. 전국 54개 업소 등록.", href: "/category/shirtroom" },
-  { icon: "⭐", title: "쩜오 (0.5)", desc: "하이퍼블릭과 퍼블릭의 중간 단계 서비스입니다. 강남에 집중되어 있으며 가성비를 원하는 방문객에게 적합합니다. 전국 31개 업소 등록.", href: "/category/jjomoh" },
+const DEFAULT_TYPE_CARDS = [
+  { icon: "🎤", title: "가라오케", desc: "노래방 형태의 룸에서 파트너와 함께 즐기는 가장 보편적인 업종입니다. 전국 168개 업소 등록.", href: "/category/karaoke" },
+  { icon: "💎", title: "하이퍼블릭", desc: "퍼블릭보다 밀착 서비스가 강화된 프리미엄 형태입니다. 전국 72개 업소 등록.", href: "/category/highpublic" },
+  { icon: "👔", title: "셔츠룸", desc: "파트너의 환복 이벤트가 포함된 서비스입니다. 전국 54개 업소 등록.", href: "/category/shirtroom" },
+  { icon: "⭐", title: "쩜오 (0.5)", desc: "하이퍼블릭과 퍼블릭의 중간 단계 서비스입니다. 전국 31개 업소 등록.", href: "/category/jjomoh" },
 ];
 
-const KW_LINKS = [
+const DEFAULT_KW_LINKS = [
   { href: "/gangnam/category/karaoke", text: "강남 가라오케" },
   { href: "/gangnam/category/highpublic", text: "강남 하이퍼블릭" },
   { href: "/gangnam/category/jjomoh", text: "강남 쩜오" },
@@ -142,25 +146,25 @@ const KW_LINKS = [
   { href: "/reviews", text: "룸싸롱 후기" },
 ];
 
-export default function SeoSection() {
+export default function SeoSection({ data }: { data?: SeoData | null }) {
   const [activeTab, setActiveTab] = useState("tab-gangnam");
+  const regionTabs = data?.region_tabs?.length ? data.region_tabs : DEFAULT_TABS;
+  const cards = data?.cards?.length ? data.cards : DEFAULT_CARDS;
+  const typeCards = data?.type_cards?.length ? data.type_cards : DEFAULT_TYPE_CARDS;
+  const kwLinks = data?.kw_links?.length ? data.kw_links : DEFAULT_KW_LINKS;
+  const regionPanels = { ...DEFAULT_PANELS, ...(data?.region_panels ?? {}) };
 
   return (
     <section className="seo-section section" aria-label="룸빵여지도 소개">
       <div className="page-wrap">
         <div className="seo-intro">
-          <p className="sec-label" style={{ marginBottom: 8 }}>ABOUT 룸빵여지도</p>
-          <p className="seo-intro-text">
-            <strong>룸빵여지도</strong>는 강남·수원·동탄·제주 등 전국 주요 지역의
-            <strong> 가라오케·룸싸롱·하이퍼블릭·셔츠룸·퍼블릭</strong> 정보를 한눈에 비교할 수 있는
-            국내 최대 유흥 정보 허브입니다. Gemini AI가 Google Places 데이터를 기반으로
-            <strong> 6시간마다 자동 업데이트</strong>하여 항상 가장 최신의 정보를 제공합니다.
-          </p>
+          <p className="sec-label" style={{ marginBottom: 8 }}>{data?.intro_label ?? "ABOUT 룸빵여지도"}</p>
+          <p className="seo-intro-text" dangerouslySetInnerHTML={{ __html: data?.intro_text ?? "<strong>룸빵여지도</strong>는 강남·수원·동탄·제주 등 전국 주요 지역의 <strong>가라오케·룸싸롱·하이퍼블릭·셔츠룸·퍼블릭</strong> 정보를 한눈에 비교할 수 있는 국내 최대 유흥 정보 허브입니다. Gemini AI가 Google Places 데이터를 기반으로 <strong>6시간마다 자동 업데이트</strong>하여 항상 가장 최신의 정보를 제공합니다." }} />
         </div>
 
         <div className="seo-cards">
-          {SEO_CARDS.map((c) => (
-            <div key={c.title} className="seo-card">
+          {cards.map((c, i) => (
+            <div key={c.title ?? i} className="seo-card">
               <div className="seo-card-icon">{c.icon}</div>
               <h3>{c.title}</h3>
               <p>{c.desc}</p>
@@ -173,11 +177,11 @@ export default function SeoSection() {
           <h2 className="sec-title" style={{ marginBottom: 20 }}>지역별 <span>완전 가이드</span></h2>
 
           <div className="seo-region-tabs" role="tablist">
-            {REGION_TABS.map((t) => (
+            {regionTabs.map((t) => (
               <button
                 key={t.id}
                 className={`seo-rtab ${activeTab === t.id ? "active" : ""}`}
-                onClick={() => setActiveTab(t.id)}
+                onClick={() => setActiveTab(t.id ?? "tab-gangnam")}
                 role="tab"
               >
                 {t.label}
@@ -185,21 +189,22 @@ export default function SeoSection() {
             ))}
           </div>
 
-          {REGION_TABS.map((t) => {
-            const panel = REGION_PANELS[t.id];
+          {regionTabs.map((t) => {
+            const panel = regionPanels[t.id ?? ""];
             if (!panel) return null;
+            const cols = panel.cols ?? [];
             return (
               <div
-                key={t.id}
+                key={t.id ?? ""}
                 className={`seo-region-panel ${activeTab === t.id ? "active" : ""}`}
-                id={t.id}
+                id={t.id ?? ""}
                 role="tabpanel"
               >
-                <h3>{panel.titleJsx}</h3>
-                {panel.cols.map((col, i) => (
+                <h3>{parseTitle(panel.title ?? "")}</h3>
+                {cols.map((col, i) => (
                   <div key={i} className="seo-region-col">
                     <h4>{col.h4}</h4>
-                    {col.ps.map((p, j) => (
+                    {(col.ps ?? []).map((p, j) => (
                       <p key={j}>{p}</p>
                     ))}
                   </div>
@@ -213,11 +218,11 @@ export default function SeoSection() {
           <p className="sec-label" style={{ marginBottom: 6 }}>CATEGORY GUIDE</p>
           <h2 className="sec-title" style={{ marginBottom: 16 }}>업종별 <span>완전 이해</span></h2>
           <div className="seo-type-grid">
-            {TYPE_CARDS.map((tc) => (
-              <div key={tc.title} className="seo-type-card">
+            {typeCards.map((tc, i) => (
+              <div key={tc.title ?? i} className="seo-type-card">
                 <h4>{tc.icon} {tc.title}</h4>
                 <p>{tc.desc}</p>
-                <Link href={tc.href}>{tc.title} 업소 보기 →</Link>
+                <Link href={tc.href ?? "#"}>{tc.title} 업소 보기 →</Link>
               </div>
             ))}
           </div>
@@ -226,8 +231,8 @@ export default function SeoSection() {
         <div className="seo-kw-block">
           <h3>관련 검색어 및 지역별 정보</h3>
           <div className="seo-kw-links">
-            {KW_LINKS.map((k, i) => (
-              <Link key={i} href={k.href} className="seo-kw-link">{k.text}</Link>
+            {kwLinks.map((k, i) => (
+              <Link key={i} href={k.href ?? "#"} className="seo-kw-link">{k.text}</Link>
             ))}
           </div>
         </div>

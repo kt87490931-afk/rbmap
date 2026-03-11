@@ -13,37 +13,74 @@ import StatsBar from "@/components/StatsBar";
 import CTAStrip from "@/components/CTAStrip";
 import FullReviewSection from "@/components/FullReviewSection";
 import Footer from "@/components/Footer";
+import { getRegions } from "@/lib/data/regions";
+import { getPartners } from "@/lib/data/partners";
+import { getFeedItems } from "@/lib/data/feed";
+import { getReviews } from "@/lib/data/reviews";
+import { getSiteSection } from "@/lib/data/site";
 
-export default function Home() {
+export default async function Home() {
+  const [
+    regions,
+    partners,
+    feedItems,
+    reviews,
+    hero,
+    ticker,
+    header,
+    seo,
+    widgetsA,
+    widgetsB,
+    stats,
+    cta,
+    footer,
+    regionPreview,
+  ] = await Promise.all([
+    getRegions(),
+    getPartners(),
+    getFeedItems(),
+    getReviews(),
+    getSiteSection<Parameters<typeof Hero>[0]["data"]>('hero'),
+    getSiteSection<Parameters<typeof Ticker>[0]["data"]>('ticker'),
+    getSiteSection<Parameters<typeof Header>[0]["data"]>('header'),
+    getSiteSection<Parameters<typeof SeoSection>[0]["data"]>('seo'),
+    getSiteSection<Parameters<typeof WidgetRowA>[0]["data"]>('widgets_a'),
+    getSiteSection<Parameters<typeof WidgetRowB>[0]["data"]>('widgets_b'),
+    getSiteSection<Parameters<typeof StatsBar>[0]["data"]>('stats'),
+    getSiteSection<Parameters<typeof CTAStrip>[0]["data"]>('cta'),
+    getSiteSection<Parameters<typeof Footer>[0]["data"]>('footer'),
+    getSiteSection<Parameters<typeof RegionPreview>[0]["data"]>('region_preview'),
+  ]);
+
   return (
     <>
-      <Header />
-      <Ticker />
-      <Hero />
+      <Header data={header} />
+      <Ticker data={ticker} />
+      <Hero data={hero} />
       <div className="divider" />
 
-      <SeoSection />
+      <SeoSection data={seo} />
 
       <div className="page-wrap">
-        <RegionsSection />
+        <RegionsSection regions={regions} />
       </div>
 
-      <PartnerSection />
+      <PartnerSection partners={partners} />
 
-      <LiveFeedSection />
+      <LiveFeedSection items={feedItems} />
 
       <div className="page-wrap">
-        <WidgetRowA />
-        <RegionPreview />
-        <ReviewGrid />
-        <WidgetRowB />
-        <StatsBar />
-        <CTAStrip />
+        <WidgetRowA data={widgetsA} />
+        <RegionPreview data={regionPreview} />
+        <ReviewGrid reviews={reviews} />
+        <WidgetRowB data={widgetsB} />
+        <StatsBar data={stats} />
+        <CTAStrip data={cta} />
       </div>
 
-      <FullReviewSection />
+      <FullReviewSection reviews={reviews} />
 
-      <Footer />
+      <Footer data={footer} />
     </>
   );
 }

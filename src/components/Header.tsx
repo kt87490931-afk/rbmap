@@ -28,7 +28,7 @@ const DEFAULT: HeaderData = {
 
 export default function Header({ data }: { data?: HeaderData | null }) {
   const d = { ...DEFAULT, ...data };
-  const nav = d.nav ?? DEFAULT.nav ?? [];
+  const nav = DEFAULT.nav ?? [];
   return (
     <header className="header-main">
       <Link href="/" className="logo">

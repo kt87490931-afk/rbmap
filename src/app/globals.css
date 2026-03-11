@@ -116,16 +116,7 @@ body::after {
 }
 
 .header-search {
-  flex: 1;
-  max-width: 300px;
-  position: relative;
-  display: none;
-}
-
-@media (min-width: 600px) {
-  .header-search {
-    display: block;
-  }
+  display: none !important;
 }
 
 .header-search input {

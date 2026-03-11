@@ -46,9 +46,8 @@ INSERT INTO site_sections (section_key, content) VALUES
   "logo_icon": "빵",
   "logo_text": "룸빵여지도",
   "logo_sub": "ROOMBANG YEOJIDO",
-  "search_placeholder": "지역, 업소명, 업종 검색...",
   "nav": [
-    {"label": "리뷰", "href": "/reviews"},
+    {"label": "업소별리뷰", "href": "/reviews"},
     {"label": "랭킹", "href": "/ranking"},
     {"label": "가이드", "href": "/guide"},
     {"label": "광고문의", "href": "/contact", "cta": true}

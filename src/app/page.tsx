@@ -1,9 +1,10 @@
+import { getServerSession } from "next-auth";
 import Header from "@/components/Header";
 import Ticker from "@/components/Ticker";
 import Hero from "@/components/Hero";
 import SeoSection from "@/components/SeoSection";
-import RegionsSection from "@/components/RegionsSection";
 import PartnerSection from "@/components/PartnerSection";
+import SectionWithSettings from "@/components/SectionWithSettings";
 import LiveFeedSection from "@/components/LiveFeedSection";
 import WidgetRowA from "@/components/WidgetRowA";
 import RegionPreview from "@/components/RegionPreview";
@@ -13,15 +14,16 @@ import StatsBar from "@/components/StatsBar";
 import CTAStrip from "@/components/CTAStrip";
 import FullReviewSection from "@/components/FullReviewSection";
 import Footer from "@/components/Footer";
-import { getRegions } from "@/lib/data/regions";
 import { getPartners } from "@/lib/data/partners";
 import { getFeedItems } from "@/lib/data/feed";
 import { getReviews } from "@/lib/data/reviews";
 import { getSiteSection } from "@/lib/data/site";
+import { authOptions } from "@/lib/auth";
 
 export default async function Home() {
+  const session = await getServerSession(authOptions);
+  const isAdmin = session?.user?.role === "admin";
   const [
-    regions,
     partners,
     feedItems,
     reviews,
@@ -36,7 +38,6 @@ export default async function Home() {
     footer,
     regionPreview,
   ] = await Promise.all([
-    getRegions(),
     getPartners(),
     getFeedItems(),
     getReviews(),
@@ -54,33 +55,51 @@ export default async function Home() {
 
   return (
     <>
-      <Header data={header} />
-      <Ticker data={ticker} />
-      <Hero data={hero} />
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="header">
+        <Header data={header} />
+      </SectionWithSettings>
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="ticker">
+        <Ticker data={ticker} />
+      </SectionWithSettings>
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="hero">
+        <Hero data={hero} />
+      </SectionWithSettings>
       <div className="divider" />
-
-      <SeoSection data={seo} />
-
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="seo">
+        <SeoSection data={seo} />
+      </SectionWithSettings>
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="partners" adminLink="/admin/partners">
+        <PartnerSection partners={partners} />
+      </SectionWithSettings>
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="feed" adminLink="/admin/live-feed">
+        <LiveFeedSection items={feedItems} />
+      </SectionWithSettings>
       <div className="page-wrap">
-        <RegionsSection regions={regions} />
+        <SectionWithSettings isAdmin={!!isAdmin} sectionKey="widgets_a">
+          <WidgetRowA data={widgetsA} />
+        </SectionWithSettings>
+        <SectionWithSettings isAdmin={!!isAdmin} sectionKey="region_preview">
+          <RegionPreview data={regionPreview} />
+        </SectionWithSettings>
+        <SectionWithSettings isAdmin={!!isAdmin} sectionKey="reviews" adminLink="/admin/reviews">
+          <ReviewGrid reviews={reviews} />
+        </SectionWithSettings>
+        <SectionWithSettings isAdmin={!!isAdmin} sectionKey="widgets_b">
+          <WidgetRowB data={widgetsB} />
+        </SectionWithSettings>
+        <SectionWithSettings isAdmin={!!isAdmin} sectionKey="stats">
+          <StatsBar data={stats} />
+        </SectionWithSettings>
+        <SectionWithSettings isAdmin={!!isAdmin} sectionKey="cta">
+          <CTAStrip data={cta} />
+        </SectionWithSettings>
       </div>
-
-      <PartnerSection partners={partners} />
-
-      <LiveFeedSection items={feedItems} />
-
-      <div className="page-wrap">
-        <WidgetRowA data={widgetsA} />
-        <RegionPreview data={regionPreview} />
-        <ReviewGrid reviews={reviews} />
-        <WidgetRowB data={widgetsB} />
-        <StatsBar data={stats} />
-        <CTAStrip data={cta} />
-      </div>
-
-      <FullReviewSection reviews={reviews} />
-
-      <Footer data={footer} />
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="reviews" adminLink="/admin/reviews">
+        <FullReviewSection reviews={reviews} />
+      </SectionWithSettings>
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="footer">
+        <Footer data={footer} />
+      </SectionWithSettings>
     </>
   );
 }

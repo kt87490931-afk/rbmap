@@ -4,6 +4,15 @@ set -e
 
 echo "== rbmap 배포 시작 =="
 
+# 0. 최신 코드 가져오기
+if [ -d .git ]; then
+  echo "[0/6] git pull..."
+  git fetch origin
+  git reset --hard origin/main
+else
+  echo "[0/6] .git 없음, git pull 스킵"
+fi
+
 # 1. 의존성 설치
 echo "[1/6] npm install..."
 npm ci

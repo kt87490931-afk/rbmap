@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Ticker from "@/components/Ticker";
 import Hero from "@/components/Hero";
+import SeoSection from "@/components/SeoSection";
 import RegionsSection from "@/components/RegionsSection";
 import PartnerSection from "@/components/PartnerSection";
 import LiveFeedSection from "@/components/LiveFeedSection";
@@ -20,6 +21,8 @@ export default function Home() {
       <Ticker />
       <Hero />
       <div className="divider" />
+
+      <SeoSection />
 
       <div className="page-wrap">
         <RegionsSection />

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
+import SectionFormEditor from './admin/SectionFormEditor'
 
 const SECTION_LABELS: Record<string, string> = {
   hero: '0. 히어로',
@@ -123,9 +124,9 @@ function SectionSettingsModal({
         style={{
           background: 'var(--bg, #1a1a1a)',
           borderRadius: 12,
-          maxWidth: 560,
-          width: '90%',
-          maxHeight: '85vh',
+          maxWidth: 680,
+          width: '95%',
+          maxHeight: '90vh',
           overflow: 'auto',
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}
@@ -134,7 +135,7 @@ function SectionSettingsModal({
         {adminLink && !isSiteSection ? (
           <AdminLinkContent sectionLabel={sectionLabel} adminLink={adminLink} onClose={onClose} />
         ) : isSiteSection ? (
-          <SiteSectionEditor sectionKey={sectionKey} sectionLabel={sectionLabel} onClose={onClose} adminLink={adminLink} />
+          <SectionFormEditor sectionKey={sectionKey} sectionLabel={sectionLabel} onClose={onClose} adminLink={adminLink} />
         ) : (
           <div style={{ padding: 24 }}>
             <p style={{ color: 'var(--muted)' }}>이 섹션은 별도 설정이 없습니다.</p>
@@ -183,126 +184,3 @@ function AdminLinkContent({
   )
 }
 
-function SiteSectionEditor({
-  sectionKey,
-  sectionLabel,
-  onClose,
-  adminLink,
-}: {
-  sectionKey: string
-  sectionLabel: string
-  onClose: () => void
-  adminLink?: string
-}) {
-  const [content, setContent] = useState('{}')
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [msg, setMsg] = useState('')
-
-  const load = useCallback(() => {
-    setLoading(true)
-    fetch(`/api/admin/site/${sectionKey}`)
-      .then((r) => r.json())
-      .then((data) => setContent(JSON.stringify(data, null, 2)))
-      .catch(() => setContent('{}'))
-      .finally(() => setLoading(false))
-  }, [sectionKey])
-
-  const showMsg = useCallback((text: string) => {
-    setMsg(text)
-    setTimeout(() => setMsg(''), 3000)
-  }, [])
-
-  const save = async () => {
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(content)
-    } catch {
-      showMsg('JSON 형식이 올바르지 않습니다.')
-      return
-    }
-    setSaving(true)
-    try {
-      const res = await fetch(`/api/admin/site/${sectionKey}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(parsed),
-      })
-      if (res.ok) {
-        showMsg('저장 완료!')
-      } else {
-        const err = await res.json()
-        showMsg(err?.error || '저장 실패')
-      }
-    } catch {
-      showMsg('저장 실패')
-    }
-    setSaving(false)
-  }
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  return (
-    <div style={{ padding: 24 }}>
-      <h2 id="section-modal-title" style={{ marginBottom: 8 }}>
-        {sectionLabel}
-      </h2>
-      <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-        JSON 형식으로 수정 후 저장하면 메인 페이지에 반영됩니다.
-      </p>
-      {msg && (
-        <div
-          style={{
-            padding: '10px 16px',
-            marginBottom: 12,
-            borderRadius: 8,
-            fontSize: 13,
-            background: 'rgba(46,204,113,.1)',
-            color: 'var(--green)',
-          }}
-        >
-          {msg}
-        </div>
-      )}
-      {loading ? (
-        <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
-      ) : (
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          style={{
-            width: '100%',
-            minHeight: 320,
-            fontFamily: 'monospace',
-            fontSize: 12,
-            padding: 12,
-            borderRadius: 8,
-            background: 'var(--card)',
-            border: '1px solid var(--border)',
-            color: 'inherit',
-          }}
-          spellCheck={false}
-        />
-      )}
-      <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
-        <button className="btn-save" onClick={save} disabled={saving || loading}>
-          {saving ? '저장 중...' : '저장'}
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)' }}
-        >
-          닫기
-        </button>
-        {adminLink && (
-          <Link href={adminLink} target="_blank" rel="noopener noreferrer" className="btn-save" style={{ textDecoration: 'none', marginLeft: 'auto' }}>
-            관리 페이지 →
-          </Link>
-        )}
-      </div>
-    </div>
-  )
-}

@@ -21,8 +21,13 @@ import { getSiteSection } from "@/lib/data/site";
 import { authOptions } from "@/lib/auth";
 
 export default async function Home() {
-  const session = await getServerSession(authOptions);
-  const isAdmin = session?.user?.role === "admin";
+  let isAdmin = false;
+  try {
+    const session = await getServerSession(authOptions);
+    isAdmin = session?.user?.role === "admin";
+  } catch {
+    // NEXTAUTH_SECRET 미설정 등 NextAuth 초기화 실패 시 톱니바퀴 비표시
+  }
   const [
     partners,
     feedItems,

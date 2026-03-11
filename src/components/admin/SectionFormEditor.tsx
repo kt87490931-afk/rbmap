@@ -360,20 +360,83 @@ function ReviewConfigForm({ data, onChange }: { data: Record<string, unknown>; o
 
 // --- Region Guide Form ---
 function RegionGuideForm({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
-  const tabs = (data?.region_tabs as { id?: string; label?: string }[]) ?? []
+  const d = data ?? {}
+  const set = (k: string, v: unknown) => onChange({ ...d, [k]: v })
+  const tabs = (d.region_tabs as { id?: string; label?: string }[]) ?? []
+  const panels = (d.region_panels as Record<string, { title?: string; cols?: { h4?: string; ps?: string[] }[] }>) ?? {}
+
+  const setPanel = (tabId: string, panel: { title?: string; cols?: { h4?: string; ps?: string[] }[] }) => {
+    const next = { ...panels, [tabId]: panel }
+    set('region_panels', next)
+  }
+
   return (
-    <ArrayBlock
-      label="지역 탭"
-      items={tabs}
-      onChange={(arr) => onChange({ ...data, region_tabs: arr })}
-      getDefault={() => ({ id: 'tab-', label: '' })}
-      renderItem={(item, _, up) => (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <FormInput label="탭 ID" value={item.id ?? ''} onChange={(v) => up({ ...item, id: v })} />
-          <FormInput label="탭 라벨" value={item.label ?? ''} onChange={(v) => up({ ...item, label: v })} />
-        </div>
-      )}
-    />
+    <>
+      <ArrayBlock
+        label="지역 탭 (이름)"
+        items={tabs}
+        onChange={(arr) => set('region_tabs', arr)}
+        getDefault={() => ({ id: 'tab-', label: '' })}
+        renderItem={(item, _, up) => (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <FormInput label="탭 ID" value={item.id ?? ''} onChange={(v) => up({ ...item, id: v })} placeholder="tab-gangnam" />
+            <FormInput label="탭 라벨" value={item.label ?? ''} onChange={(v) => up({ ...item, label: v })} placeholder="강남" />
+          </div>
+        )}
+      />
+      <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border, #333)' }}>
+        <p style={{ ...labelStyle, marginBottom: 12, fontSize: 14 }}>지역별 본문 (강남 가라오케란? 등)</p>
+        {tabs.map((t) => {
+          const tabId = t.id ?? ''
+          if (!tabId) return null
+          const panel = panels[tabId] ?? { title: '', cols: [] }
+          const cols = panel.cols ?? []
+          return (
+            <div
+              key={tabId}
+              style={{
+                marginBottom: 20,
+                padding: 16,
+                background: 'var(--card, #222)',
+                borderRadius: 8,
+                border: '1px solid var(--border, #333)',
+              }}
+            >
+              <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>{t.label || tabId}</p>
+              <FormInput
+                label="패널 제목"
+                value={panel.title ?? ''}
+                onChange={(v) => setPanel(tabId, { ...panel, title: v })}
+                placeholder="강남 _유흥 완전 가이드_ — 가라오케·하이퍼블릭·쩜오"
+              />
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8, marginTop: 12 }}>소제목 + 문단 (예: 강남 가라오케란?, 강남 이용 시 주의사항)</p>
+              <ArrayBlock
+                label=""
+                items={cols}
+                onChange={(arr) => setPanel(tabId, { ...panel, cols: arr })}
+                getDefault={() => ({ h4: '', ps: [''] })}
+                renderItem={(col, _, upCol) => (
+                  <>
+                    <FormInput
+                      label="소제목 (h4)"
+                      value={col.h4 ?? ''}
+                      onChange={(v) => upCol({ ...col, h4: v })}
+                      placeholder="강남 가라오케란?"
+                    />
+                    <FormTextarea
+                      label="문단 (한 줄 = 한 문단)"
+                      value={(col.ps ?? []).join('\n')}
+                      onChange={(v) => upCol({ ...col, ps: v.split('\n').map((s) => s.trim()).filter((s) => s) })}
+                      rows={4}
+                    />
+                  </>
+                )}
+              />
+            </div>
+          )
+        })}
+      </div>
+    </>
   )
 }
 

@@ -15,8 +15,8 @@ import {
 } from './config'
 
 function getApiKey(): string {
-  let key = process.env.GEMINI_API_KEY?.trim() || ''
-  if (key) return key
+  let key = (process.env.GEMINI_API_KEY || '').replace(/\ufeff/g, '').trim()
+  if (key && key.length > 20) return key
   // 이브알바처럼 파일 fallback: .env.production 또는 gemini_api_key.env
   const cwd = process.cwd()
   const candidates: { path: string; raw?: boolean }[] = [
@@ -31,13 +31,13 @@ function getApiKey(): string {
       try {
         const content = readFileSync(p, 'utf-8')
         if (raw) {
-          key = content.trim()
+          key = content.replace(/\ufeff/g, '').trim()
           if (key && key.length > 20) return key
         } else {
           const m = content.match(/GEMINI_API_KEY\s*=\s*(.+)/)
           if (m) {
-            key = m[1].trim().replace(/^["']|["']$/g, '')
-            if (key) return key
+            key = m[1].trim().replace(/^["']|["']$/g, '').replace(/\ufeff/g, '').trim()
+            if (key && key.length > 20) return key
           }
         }
       } catch { /* ignore */ }
@@ -121,7 +121,7 @@ export async function generateVenueIntro(
   const dataBlock = buildDataBlock(data)
   const fullPrompt = basePrompt + '\n' + dataBlock
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${encodeURIComponent(apiKey)}`
   const payload = {
     contents: [{ parts: [{ text: fullPrompt }] }],
     generationConfig: {
@@ -134,10 +134,7 @@ export async function generateVenueIntro(
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
     const json = await res.json()

@@ -27,12 +27,14 @@ cp -r .next/static .next/standalone/.next/static 2>/dev/null || true
 if [ -d public ]; then
   cp -r public .next/standalone/public 2>/dev/null || true
 fi
-# 환경변수 복사 (서버에서 .env.production 또는 .env.local 사용)
+# 환경변수 복사 — PM2 dotenv는 .env.production만 로드하므로 반드시 .env.production으로 복사
 if [ -f .env.production ]; then
   cp .env.production .next/standalone/.env.production
 elif [ -f .env.local ]; then
-  cp .env.local .next/standalone/.env.local
+  cp .env.local .next/standalone/.env.production
 fi
+# Gemini API 키 파일 fallback (이브알바 패턴)
+[ -f gemini_api_key.env ] && cp gemini_api_key.env .next/standalone/gemini_api_key.env
 
 # 4. 로그 디렉터리
 mkdir -p logs

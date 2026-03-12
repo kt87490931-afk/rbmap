@@ -25,6 +25,9 @@ export default function AdminVenueIntrosPage() {
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
   const [viewingItem, setViewingItem] = useState<IntroItem | null>(null)
+  const [editingItem, setEditingItem] = useState<IntroItem | null>(null)
+  const [editContent, setEditContent] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const fetchItems = useCallback(async () => {
     try {
@@ -54,6 +57,47 @@ export default function AdminVenueIntrosPage() {
       const err = await res.json()
       alert(err.error || '삭제 실패')
     }
+  }
+
+  async function saveContentEdit() {
+    if (!editingItem) return
+    setSavingEdit(true)
+    try {
+      const payload = {
+        intro_ai_json: {
+          ...editingItem.intro_ai_json,
+          content: editContent,
+        },
+      }
+      const res = await fetch(`/api/admin/venues/intro/${editingItem.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || '저장 실패')
+      }
+      setItems((prev) =>
+        prev.map((r) =>
+          r.id === editingItem.id
+            ? { ...r, intro_ai_json: { ...r.intro_ai_json, content: editContent } }
+            : r
+        )
+      )
+      setEditingItem(null)
+      setEditContent('')
+      showMsg('수정 완료')
+    } catch (e) {
+      alert(String(e))
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  function openEditModal(item: IntroItem) {
+    setEditingItem(item)
+    setEditContent(item.intro_ai_json?.content || '')
   }
 
   const getName = (x: IntroItem) =>
@@ -205,13 +249,15 @@ export default function AdminVenueIntrosPage() {
                       >
                         보기
                       </button>
-                      <Link
-                        href={`/admin/venues/intro?load=${r.id}`}
-                        style={{ marginRight: 8, fontSize: 12 }}
-                        title="양식 수정"
+                      <button
+                        type="button"
+                        style={{ marginRight: 8, fontSize: 12, padding: '4px 10px', cursor: hasAi ? 'pointer' : 'not-allowed', background: hasAi ? 'var(--bg)' : 'var(--bg)', color: hasAi ? 'var(--fg)' : 'var(--muted)', border: '1px solid var(--border)', borderRadius: 6 }}
+                        onClick={() => hasAi && openEditModal(r)}
+                        disabled={!hasAi}
+                        title={hasAi ? '글 내용 직접 수정' : 'AI 작성글이 없습니다'}
                       >
-                        폼 수정
-                      </Link>
+                        수정
+                      </button>
                       <button
                         type="button"
                         className="btn-danger"
@@ -322,6 +368,90 @@ export default function AdminVenueIntrosPage() {
               }}
             >
               {viewingItem.intro_ai_json?.content || '— AI 작성글이 없습니다. —'}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingItem && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 24,
+          }}
+          onClick={() => !savingEdit && (setEditingItem(null), setEditContent(''))}
+        >
+          <div
+            style={{
+              background: 'var(--card)',
+              borderRadius: 12,
+              maxWidth: 720,
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '14px 18px',
+                borderBottom: '1px solid var(--border)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: 'var(--bg)',
+              }}
+            >
+              <span style={{ fontWeight: 700, fontSize: 15 }}>
+                글 수정 — {getName(editingItem)} (불법·과장 문구 확인 후 수정)
+              </span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={saveContentEdit}
+                  disabled={savingEdit}
+                  style={{ fontSize: 12, padding: '6px 14px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, cursor: savingEdit ? 'not-allowed' : 'pointer' }}
+                >
+                  {savingEdit ? '저장 중...' : '저장'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEditingItem(null); setEditContent('') }}
+                  disabled={savingEdit}
+                  style={{ fontSize: 12, padding: '6px 12px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer' }}
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              placeholder="AI가 생성한 글을 직접 수정하세요. 불법 표현, 과장된 내용을 확인·수정할 수 있습니다."
+              style={{
+                flex: 1,
+                minHeight: 360,
+                padding: 18,
+                fontSize: 14,
+                lineHeight: 1.8,
+                resize: 'vertical',
+                border: 'none',
+                outline: 'none',
+                background: 'var(--card)',
+                color: 'var(--fg)',
+              }}
+            />
+            <div style={{ padding: '8px 18px', fontSize: 11, color: 'var(--muted)', borderTop: '1px solid var(--border)' }}>
+              {editContent.length}자
             </div>
           </div>
         </div>

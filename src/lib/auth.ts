@@ -3,7 +3,6 @@ import GoogleProvider from 'next-auth/providers/google'
 import { createClient } from '@supabase/supabase-js'
 
 export const authOptions: NextAuthOptions = {
-  trustHost: true, // Cloudflare/Nginx 프록시 환경에서 올바른 callback URL 사용
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,

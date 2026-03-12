@@ -136,6 +136,8 @@ export default function AdminVenueIntroPage() {
 
   const [msg, setMsg] = useState('')
   const [saving, setSaving] = useState(false)
+  const [introAiContent, setIntroAiContent] = useState('')
+  const [generating, setGenerating] = useState(false)
 
   const fetchPartners = useCallback(async () => {
     try {
@@ -200,6 +202,31 @@ export default function AdminVenueIntroPage() {
     staff_count: staffCount,
   }
 
+  const handleGenerateAi = async () => {
+    if (!name.trim()) {
+      alert('업소명을 입력해주세요.')
+      return
+    }
+    setGenerating(true)
+    setIntroAiContent('')
+    try {
+      const res = await fetch('/api/admin/gemini/intro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ form: formData, ai_tone: aiTone }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || data.error || '생성 실패')
+      if (!data.success || !data.text) throw new Error('AI 응답이 비어 있습니다.')
+      setIntroAiContent(data.text)
+      showMsg('AI 소개글 생성 완료')
+    } catch (e) {
+      alert(String(e))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const handleSaveDraft = async () => {
     if (!name.trim()) {
       alert('업소명을 입력해주세요.')
@@ -207,15 +234,19 @@ export default function AdminVenueIntroPage() {
     }
     setSaving(true)
     try {
+      const payload: Record<string, unknown> = {
+        partner_id: selectedPartnerId || null,
+        form: formData,
+        ai_tone: aiTone,
+        period_days: periodDays,
+      }
+      if (introAiContent) {
+        payload.intro_ai_json = { content: introAiContent }
+      }
       const res = await fetch('/api/admin/venues/intro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          partner_id: selectedPartnerId || null,
-          form: formData,
-          ai_tone: aiTone,
-          period_days: periodDays,
-        }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '저장 실패')
@@ -570,7 +601,18 @@ export default function AdminVenueIntroPage() {
             </select>
           </div>
 
-          <div style={{ marginTop: 24 }}>
+          <div style={{ marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={handleGenerateAi}
+              disabled={generating}
+              style={{
+                padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 600,
+                background: 'var(--accent)', color: '#fff', border: 'none', cursor: generating ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {generating ? 'AI 생성 중...' : '🤖 AI 소개글 생성'}
+            </button>
             <button
               type="button"
               className="btn-save"
@@ -675,10 +717,19 @@ export default function AdminVenueIntroPage() {
               <span style={{ color: 'var(--muted)' }}>톤</span>
               <div>{aiTone === 'pro' ? '💎 전문가' : '🤝 듬직한 파트너'}</div>
             </div>
-            <div>
+            <div style={{ marginBottom: 8 }}>
               <span style={{ color: 'var(--muted)' }}>기간</span>
               <div>{periodDays}일</div>
             </div>
+            {introAiContent ? (
+              <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--muted)' }}>📄 AI 생성 소개글</span>
+                <div style={{ marginTop: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 12, maxHeight: 200, overflowY: 'auto', background: 'var(--bg)', padding: 10, borderRadius: 8 }}>
+                  {introAiContent}
+                </div>
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>{introAiContent.length}자</span>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

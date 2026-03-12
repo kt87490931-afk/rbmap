@@ -42,7 +42,11 @@ export async function POST(request: Request) {
     contact_visible: true,
   }
   if (intro_ai_json && typeof intro_ai_json === 'object') {
-    insertData.intro_ai_json = intro_ai_json
+    insertData.intro_ai_json = {
+      ...intro_ai_json,
+      generated_at: (intro_ai_json as { generated_at?: string }).generated_at || new Date().toISOString(),
+      elapsed_ms: (intro_ai_json as { elapsed_ms?: number }).elapsed_ms ?? null,
+    }
   }
 
   const { data, error } = await supabaseAdmin
@@ -51,6 +55,12 @@ export async function POST(request: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error('[venues/intro POST]', { error: error.message })
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+  // eslint-disable-next-line no-console
+  console.log('[venues/intro POST] ok', { id: data?.id, name: (form as { name?: string }).name, hasAi: !!intro_ai_json })
   return NextResponse.json(data)
 }

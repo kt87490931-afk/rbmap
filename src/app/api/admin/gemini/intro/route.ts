@@ -21,8 +21,16 @@ export async function POST(request: Request) {
   const result = await generateVenueIntro(data, tone)
 
   if (result.success) {
-    return NextResponse.json({ success: true, text: result.text })
+    // eslint-disable-next-line no-console
+    console.log('[gemini/intro] ok', { name: data.name, elapsedMs: result.elapsedMs, len: result.text?.length })
+    return NextResponse.json({
+      success: true,
+      text: result.text,
+      elapsedMs: result.elapsedMs,
+    })
   }
+  // eslint-disable-next-line no-console
+  console.error('[gemini/intro] fail', { name: data.name, message: result.message, diag: result.diag })
   const status = result.httpStatus && result.httpStatus >= 400 ? result.httpStatus : 400
   return NextResponse.json(
     {

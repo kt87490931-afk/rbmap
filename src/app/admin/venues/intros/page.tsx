@@ -8,9 +8,16 @@ interface IntroItem {
   form_json: { name?: string; region?: string; type?: string }
   ai_tone: string
   period_days: number
-  intro_ai_json?: { content?: string }
+  intro_ai_json?: { content?: string; generated_at?: string; elapsed_ms?: number }
   is_public?: boolean
   created_at: string
+}
+
+function formatDateTime(s: string) {
+  try {
+    const d = new Date(s)
+    return d.toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  } catch { return s }
 }
 
 export default function AdminVenueIntrosPage() {
@@ -105,8 +112,35 @@ export default function AdminVenueIntrosPage() {
 
       <div className="card-box">
         <div className="card-box-title">📋 AI 작성글 리스트 (2000자 이내)</div>
+        <div
+          style={{
+            display: 'flex',
+            gap: 16,
+            marginBottom: 16,
+            padding: '10px 12px',
+            background: 'var(--bg)',
+            borderRadius: 8,
+            fontSize: 13,
+          }}
+        >
+          <span>
+            <strong>성공</strong>{' '}
+            <span style={{ color: 'var(--green)' }}>
+              {items.filter((x) => !!(x.intro_ai_json?.content || '').trim()).length}
+            </span>
+          </span>
+          <span>
+            <strong>실패</strong>{' '}
+            <span style={{ color: 'var(--red, #ff4757)' }}>
+              {items.filter((x) => !(x.intro_ai_json?.content || '').trim()).length}
+            </span>
+          </span>
+          <span>
+            <strong>전체</strong> {items.length}
+          </span>
+        </div>
         <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 16 }}>
-          AI가 생성한 소개글 원문입니다. 임시저장 시 AI 생성 후 저장해야 여기에서 확인할 수 있습니다.
+          AI 소개글 생성 버튼을 누르면 자동 저장 후 이 리스트에 반영됩니다.
         </p>
         {items.length === 0 ? (
           <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 24 }}>
@@ -133,16 +167,34 @@ export default function AdminVenueIntrosPage() {
                       background: 'var(--bg)',
                       borderBottom: '1px solid var(--border)',
                       display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
                       flexWrap: 'wrap',
                       gap: 8,
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                     }}
                   >
-                    <span style={{ fontWeight: 600 }}>{getName(r)}</span>
-                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-                      {String(r.form_json?.region || '')} · {r.ai_tone === 'partner_pro' ? '파트너' : '전문가'} · {new Date(r.created_at).toLocaleDateString('ko-KR')}
-                    </span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', flex: 1, minWidth: 0 }}>
+                      <span style={{ fontWeight: 600 }}>{getName(r)}</span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          fontWeight: 600,
+                          background: hasAi ? 'rgba(46,204,113,.2)' : 'rgba(255,71,87,.15)',
+                          color: hasAi ? 'var(--green)' : 'var(--red, #ff4757)',
+                        }}
+                      >
+                        {hasAi ? '성공' : '실패'}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+                        생성일시 {formatDateTime(r.intro_ai_json?.generated_at || r.created_at)}
+                        {r.intro_ai_json?.elapsed_ms != null && ` · ${Number(r.intro_ai_json.elapsed_ms).toLocaleString()}ms`}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+                        {String(r.form_json?.region || '')} · {r.ai_tone === 'partner_pro' ? '파트너' : '전문가'}
+                      </span>
+                    </div>
                     <div>
                       <button
                         type="button"

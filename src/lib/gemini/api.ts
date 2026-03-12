@@ -108,7 +108,7 @@ function buildDataBlock(data: FormDataForGemini): string {
  * 업체소개글 텍스트 생성 (다이렉트 2,000자 이내)
  */
 export type VenueIntroResult =
-  | { success: true; text: string }
+  | { success: true; text: string; elapsedMs?: number }
   | { success: false; message: string; httpStatus?: number; diag?: Record<string, unknown> }
 
 export async function generateVenueIntro(
@@ -138,6 +138,7 @@ export async function generateVenueIntro(
     },
   }
 
+  const start = Date.now()
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -148,10 +149,11 @@ export async function generateVenueIntro(
       body: JSON.stringify(payload),
     })
     const json = await res.json()
+    const elapsedMs = Date.now() - start
 
     const text = json?.candidates?.[0]?.content?.parts?.[0]?.text
     if (text && typeof text === 'string') {
-      return { success: true, text: text.trim() }
+      return { success: true, text: text.trim(), elapsedMs }
     }
 
     const errMsg = json?.error?.message || '알 수 없는 오류'

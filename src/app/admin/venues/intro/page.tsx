@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const TYPE_OPTIONS = [
   { value: 'karaoke', label: '가라오케' },
@@ -142,6 +142,7 @@ export default function AdminVenueIntroPage() {
   const [testingApi, setTestingApi] = useState(false)
   const [savedIntros, setSavedIntros] = useState<Array<{ id: string; form_json: Record<string, unknown>; ai_tone: string; period_days: number; intro_ai_json?: { content?: string }; created_at: string }>>([])
   const [loadingIntros, setLoadingIntros] = useState(false)
+  const router = useRouter()
   const searchParams = useSearchParams()
 
   const fetchPartners = useCallback(async () => {
@@ -289,9 +290,32 @@ export default function AdminVenueIntroPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || data.error || `생성 실패 (HTTP ${res.status})`)
       if (!data.success || !data.text) throw new Error(data.message || 'AI 응답이 비어 있습니다.')
-      setIntroAiContent(data.text)
-      showMsg('AI 소개글 생성 완료')
+      const aiText = data.text
+      setIntroAiContent(aiText)
+
+      // AI 생성 성공 시 즉시 저장 후 리스트로 이동 (이브알바처럼)
+      const payload: Record<string, unknown> = {
+        partner_id: selectedPartnerId || null,
+        form: formData,
+        ai_tone: aiTone,
+        period_days: periodDays,
+        intro_ai_json: {
+          content: aiText,
+          generated_at: new Date().toISOString(),
+          elapsed_ms: data.elapsedMs ?? null,
+        },
+      }
+      const saveRes = await fetch('/api/admin/venues/intro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const saveData = await saveRes.json()
+      if (!saveRes.ok) throw new Error(saveData.error || '저장 실패')
+      showMsg(`AI 생성 완료 (${data.elapsedMs ?? 0}ms) · 리스트에 저장됨`)
+      router.push('/admin/venues/intros')
     } catch (e) {
+      console.error('[AI 생성]', e)
       alert(String(e))
     } finally {
       setGenerating(false)

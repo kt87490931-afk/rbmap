@@ -17,6 +17,85 @@ const REGION_OPTIONS = [
   { value: 'jeju', label: '제주' },
 ]
 
+const INTERIOR_OPTIONS = [
+  { id: 'luxury_gold', label: '럭셔리 & 골드 (고급스러운 대리석 느낌)' },
+  { id: 'modern_white', label: '모던 & 화이트 (심플하고 깔끔한 느낌)' },
+  { id: 'cyberpunk', label: '사이버 펑크 (화려한 네온 조명)' },
+  { id: 'private_classic', label: '프라이빗 클래식 (중후하고 조용한 분위기)' },
+  { id: 'hip_club', label: '힙한 클럽 스타일 (화려한 무빙 라이트)' },
+]
+
+const ROOM_CONDITION_OPTIONS = [
+  { id: 'large_50', label: '50인 수용 대형룸 (단체/회식 최적)' },
+  { id: 'room_toilet', label: '룸 내 개별 화장실 완비' },
+  { id: 'non_smoking', label: '비흡연자를 위한 금연룸 운영' },
+  { id: 'air_purifier', label: '최신형 공기청정기 풀가동' },
+  { id: 'soundproof', label: '층간 소음 완벽 차단 (방음 시설)' },
+  { id: 'small_private', label: '프라이빗 소형룸' },
+  { id: 'party_room', label: '파티/이벤트룸' },
+]
+
+const SOUND_FACILITY_OPTIONS = [
+  { id: 'latest_karaoke', label: '최신형 노래방 기기' },
+  { id: 'high_speaker', label: '고성능 스피커' },
+  { id: 'laser_light', label: '레이저 조명' },
+  { id: 'mirror_ball', label: '미러볼' },
+]
+
+const CLEAN_OPTIONS = [
+  { id: 'daily_sterilize', label: '매일 소독·살균' },
+  { id: 'air_purifier_24', label: '공기청정기 24시간 가동' },
+  { id: 'no_smell', label: '담배 냄새 없는 청결한 룸' },
+]
+
+const MANAGER_STYLE_OPTIONS = [
+  { id: 'young_20s', label: '20대 초반 위주 (젊은 에너지)' },
+  { id: 'model_grade', label: '모델/연예인 지망생 급 (비주얼 강조)' },
+  { id: 'friendly', label: '싹싹하고 친절한 마인드 (내상 제로)' },
+  { id: 'party_type', label: '텐션 높은 파티형 (분위기 메이커)' },
+  { id: 'innocent_intel', label: '청순/지적인 이미지' },
+]
+
+const MATCHING_OPTIONS = [
+  { id: 'unlimited_choice', label: '무한 초이스 시스템 (마음에 들 때까지)' },
+  { id: 'manager_match', label: '실장 추천 맞춤 매칭 (실패 없는 선택)' },
+  { id: 'no_rotation', label: '로테이션 없는 고정 시스템' },
+  { id: 'first_30', label: '첫 타임 출근 인원 30명 이상' },
+]
+
+const FREE_SERVICE_OPTIONS = [
+  { id: 'fruit_refill', label: '고급 과일 안주 무한 리필' },
+  { id: 'soju_beer', label: '소주/맥주 무제한 제공 이벤트' },
+  { id: 'ramen_meal', label: '라면/짜파게티 등 식사 대용 서비스' },
+  { id: 'whiskey_upgrade', label: '고급 양주 승급 이벤트 (저녁 9시 이전)' },
+]
+
+const CONVENIENCE_OPTIONS = [
+  { id: 'valet', label: '발렛 파킹 무료 서비스' },
+  { id: 'pickup', label: '인근 지역 픽업/샌딩 가능' },
+  { id: 'hangover', label: '숙취해소제(컨디션 등) 증정' },
+  { id: 'charging', label: '휴대폰 초고속 충전 서비스' },
+]
+
+const DISCOUNT_OPTIONS = [
+  { id: 'first_visit', label: '첫 방문 고객 특별 할인' },
+  { id: 'cash_extra', label: '현금 결제 시 추가 서비스 룸 제공' },
+  { id: 'birthday', label: '생일/기념일 축하 샴페인 증정' },
+]
+
+const PHILOSOPHY_OPTIONS = [
+  { id: 'fixed_price', label: '정찰제 운영 (추가금 일체 없음)' },
+  { id: 'real_liquor', label: '정품 양주/새 술 확인 시스템' },
+  { id: 'as_100', label: '내상 발생 시 100% AS 보장' },
+  { id: 'privacy', label: '프라이버시 철저 보장 (비밀 유지)' },
+]
+
+const MANAGER_CAREER_OPTIONS = [
+  { id: 'veteran', label: 'OO지역 10년차 베테랑 실장' },
+  { id: 'youtube_famous', label: '유튜브/커뮤니티 유명 실장 직접 케어' },
+  { id: 'outgoing', label: '외성적인 성격의 화끈한 케어 가능' },
+]
+
 interface PartnerOption {
   id: string
   name: string
@@ -38,6 +117,19 @@ export default function AdminVenueIntroPage() {
   const [benefits, setBenefits] = useState('')
   const [qualify, setQualify] = useState('')
   const [extra, setExtra] = useState('')
+
+  const [interior, setInterior] = useState<string[]>([])
+  const [roomCondition, setRoomCondition] = useState<string[]>([])
+  const [soundFacility, setSoundFacility] = useState<string[]>([])
+  const [cleanPoints, setCleanPoints] = useState<string[]>([])
+  const [managerStyle, setManagerStyle] = useState<string[]>([])
+  const [matching, setMatching] = useState<string[]>([])
+  const [freeService, setFreeService] = useState<string[]>([])
+  const [convenience, setConvenience] = useState<string[]>([])
+  const [discount, setDiscount] = useState<string[]>([])
+  const [philosophy, setPhilosophy] = useState<string[]>([])
+  const [managerCareer, setManagerCareer] = useState<string[]>([])
+  const [staffCount, setStaffCount] = useState('')
 
   const [aiTone, setAiTone] = useState<'pro' | 'partner_pro'>('pro')
   const [periodDays, setPeriodDays] = useState(30)
@@ -78,6 +170,11 @@ export default function AdminVenueIntroPage() {
     setTimeout(() => setMsg(''), 3000)
   }
 
+  const toggleCheck = (ids: string[], setIds: (v: string[]) => void, id: string) => {
+    if (ids.includes(id)) setIds(ids.filter((x) => x !== id))
+    else setIds([...ids, id])
+  }
+
   const formData = {
     name,
     region,
@@ -89,6 +186,18 @@ export default function AdminVenueIntroPage() {
     benefits,
     qualify,
     extra,
+    interior,
+    room_condition: roomCondition,
+    sound_facility: soundFacility,
+    clean_points: cleanPoints,
+    manager_style: managerStyle,
+    matching,
+    free_service: freeService,
+    convenience,
+    discount,
+    philosophy,
+    manager_career: managerCareer,
+    staff_count: staffCount,
   }
 
   const handleSaveDraft = async () => {
@@ -219,6 +328,150 @@ export default function AdminVenueIntroPage() {
             />
           </div>
 
+          <div className="card-box-title" style={{ marginTop: 24, marginBottom: 12 }}>1. 시설 및 환경</div>
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>분위기를 결정하는 시각적 요소 선택 (다중 선택 가능)</p>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">인테리어 컨셉</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {INTERIOR_OPTIONS.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={interior.includes(o.id)} onChange={() => toggleCheck(interior, setInterior, o.id)} />
+                  <span style={{ fontSize: 13 }}>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">룸 구성 / 룸 컨디션</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {ROOM_CONDITION_OPTIONS.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={roomCondition.includes(o.id)} onChange={() => toggleCheck(roomCondition, setRoomCondition, o.id)} />
+                  <span style={{ fontSize: 13 }}>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">음향 / 특수시설</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {SOUND_FACILITY_OPTIONS.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={soundFacility.includes(o.id)} onChange={() => toggleCheck(soundFacility, setSoundFacility, o.id)} />
+                  <span style={{ fontSize: 13 }}>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">청결 포인트</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {CLEAN_OPTIONS.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={cleanPoints.includes(o.id)} onChange={() => toggleCheck(cleanPoints, setCleanPoints, o.id)} />
+                  <span style={{ fontSize: 13 }}>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="card-box-title" style={{ marginTop: 24, marginBottom: 12 }}>2. 매니저 및 수질 (핵심 데이터)</div>
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>리뷰·소개글의 메인 테마가 됩니다</p>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">출근 인원 (선택)</label>
+            <input
+              type="text"
+              className="form-input"
+              value={staffCount}
+              onChange={(e) => setStaffCount(e.target.value)}
+              placeholder="예: 평균 25명, 피크 35명"
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">매니저 스타일</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {MANAGER_STYLE_OPTIONS.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={managerStyle.includes(o.id)} onChange={() => toggleCheck(managerStyle, setManagerStyle, o.id)} />
+                  <span style={{ fontSize: 13 }}>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">매칭 및 시스템</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {MATCHING_OPTIONS.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={matching.includes(o.id)} onChange={() => toggleCheck(matching, setMatching, o.id)} />
+                  <span style={{ fontSize: 13 }}>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="card-box-title" style={{ marginTop: 24, marginBottom: 12 }}>3. 서비스 및 이벤트 (가성비·혜택)</div>
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>손님이 &apos;지금 바로 가야 할 이유&apos;를 만들어줍니다</p>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">무료 안주/주류 서비스</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {FREE_SERVICE_OPTIONS.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={freeService.includes(o.id)} onChange={() => toggleCheck(freeService, setFreeService, o.id)} />
+                  <span style={{ fontSize: 13 }}>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">편의 서비스</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {CONVENIENCE_OPTIONS.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={convenience.includes(o.id)} onChange={() => toggleCheck(convenience, setConvenience, o.id)} />
+                  <span style={{ fontSize: 13 }}>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">가격 할인</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {DISCOUNT_OPTIONS.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={discount.includes(o.id)} onChange={() => toggleCheck(discount, setDiscount, o.id)} />
+                  <span style={{ fontSize: 13 }}>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="card-box-title" style={{ marginTop: 24, marginBottom: 12 }}>4. 실장/부장 마인드 (운영 신뢰도)</div>
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>업소의 공신력을 높여주는 항목입니다</p>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">운영 철학</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {PHILOSOPHY_OPTIONS.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={philosophy.includes(o.id)} onChange={() => toggleCheck(philosophy, setPhilosophy, o.id)} />
+                  <span style={{ fontSize: 13 }}>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label className="form-label">실장 경력</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {MANAGER_CAREER_OPTIONS.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={managerCareer.includes(o.id)} onChange={() => toggleCheck(managerCareer, setManagerCareer, o.id)} />
+                  <span style={{ fontSize: 13 }}>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="card-box-title" style={{ marginTop: 24, marginBottom: 12 }}>📝 상세 설명 (10자 이상 권장)</div>
 
           <div style={{ marginBottom: 16 }}>
@@ -335,11 +588,14 @@ export default function AdminVenueIntroPage() {
             <span>🤖 AI소개글 종합정리</span>
             <span style={{ fontSize: 11, color: 'var(--muted)' }}>실시간 반영</span>
           </div>
-          <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
+          <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>
             제출 전 확인 · AI 소개글 생성에 활용됩니다
           </p>
+          <p style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, marginBottom: 12 }}>
+            ⚠ AI 소개글은 2000자 이내로 생성됩니다 (선택 항목을 충분히 체크하면 더 디테일해집니다)
+          </p>
 
-          <div style={{ fontSize: 12, lineHeight: 1.8 }}>
+          <div style={{ fontSize: 12, lineHeight: 1.8, maxHeight: '70vh', overflowY: 'auto' }}>
             <div style={{ marginBottom: 8 }}>
               <span style={{ color: 'var(--muted)' }}>🏪 업소명</span>
               <div>{name || '—'}</div>
@@ -365,8 +621,43 @@ export default function AdminVenueIntroPage() {
               <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{locationDesc || '—'}</div>
             </div>
             <div style={{ marginBottom: 8 }}>
-              <span style={{ color: 'var(--muted)' }}>🏭 시설/환경</span>
-              <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{facilityEnv || '—'}</div>
+              <span style={{ color: 'var(--muted)' }}>🏠 시설·환경 (선택)</span>
+              <div style={{ marginTop: 2 }}>
+                {[
+                  ...interior.map((id) => INTERIOR_OPTIONS.find((o) => o.id === id)?.label),
+                  ...roomCondition.map((id) => ROOM_CONDITION_OPTIONS.find((o) => o.id === id)?.label),
+                  ...soundFacility.map((id) => SOUND_FACILITY_OPTIONS.find((o) => o.id === id)?.label),
+                  ...cleanPoints.map((id) => CLEAN_OPTIONS.find((o) => o.id === id)?.label),
+                ].filter(Boolean).join(' · ') || '—'}
+              </div>
+              {facilityEnv ? <div style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{facilityEnv}</div> : null}
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ color: 'var(--muted)' }}>👥 매니저·수질 (선택)</span>
+              {staffCount ? <div style={{ marginTop: 2 }}>출근: {staffCount}</div> : null}
+              <div style={{ marginTop: 2 }}>
+                {(managerStyle.length || matching.length)
+                  ? [...managerStyle.map((id) => MANAGER_STYLE_OPTIONS.find((o) => o.id === id)?.label), ...matching.map((id) => MATCHING_OPTIONS.find((o) => o.id === id)?.label)].filter(Boolean).join(' · ')
+                  : !staffCount ? '—' : ''}
+              </div>
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ color: 'var(--muted)' }}>🎁 서비스·이벤트 (선택)</span>
+              <div style={{ marginTop: 2 }}>
+                {[
+                  ...freeService.map((id) => FREE_SERVICE_OPTIONS.find((o) => o.id === id)?.label),
+                  ...convenience.map((id) => CONVENIENCE_OPTIONS.find((o) => o.id === id)?.label),
+                  ...discount.map((id) => DISCOUNT_OPTIONS.find((o) => o.id === id)?.label),
+                ].filter(Boolean).join(' · ') || '—'}
+              </div>
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ color: 'var(--muted)' }}>🛡 실장마인드 (선택)</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 2 }}>
+                {philosophy.length || managerCareer.length
+                  ? [...philosophy.map((id) => PHILOSOPHY_OPTIONS.find((o) => o.id === id)?.label), ...managerCareer.map((id) => MANAGER_CAREER_OPTIONS.find((o) => o.id === id)?.label)].filter(Boolean).join(' · ')
+                  : '—'}
+              </div>
             </div>
             <div style={{ marginBottom: 8 }}>
               <span style={{ color: 'var(--muted)' }}>🎁 혜택</span>

@@ -23,6 +23,7 @@ function getApiKey(): string {
     { path: join(cwd, '.env.production') },
     { path: join(cwd, '.env.local') },
     { path: join(cwd, '..', '.env.production') },
+    { path: join(cwd, '..', 'extend', 'gemini_api_key.env'), raw: true },
     { path: join(cwd, '..', 'gemini_api_key.env'), raw: true },
     { path: join(cwd, 'gemini_api_key.env'), raw: true },
   ]
@@ -121,7 +122,8 @@ export async function generateVenueIntro(
   const dataBlock = buildDataBlock(data)
   const fullPrompt = basePrompt + '\n' + dataBlock
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${encodeURIComponent(apiKey)}`
+  // 이브알바와 동일: x-goog-api-key 헤더 사용 (URL 쿼리 아님)
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`
   const payload = {
     contents: [{ parts: [{ text: fullPrompt }] }],
     generationConfig: {
@@ -134,7 +136,10 @@ export async function generateVenueIntro(
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
       body: JSON.stringify(payload),
     })
     const json = await res.json()

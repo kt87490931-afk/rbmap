@@ -17,6 +17,7 @@ export default function AdminVenueIntrosPage() {
   const [items, setItems] = useState<IntroItem[]>([])
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
+  const [viewingItem, setViewingItem] = useState<IntroItem | null>(null)
 
   const fetchItems = useCallback(async () => {
     try {
@@ -50,6 +51,11 @@ export default function AdminVenueIntrosPage() {
 
   const getName = (x: IntroItem) =>
     (x.form_json?.name as string) || '제목없음'
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    showMsg('클립보드에 복사되었습니다.')
+  }
 
   if (loading) return <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
 
@@ -138,11 +144,21 @@ export default function AdminVenueIntrosPage() {
                       {String(r.form_json?.region || '')} · {r.ai_tone === 'partner_pro' ? '파트너' : '전문가'} · {new Date(r.created_at).toLocaleDateString('ko-KR')}
                     </span>
                     <div>
+                      <button
+                        type="button"
+                        style={{ marginRight: 8, fontSize: 12, padding: '4px 10px', cursor: 'pointer', background: hasAi ? 'var(--accent)' : 'var(--bg)', color: hasAi ? '#fff' : 'var(--muted)', border: '1px solid var(--border)', borderRadius: 6 }}
+                        onClick={() => setViewingItem(r)}
+                        disabled={!hasAi}
+                        title={hasAi ? 'AI 작성 원문 보기' : 'AI 작성글이 없습니다'}
+                      >
+                        보기
+                      </button>
                       <Link
                         href={`/admin/venues/intro?load=${r.id}`}
                         style={{ marginRight: 8, fontSize: 12 }}
+                        title="양식 수정"
                       >
-                        수정
+                        폼 수정
                       </Link>
                       <button
                         type="button"
@@ -183,6 +199,81 @@ export default function AdminVenueIntrosPage() {
           </div>
         )}
       </div>
+
+      {viewingItem && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 24,
+          }}
+          onClick={() => setViewingItem(null)}
+        >
+          <div
+            style={{
+              background: 'var(--card)',
+              borderRadius: 12,
+              maxWidth: 640,
+              width: '100%',
+              maxHeight: '85vh',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '14px 18px',
+                borderBottom: '1px solid var(--border)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: 'var(--bg)',
+              }}
+            >
+              <span style={{ fontWeight: 700, fontSize: 15 }}>
+                AI 작성 원문 — {getName(viewingItem)}
+              </span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(viewingItem.intro_ai_json?.content || '')}
+                  style={{ fontSize: 12, padding: '6px 12px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                >
+                  복사
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewingItem(null)}
+                  style={{ fontSize: 12, padding: '6px 12px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer' }}
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+            <div
+              style={{
+                padding: 18,
+                fontSize: 14,
+                lineHeight: 1.8,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                overflowY: 'auto',
+                flex: 1,
+              }}
+            >
+              {viewingItem.intro_ai_json?.content || '— AI 작성글이 없습니다. —'}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

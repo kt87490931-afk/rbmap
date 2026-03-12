@@ -107,6 +107,8 @@ function buildDataBlock(data: FormDataForGemini, essentialKeywords?: string[]): 
   return block
 }
 
+const DEFAULT_ESSENTIAL_KEYWORDS = ['가라오케', '룸싸롱', '퍼블릭', '노래방']
+
 /**
  * 업체소개글 텍스트 생성 (다이렉트 2,000자 이내)
  */

@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: '/admin/site', icon: '📄', label: '메인 페이지 설정' },
   { href: '/admin/regions', icon: '🗺', label: '지역 관리' },
   { href: '/admin/partners', icon: '🤝', label: '제휴업체 관리' },
+  { href: '/admin/essential-keywords', icon: '🔑', label: '필수단어관리' },
   { href: '/admin/venues/intro', icon: '📝', label: '업체소개글 작성' },
   { href: '/admin/venues/intros', icon: '📋', label: '업체소개글관리' },
   { href: '/admin/live-feed', icon: '📡', label: 'Live Feed 관리' },

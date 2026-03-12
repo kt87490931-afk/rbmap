@@ -74,9 +74,12 @@ export interface FormDataForGemini {
   staff_count?: string
 }
 
-function buildDataBlock(data: FormDataForGemini): string {
+function buildDataBlock(data: FormDataForGemini, essentialKeywords?: string[]): string {
   const arr = (v: string[] | undefined) => (Array.isArray(v) ? v : []).join(', ')
   let block = '[고정 참고 데이터] (참고만 하고 생성 글에 넣지 마라)\n'
+  if (essentialKeywords && essentialKeywords.length > 0) {
+    block += `[필수 포함 키워드] 다음 단어들을 본문에 반드시 자연스럽게 1회 이상 포함할 것: ${essentialKeywords.join(', ')}\n`
+  }
   block += `업소명: ${data.name || ''}\n`
   block += `지역: ${data.region || ''}\n`
   block += `업종: ${data.type || ''}\n`
@@ -113,17 +116,22 @@ export type VenueIntroResult =
 
 export async function generateVenueIntro(
   data: FormDataForGemini,
-  tone: IntroTone = 'pro'
+  tone: IntroTone = 'pro',
+  essentialKeywords?: string[]
 ): Promise<VenueIntroResult> {
   const apiKey = getApiKey()
   if (!apiKey) {
     return { success: false, message: 'API 키가 설정되지 않았습니다.' }
   }
 
+  const keywords = essentialKeywords && essentialKeywords.length > 0
+    ? essentialKeywords
+    : DEFAULT_ESSENTIAL_KEYWORDS
+
   const roleId = tone === 'partner_pro' ? 'partner_pro' : 'pro'
   const role = geminiRoles[roleId] || geminiRoles.pro
   const basePrompt = role.prompt
-  const dataBlock = buildDataBlock(data)
+  const dataBlock = buildDataBlock(data, keywords)
   const fullPrompt = basePrompt + '\n' + dataBlock
 
   // API 키 전달: 헤더 + 쿼리(이중화) — 일부 프록시/CDN에서 헤더 누락 대비

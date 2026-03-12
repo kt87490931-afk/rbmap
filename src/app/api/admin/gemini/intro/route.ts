@@ -1,8 +1,25 @@
 import { NextResponse } from 'next/server'
 import { requireAdminOrSetup } from '@/lib/admin-auth'
 import { generateVenueIntro, type FormDataForGemini } from '@/lib/gemini'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
+
+const DEFAULT_KEYWORDS = ['가라오케', '룸싸롱', '퍼블릭', '노래방']
+
+async function getEssentialKeywords(): Promise<string[]> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('essential_keywords')
+      .select('keyword')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true })
+    if (error || !data?.length) return DEFAULT_KEYWORDS
+    return data.map((r) => r.keyword).filter(Boolean)
+  } catch {
+    return DEFAULT_KEYWORDS
+  }
+}
 
 export async function POST(request: Request) {
   const authErr = await requireAdminOrSetup()
@@ -17,8 +34,9 @@ export async function POST(request: Request) {
 
   const tone = ai_tone === 'partner_pro' ? 'partner_pro' : 'pro'
   const data = form as FormDataForGemini
+  const essentialKeywords = await getEssentialKeywords()
 
-  const result = await generateVenueIntro(data, tone)
+  const result = await generateVenueIntro(data, tone, essentialKeywords)
 
   if (result.success) {
     // eslint-disable-next-line no-console

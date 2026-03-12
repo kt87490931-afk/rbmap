@@ -138,6 +138,8 @@ export default function AdminVenueIntroPage() {
   const [saving, setSaving] = useState(false)
   const [introAiContent, setIntroAiContent] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [savedIntros, setSavedIntros] = useState<Array<{ id: string; form_json: Record<string, unknown>; ai_tone: string; period_days: number; intro_ai_json?: { content?: string }; created_at: string }>>([])
+  const [loadingIntros, setLoadingIntros] = useState(false)
 
   const fetchPartners = useCallback(async () => {
     try {
@@ -153,9 +155,51 @@ export default function AdminVenueIntroPage() {
     } catch { /* ignore */ }
   }, [])
 
+  const fetchSavedIntros = useCallback(async () => {
+    setLoadingIntros(true)
+    try {
+      const res = await fetch('/api/admin/venues/intro')
+      const data = await res.json()
+      setSavedIntros(Array.isArray(data) ? data : [])
+    } catch { /* ignore */ } finally {
+      setLoadingIntros(false)
+    }
+  }, [])
+
   useEffect(() => {
     fetchPartners()
-  }, [fetchPartners])
+    fetchSavedIntros()
+  }, [fetchPartners, fetchSavedIntros])
+
+  const loadSavedIntro = (item: { form_json: Record<string, unknown>; ai_tone: string; period_days: number; intro_ai_json?: { content?: string } }) => {
+    const f = item.form_json
+    setName(String(f.name ?? ''))
+    setRegion(String(f.region ?? ''))
+    setType(String(f.type ?? ''))
+    setContact(String(f.contact ?? ''))
+    setLocation(String(f.location ?? ''))
+    setLocationDesc(String(f.location_desc ?? ''))
+    setFacilityEnv(String(f.facility_env ?? ''))
+    setBenefits(String(f.benefits ?? ''))
+    setQualify(String(f.qualify ?? ''))
+    setExtra(String(f.extra ?? ''))
+    setInterior(Array.isArray(f.interior) ? f.interior : [])
+    setRoomCondition(Array.isArray(f.room_condition) ? f.room_condition : [])
+    setSoundFacility(Array.isArray(f.sound_facility) ? f.sound_facility : [])
+    setCleanPoints(Array.isArray(f.clean_points) ? f.clean_points : [])
+    setManagerStyle(Array.isArray(f.manager_style) ? f.manager_style : [])
+    setMatching(Array.isArray(f.matching) ? f.matching : [])
+    setFreeService(Array.isArray(f.free_service) ? f.free_service : [])
+    setConvenience(Array.isArray(f.convenience) ? f.convenience : [])
+    setDiscount(Array.isArray(f.discount) ? f.discount : [])
+    setPhilosophy(Array.isArray(f.philosophy) ? f.philosophy : [])
+    setManagerCareer(Array.isArray(f.manager_career) ? f.manager_career : [])
+    setStaffCount(String(f.staff_count ?? ''))
+    setAiTone(item.ai_tone === 'partner_pro' ? 'partner_pro' : 'pro')
+    setPeriodDays(Number(item.period_days) || 30)
+    setIntroAiContent(item.intro_ai_json?.content ?? '')
+    showMsg('저장된 소개글을 불러왔습니다.')
+  }
 
   useEffect(() => {
     if (!selectedPartnerId) return
@@ -251,6 +295,7 @@ export default function AdminVenueIntroPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '저장 실패')
       showMsg('임시저장 되었습니다.')
+      fetchSavedIntros()
     } catch (e) {
       alert(String(e))
     } finally {
@@ -275,6 +320,38 @@ export default function AdminVenueIntroPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
         {/* 왼쪽: 양식 */}
         <div className="card-box">
+          <div style={{ marginBottom: 16, padding: 12, background: 'var(--bg)', borderRadius: 8 }}>
+            <label className="form-label">저장된 소개글 불러오기</label>
+            <select
+              className="form-input"
+              value=""
+              onChange={(e) => {
+                const id = e.target.value
+                if (!id) return
+                const item = savedIntros.find((x) => x.id === id)
+                if (item) loadSavedIntro(item)
+                e.target.value = ''
+              }}
+              style={{ width: '100%' }}
+              disabled={loadingIntros}
+            >
+              <option value="">— 선택하여 불러오기 —</option>
+              {savedIntros.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {String((x.form_json as { name?: string }).name || '제목없음')} · {new Date(x.created_at).toLocaleDateString('ko-KR')}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={fetchSavedIntros}
+              disabled={loadingIntros}
+              style={{ marginTop: 8, fontSize: 12 }}
+            >
+              {loadingIntros ? '로딩 중...' : '목록 새로고침'}
+            </button>
+          </div>
+
           <div className="card-box-title">📋 업체 기본 정보</div>
 
           <div style={{ marginBottom: 16 }}>

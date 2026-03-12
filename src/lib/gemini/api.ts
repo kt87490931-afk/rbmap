@@ -1,8 +1,11 @@
 /**
  * Gemini API 호출 (이브알바 gemini_api.lib.php 동일 패턴)
  * REST API: generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
+ * API 키: 1) 환경변수 GEMINI_API_KEY, 2) .env.production 파일에서 파싱
  */
 
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
 import {
   geminiModel,
   geminiTemperature,
@@ -12,8 +15,35 @@ import {
 } from './config'
 
 function getApiKey(): string {
-  const key = process.env.GEMINI_API_KEY?.trim() || ''
-  return key
+  let key = process.env.GEMINI_API_KEY?.trim() || ''
+  if (key) return key
+  // 이브알바처럼 파일 fallback: .env.production 또는 gemini_api_key.env
+  const cwd = process.cwd()
+  const candidates: { path: string; raw?: boolean }[] = [
+    { path: join(cwd, '.env.production') },
+    { path: join(cwd, '.env.local') },
+    { path: join(cwd, '..', '.env.production') },
+    { path: join(cwd, '..', 'gemini_api_key.env'), raw: true },
+    { path: join(cwd, 'gemini_api_key.env'), raw: true },
+  ]
+  for (const { path: p, raw } of candidates) {
+    if (existsSync(p)) {
+      try {
+        const content = readFileSync(p, 'utf-8')
+        if (raw) {
+          key = content.trim()
+          if (key && key.length > 20) return key
+        } else {
+          const m = content.match(/GEMINI_API_KEY\s*=\s*(.+)/)
+          if (m) {
+            key = m[1].trim().replace(/^["']|["']$/g, '')
+            if (key) return key
+          }
+        }
+      } catch { /* ignore */ }
+    }
+  }
+  return ''
 }
 
 export type IntroTone = 'pro' | 'partner_pro'

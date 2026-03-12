@@ -4,6 +4,20 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
+export async function GET() {
+  const authErr = await requireAdminOrSetup()
+  if (authErr) return authErr
+
+  const { data, error } = await supabaseAdmin
+    .from('venue_intros')
+    .select('id, form_json, ai_tone, period_days, intro_ai_json, created_at')
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  return NextResponse.json(data || [])
+}
+
 export async function POST(request: Request) {
   const authErr = await requireAdminOrSetup()
   if (authErr) return authErr

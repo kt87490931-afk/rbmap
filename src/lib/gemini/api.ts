@@ -74,10 +74,23 @@ export interface FormDataForGemini {
   staff_count?: string
 }
 
+const REGION_LABELS: Record<string, string> = {
+  gangnam: '강남',
+  suwon: '수원',
+  dongtan: '동탄',
+  jeju: '제주',
+}
+
 function buildDataBlock(data: FormDataForGemini, essentialKeywords?: string[]): string {
   const arr = (v: string[] | undefined) => (Array.isArray(v) ? v : []).join(', ')
+  const regionLabel = data.region ? (REGION_LABELS[data.region] || data.region) : ''
+
   let block = '[고정 참고 데이터] (참고만 하고 생성 글에 넣지 마라)\n'
-  if (essentialKeywords && essentialKeywords.length > 0) {
+  if (essentialKeywords && essentialKeywords.length > 0 && regionLabel) {
+    block += `[필수 포함 키워드 - 지역+키워드 형태] 다음 키워드들을 본문에 반드시 "지역명+키워드" 형태로 자연스럽게 포함할 것.\n`
+    block += `예: "${regionLabel} 가라오케는~", "${regionLabel} 룸싸롱으로~", "${regionLabel} 퍼블릭에서~"\n`
+    block += `지역: ${regionLabel} | 키워드: ${essentialKeywords.join(', ')}\n`
+  } else if (essentialKeywords && essentialKeywords.length > 0) {
     block += `[필수 포함 키워드] 다음 단어들을 본문에 반드시 자연스럽게 1회 이상 포함할 것: ${essentialKeywords.join(', ')}\n`
   }
   block += `업소명: ${data.name || ''}\n`

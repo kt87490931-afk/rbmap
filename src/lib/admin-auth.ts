@@ -5,9 +5,13 @@ import { verifyOtpSession } from '@/lib/otp'
 import { cookies } from 'next/headers'
 
 /**
- * 로고 5클릭 dev-admin 쿠키 있으면 즉시 어드민 통과 (Google/OTP 없음)
+ * 로고 5클릭 dev-admin 쿠키 — 로컬/IP 접속 시에만 통과, 프로덕션 도메인에서는 Google+OTP 필수
  */
 export async function hasDevAdminCookie(): Promise<boolean> {
+  const url = process.env.NEXTAUTH_URL || ''
+  const isProductionDomain = url.includes('rbbmap.com') || (url.startsWith('https://') && !url.includes('localhost'))
+  if (isProductionDomain) return false
+
   const c = await cookies()
   return c.get('rbmap_dev_admin')?.value === '1'
 }

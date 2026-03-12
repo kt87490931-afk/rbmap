@@ -36,12 +36,17 @@ export default async function AdminLayout({
             background: 'rgba(200, 168, 75, 0.15)',
             border: '1px solid rgba(200, 168, 75, 0.4)',
             borderRadius: 8,
-            padding: '10px 14px',
+            padding: '14px 18px',
             marginBottom: 16,
-            fontSize: 12,
+            fontSize: 13,
             color: 'var(--gold, #c8a84b)',
+            lineHeight: 1.6,
           }}>
-            ⚠️ <strong>설정 모드</strong> — Google OAuth 미설정. 지역·제휴업체·리뷰 세팅 후, 도메인 구입 시 인증을 설정하세요.
+            ⚠️ <strong>설정 모드</strong> — 로그인·OTP가 비활성화된 상태입니다.
+            <br />
+            <span style={{ fontSize: 12, opacity: 0.9 }}>
+              서버 .env.production에 <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: 4 }}>GOOGLE_CLIENT_ID</code>, <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: 4 }}>GOOGLE_CLIENT_SECRET</code>를 추가 후 빌드/재시작하면 Google 로그인과 OTP가 활성화됩니다.
+            </span>
           </div>
           {children}
         </div>

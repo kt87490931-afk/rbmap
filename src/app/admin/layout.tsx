@@ -1,11 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { verifyOtpSession } from '@/lib/otp'
-import { isSetupMode, hasDevAdminCookie } from '@/lib/admin-auth'
+import { isSetupModeEffective, hasDevAdminCookie } from '@/lib/admin-auth'
 import { AdminSidebar } from './AdminSidebar'
 import type { Metadata } from 'next'
 
@@ -27,7 +27,7 @@ export default async function AdminLayout({
       </div>
     )
   }
-  if (isSetupMode()) {
+  if (isSetupModeEffective()) {
     return (
       <div className="admin-layout">
         <AdminSidebar disabled={false} setupMode />
@@ -70,14 +70,14 @@ export default async function AdminLayout({
     )
   }
 
-  const isOtpVerified = await verifyOtpSession(session.user.id)
-  if (!isOtpVerified) {
-    redirect('/admin/verify-otp')
-  }
+  // OTP 쿠키는 미들웨어에서 검사함. 여기선 사이드바 disabled용으로만 사용
+  const cookieStore = await cookies()
+  const otpCookie = cookieStore.get('admin_otp_session')
+  const isOtpVerified = !!otpCookie?.value
 
   return (
     <div className="admin-layout">
-      <AdminSidebar disabled={false} />
+      <AdminSidebar disabled={!isOtpVerified} setupMode={false} />
       <div className="admin-content">
         {children}
       </div>

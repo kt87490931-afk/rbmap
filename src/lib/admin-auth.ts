@@ -17,7 +17,7 @@ export async function hasDevAdminCookie(): Promise<boolean> {
 }
 
 /**
- * Google OAuth가 설정되지 않았으면 "설정 모드"로 인증 없이 허용
+ * Google OAuth가 설정되지 않았으면 "설정 모드" — 로컬/비프로덕션에서만 사용
  */
 export function isSetupMode() {
   return !(
@@ -28,11 +28,26 @@ export function isSetupMode() {
 }
 
 /**
+ * 프로덕션 도메인(rbbmap.com) 여부 — 여기서는 설정 모드 미적용, Google+OTP 필수
+ */
+export function isProductionDomain(): boolean {
+  const url = process.env.NEXTAUTH_URL || ''
+  return url.includes('rbbmap.com')
+}
+
+/**
+ * 설정 모드가 실제로 적용되는지 — 프로덕션에서는 항상 false
+ */
+export function isSetupModeEffective(): boolean {
+  return isSetupMode() && !isProductionDomain()
+}
+
+/**
  * 어드민 API용: dev 쿠키/설정 모드면 통과, 아니면 세션+OTP 검증
  */
 export async function requireAdminOrSetup(): Promise<NextResponse | null> {
   if (await hasDevAdminCookie()) return null
-  if (isSetupMode()) {
+  if (isSetupModeEffective()) {
     return null
   }
   const session = await getServerSession(authOptions)

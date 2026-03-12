@@ -53,7 +53,10 @@ export function AdminSidebar({ disabled, setupMode }: { disabled?: boolean; setu
         <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--border)' }}>
           <button
             type="button"
-            onClick={() => signOut({ callbackUrl: '/' })}
+            onClick={async () => {
+              await fetch('/api/admin/logout', { method: 'POST' }).catch(() => {})
+              signOut({ callbackUrl: '/' })
+            }}
             className="admin-nav-item"
             style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
           >

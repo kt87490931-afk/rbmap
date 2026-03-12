@@ -15,6 +15,7 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
+            set -e
             if [ ! -d /var/www/rbmap/.git ]; then
               rm -rf /var/www/rbmap
               git clone git@github.com:${{ github.repository }}.git /var/www/rbmap
@@ -22,7 +23,24 @@ jobs:
             cd /var/www/rbmap
             git fetch origin
             git reset --hard origin/main
+
             npm ci
             npm run build
-            pm2 restart rbmap || pm2 start npm --name "rbmap" -- start
-            pm2 save
+
+            cp -r .next/static .next/standalone/.next/static 2>/dev/null || true
+            [ -d public ] && cp -r public .next/standalone/public 2>/dev/null || true
+            if [ -f .env.production ]; then
+              cp .env.production .next/standalone/.env.production
+            elif [ -f .env.local ]; then
+              cp .env.local .next/standalone/.env.production
+            fi
+            [ -f gemini_api_key.env ] && cp gemini_api_key.env .next/standalone/gemini_api_key.env || true
+
+            mkdir -p logs
+            if pm2 describe rbmap > /dev/null 2>&1; then
+              pm2 reload ecosystem.config.cjs
+            else
+              pm2 start ecosystem.config.cjs
+              pm2 save
+            fi
+            pm2 status rbmap

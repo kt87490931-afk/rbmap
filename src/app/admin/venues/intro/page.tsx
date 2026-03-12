@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 const TYPE_OPTIONS = [
   { value: 'karaoke', label: '가라오케' },
@@ -140,6 +141,7 @@ export default function AdminVenueIntroPage() {
   const [generating, setGenerating] = useState(false)
   const [savedIntros, setSavedIntros] = useState<Array<{ id: string; form_json: Record<string, unknown>; ai_tone: string; period_days: number; intro_ai_json?: { content?: string }; created_at: string }>>([])
   const [loadingIntros, setLoadingIntros] = useState(false)
+  const searchParams = useSearchParams()
 
   const fetchPartners = useCallback(async () => {
     try {
@@ -170,6 +172,13 @@ export default function AdminVenueIntroPage() {
     fetchPartners()
     fetchSavedIntros()
   }, [fetchPartners, fetchSavedIntros])
+
+  const loadId = searchParams.get('load')
+  useEffect(() => {
+    if (!loadId || !savedIntros.length) return
+    const item = savedIntros.find((x) => x.id === loadId)
+    if (item) loadSavedIntro(item)
+  }, [loadId, savedIntros])
 
   const loadSavedIntro = (item: { form_json: Record<string, unknown>; ai_tone: string; period_days: number; intro_ai_json?: { content?: string } }) => {
     const f = item.form_json

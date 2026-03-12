@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: '/admin/regions', icon: '🗺', label: '지역 관리' },
   { href: '/admin/partners', icon: '🤝', label: '제휴업체 관리' },
   { href: '/admin/venues/intro', icon: '📝', label: '업체소개글 작성' },
+  { href: '/admin/venues/intros', icon: '📋', label: '업체소개글관리' },
   { href: '/admin/live-feed', icon: '📡', label: 'Live Feed 관리' },
   { href: '/admin/reviews', icon: '⭐', label: '리뷰 관리' },
   { href: '/admin/reviews/write', icon: '✍️', label: '리뷰 작성' },

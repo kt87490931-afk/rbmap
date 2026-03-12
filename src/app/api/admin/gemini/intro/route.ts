@@ -23,5 +23,14 @@ export async function POST(request: Request) {
   if (result.success) {
     return NextResponse.json({ success: true, text: result.text })
   }
-  return NextResponse.json({ success: false, message: result.message }, { status: 400 })
+  const status = result.httpStatus && result.httpStatus >= 400 ? result.httpStatus : 400
+  return NextResponse.json(
+    {
+      success: false,
+      message: result.message,
+      httpStatus: result.httpStatus,
+      diag: result.diag || null,
+    },
+    { status }
+  )
 }

@@ -139,6 +139,7 @@ export default function AdminVenueIntroPage() {
   const [saving, setSaving] = useState(false)
   const [introAiContent, setIntroAiContent] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [testingApi, setTestingApi] = useState(false)
   const [savedIntros, setSavedIntros] = useState<Array<{ id: string; form_json: Record<string, unknown>; ai_tone: string; period_days: number; intro_ai_json?: { content?: string }; created_at: string }>>([])
   const [loadingIntros, setLoadingIntros] = useState(false)
   const searchParams = useSearchParams()
@@ -255,6 +256,23 @@ export default function AdminVenueIntroPage() {
     staff_count: staffCount,
   }
 
+  const handleTestApiKey = async () => {
+    setTestingApi(true)
+    try {
+      const res = await fetch('/api/admin/gemini/test')
+      const data = await res.json()
+      if (data.ok) {
+        alert(`API 키 테스트 성공\n${data.message}\n응답 시간: ${data.elapsedMs}ms`)
+      } else {
+        alert(`API 키 테스트 실패\n${data.message || data.error}\n${data.error ? `상세: ${JSON.stringify(data.fullError || data.error)}` : ''}`)
+      }
+    } catch (e) {
+      alert('연결 오류: ' + String(e))
+    } finally {
+      setTestingApi(false)
+    }
+  }
+
   const handleGenerateAi = async () => {
     if (!name.trim()) {
       alert('업소명을 입력해주세요.')
@@ -269,8 +287,8 @@ export default function AdminVenueIntroPage() {
         body: JSON.stringify({ form: formData, ai_tone: aiTone }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.message || data.error || '생성 실패')
-      if (!data.success || !data.text) throw new Error('AI 응답이 비어 있습니다.')
+      if (!res.ok) throw new Error(data.message || data.error || `생성 실패 (HTTP ${res.status})`)
+      if (!data.success || !data.text) throw new Error(data.message || 'AI 응답이 비어 있습니다.')
       setIntroAiContent(data.text)
       showMsg('AI 소개글 생성 완료')
     } catch (e) {
@@ -687,7 +705,7 @@ export default function AdminVenueIntroPage() {
             </select>
           </div>
 
-          <div style={{ marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <button
               type="button"
               onClick={handleGenerateAi}
@@ -698,6 +716,16 @@ export default function AdminVenueIntroPage() {
               }}
             >
               {generating ? 'AI 생성 중...' : '🤖 AI 소개글 생성'}
+            </button>
+            <button
+              type="button"
+              onClick={handleTestApiKey}
+              disabled={testingApi}
+              style={{
+                padding: '8px 14px', borderRadius: 8, fontSize: 12, background: 'var(--bg)', color: 'var(--fg)', border: '1px solid var(--border)', cursor: testingApi ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {testingApi ? '테스트 중...' : '🔑 API 키 테스트'}
             </button>
             <button
               type="button"

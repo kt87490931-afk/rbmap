@@ -107,10 +107,14 @@ function buildDataBlock(data: FormDataForGemini): string {
 /**
  * 업체소개글 텍스트 생성 (다이렉트 2,000자 이내)
  */
+export type VenueIntroResult =
+  | { success: true; text: string }
+  | { success: false; message: string; httpStatus?: number; diag?: Record<string, unknown> }
+
 export async function generateVenueIntro(
   data: FormDataForGemini,
   tone: IntroTone = 'pro'
-): Promise<{ success: true; text: string } | { success: false; message: string }> {
+): Promise<VenueIntroResult> {
   const apiKey = getApiKey()
   if (!apiKey) {
     return { success: false, message: 'API 키가 설정되지 않았습니다.' }
@@ -122,8 +126,9 @@ export async function generateVenueIntro(
   const dataBlock = buildDataBlock(data)
   const fullPrompt = basePrompt + '\n' + dataBlock
 
-  // 이브알바와 동일: x-goog-api-key 헤더 사용 (URL 쿼리 아님)
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`
+  // API 키 전달: 헤더 + 쿼리(이중화) — 일부 프록시/CDN에서 헤더 누락 대비
+  const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`
+  const url = `${baseUrl}?key=${encodeURIComponent(apiKey)}`
   const payload = {
     contents: [{ parts: [{ text: fullPrompt }] }],
     generationConfig: {
@@ -150,9 +155,14 @@ export async function generateVenueIntro(
     }
 
     const errMsg = json?.error?.message || '알 수 없는 오류'
-    return { success: false, message: `글 생성 중 오류가 발생했습니다. (${errMsg})` }
+    return {
+      success: false,
+      message: `글 생성 중 오류가 발생했습니다. (${errMsg})`,
+      httpStatus: res.status,
+      diag: { error: json?.error, status: res.status },
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'API 연결 중 오류'
-    return { success: false, message: msg }
+    return { success: false, message: msg, diag: { stack: e instanceof Error ? e.stack : null } }
   }
 }

@@ -15,7 +15,8 @@ export async function PATCH(
   const body = await request.json()
 
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  if (typeof body.is_public === 'boolean') update.is_public = body.is_public
+  // is_public: Supabase에 해당 컬럼이 있을 때만 사용 (supabase-venue-intros-is-public.sql 실행 후)
+  // if (typeof body.is_public === 'boolean') update.is_public = body.is_public
   if (body.form_json && typeof body.form_json === 'object') update.form_json = body.form_json
   if (body.intro_ai_json && typeof body.intro_ai_json === 'object') update.intro_ai_json = body.intro_ai_json
   if (body.ai_tone === 'partner_pro' || body.ai_tone === 'pro') update.ai_tone = body.ai_tone

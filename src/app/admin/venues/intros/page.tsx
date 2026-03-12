@@ -17,7 +17,6 @@ export default function AdminVenueIntrosPage() {
   const [items, setItems] = useState<IntroItem[]>([])
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
-  const [toggling, setToggling] = useState<string | null>(null)
 
   const fetchItems = useCallback(async () => {
     try {
@@ -35,31 +34,6 @@ export default function AdminVenueIntrosPage() {
   function showMsg(text: string) {
     setMsg(text)
     setTimeout(() => setMsg(''), 3000)
-  }
-
-  async function togglePublic(item: IntroItem) {
-    const next = !(item.is_public !== false)
-    setToggling(item.id)
-    try {
-      const res = await fetch(`/api/admin/venues/intro/${item.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_public: next }),
-      })
-      if (res.ok) {
-        setItems((prev) =>
-          prev.map((x) => (x.id === item.id ? { ...x, is_public: next } : x))
-        )
-        showMsg(next ? '공개로 변경되었습니다.' : '비공개로 변경되었습니다.')
-      } else {
-        const err = await res.json()
-        alert(err.error || '변경 실패')
-      }
-    } catch (e) {
-      alert(String(e))
-    } finally {
-      setToggling(null)
-    }
   }
 
   async function deleteItem(id: string, title: string) {
@@ -83,7 +57,7 @@ export default function AdminVenueIntrosPage() {
     <>
       <div className="admin-header">
         <h1 className="admin-title">업체소개글 관리</h1>
-        <p className="admin-subtitle">저장된 업체소개글 목록 · 공개/비공개 전환</p>
+        <p className="admin-subtitle">저장된 업체소개글 목록 (공개/비공개는 DB 마이그레이션 후 사용)</p>
       </div>
 
       {msg && (
@@ -134,7 +108,6 @@ export default function AdminVenueIntrosPage() {
                 <th>업종</th>
                 <th>톤</th>
                 <th>생성일</th>
-                <th>공개</th>
                 <th>작업</th>
               </tr>
             </thead>
@@ -146,24 +119,6 @@ export default function AdminVenueIntrosPage() {
                   <td>{String(r.form_json?.type || '—')}</td>
                   <td>{r.ai_tone === 'partner_pro' ? '파트너' : '전문가'}</td>
                   <td>{new Date(r.created_at).toLocaleDateString('ko-KR')}</td>
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => togglePublic(r)}
-                      disabled={toggling === r.id}
-                      style={{
-                        padding: '4px 10px',
-                        fontSize: 11,
-                        borderRadius: 6,
-                        background: r.is_public !== false ? 'rgba(46,204,113,0.2)' : 'rgba(255,99,71,0.2)',
-                        color: r.is_public !== false ? 'var(--green)' : 'var(--red, #ff6347)',
-                        border: '1px solid rgba(0,0,0,0.1)',
-                        cursor: toggling === r.id ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      {toggling === r.id ? '처리 중' : r.is_public !== false ? '공개' : '비공개'}
-                    </button>
-                  </td>
                   <td>
                     <Link
                       href={`/admin/venues/intro?load=${r.id}`}

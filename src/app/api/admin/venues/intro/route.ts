@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data, error } = await supabaseAdmin
     .from('venue_intros')
-    .select('id, form_json, ai_tone, period_days, intro_ai_json, is_public, created_at')
+    .select('id, form_json, ai_tone, period_days, intro_ai_json, created_at')
     .order('created_at', { ascending: false })
     .limit(50)
 
@@ -40,7 +40,6 @@ export async function POST(request: Request) {
     period_days: days,
     period_end: periodEnd.toISOString().slice(0, 10),
     contact_visible: true,
-    is_public: body.is_public !== false,
   }
   if (intro_ai_json && typeof intro_ai_json === 'object') {
     insertData.intro_ai_json = intro_ai_json

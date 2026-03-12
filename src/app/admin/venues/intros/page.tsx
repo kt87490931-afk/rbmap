@@ -108,17 +108,39 @@ export default function AdminVenueIntrosPage() {
                 <th>업종</th>
                 <th>톤</th>
                 <th>생성일</th>
+                <th style={{ minWidth: 320 }}>AI 작성글</th>
                 <th>작업</th>
               </tr>
             </thead>
             <tbody>
               {items.map((r) => (
                 <tr key={r.id}>
-                  <td style={{ maxWidth: 180 }}>{getName(r)}</td>
+                  <td style={{ maxWidth: 120 }}>{getName(r)}</td>
                   <td>{String(r.form_json?.region || '—')}</td>
                   <td>{String(r.form_json?.type || '—')}</td>
                   <td>{r.ai_tone === 'partner_pro' ? '파트너' : '전문가'}</td>
                   <td>{new Date(r.created_at).toLocaleDateString('ko-KR')}</td>
+                  <td>
+                    <div
+                      style={{
+                        maxWidth: 400,
+                        maxHeight: 160,
+                        overflowY: 'auto',
+                        fontSize: 12,
+                        lineHeight: 1.6,
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        padding: 8,
+                        background: 'var(--bg)',
+                        borderRadius: 6,
+                        color: 'var(--text)',
+                      }}
+                    >
+                      {r.intro_ai_json?.content || (
+                        <span style={{ color: 'var(--muted)' }}>— AI 작성글이 없습니다 (임시저장 시 AI 생성 후 저장 필요) —</span>
+                      )}
+                    </div>
+                  </td>
                   <td>
                     <Link
                       href={`/admin/venues/intro?load=${r.id}`}

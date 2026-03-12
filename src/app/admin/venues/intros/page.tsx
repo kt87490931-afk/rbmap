@@ -98,74 +98,89 @@ export default function AdminVenueIntrosPage() {
       </div>
 
       <div className="card-box">
-        <div className="card-box-title">📋 저장된 업체소개글</div>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>업소명</th>
-                <th>지역</th>
-                <th>업종</th>
-                <th>톤</th>
-                <th>생성일</th>
-                <th style={{ minWidth: 320 }}>AI 작성글</th>
-                <th>작업</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((r) => (
-                <tr key={r.id}>
-                  <td style={{ maxWidth: 120 }}>{getName(r)}</td>
-                  <td>{String(r.form_json?.region || '—')}</td>
-                  <td>{String(r.form_json?.type || '—')}</td>
-                  <td>{r.ai_tone === 'partner_pro' ? '파트너' : '전문가'}</td>
-                  <td>{new Date(r.created_at).toLocaleDateString('ko-KR')}</td>
-                  <td>
-                    <div
-                      style={{
-                        maxWidth: 400,
-                        maxHeight: 160,
-                        overflowY: 'auto',
-                        fontSize: 12,
-                        lineHeight: 1.6,
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                        padding: 8,
-                        background: 'var(--bg)',
-                        borderRadius: 6,
-                        color: 'var(--text)',
-                      }}
-                    >
-                      {r.intro_ai_json?.content || (
-                        <span style={{ color: 'var(--muted)' }}>— AI 작성글이 없습니다 (임시저장 시 AI 생성 후 저장 필요) —</span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <Link
-                      href={`/admin/venues/intro?load=${r.id}`}
-                      style={{ marginRight: 8, fontSize: 12 }}
-                    >
-                      수정
-                    </Link>
-                    <button
-                      type="button"
-                      className="btn-danger"
-                      style={{ padding: '4px 10px', fontSize: 11 }}
-                      onClick={() => deleteItem(r.id, getName(r))}
-                    >
-                      삭제
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {items.length === 0 && (
+        <div className="card-box-title">📋 AI 작성글 리스트 (2000자 이내)</div>
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 16 }}>
+          AI가 생성한 소개글 원문입니다. 임시저장 시 AI 생성 후 저장해야 여기에서 확인할 수 있습니다.
+        </p>
+        {items.length === 0 ? (
           <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 24 }}>
-            저장된 업체소개글이 없습니다. 업체소개글 작성에서 생성 후 임시저장해 주세요.
+            저장된 업체소개글이 없습니다. 업체소개글 작성에서 AI 생성 후 임시저장해 주세요.
           </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {items.map((r) => {
+              const aiContent = r.intro_ai_json?.content || ''
+              const hasAi = !!aiContent.trim()
+              return (
+                <div
+                  key={r.id}
+                  style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                    background: 'var(--card)',
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      background: 'var(--bg)',
+                      borderBottom: '1px solid var(--border)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                    }}
+                  >
+                    <span style={{ fontWeight: 600 }}>{getName(r)}</span>
+                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+                      {String(r.form_json?.region || '')} · {r.ai_tone === 'partner_pro' ? '파트너' : '전문가'} · {new Date(r.created_at).toLocaleDateString('ko-KR')}
+                    </span>
+                    <div>
+                      <Link
+                        href={`/admin/venues/intro?load=${r.id}`}
+                        style={{ marginRight: 8, fontSize: 12 }}
+                      >
+                        수정
+                      </Link>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        style={{ padding: '4px 10px', fontSize: 11 }}
+                        onClick={() => deleteItem(r.id, getName(r))}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      padding: 14,
+                      fontSize: 13,
+                      lineHeight: 1.7,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      maxHeight: 280,
+                      overflowY: 'auto',
+                      color: hasAi ? 'var(--text)' : 'var(--muted)',
+                    }}
+                  >
+                    {hasAi ? (
+                      aiContent
+                    ) : (
+                      <span>— AI 작성글이 없습니다. 업체소개글 작성에서 AI 생성 버튼을 누른 뒤 임시저장해 주세요. —</span>
+                    )}
+                  </div>
+                  {hasAi && (
+                    <div style={{ padding: '6px 14px', fontSize: 11, color: 'var(--muted)', borderTop: '1px solid var(--border)' }}>
+                      {aiContent.length}자
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
     </>

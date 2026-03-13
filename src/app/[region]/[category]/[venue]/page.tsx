@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { unstable_noStore } from "next/cache";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import Header from "@/components/Header";
@@ -91,6 +92,7 @@ export default async function VenueDetailPage({
 }: {
   params: Promise<PageParams>;
 }) {
+  unstable_noStore()
   const { region, category, venue } = await params;
 
   if (!isValidRegion(region) || !isValidCategory(category)) {

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { unstable_noStore } from 'next/cache'
 import type { Metadata } from 'next'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -17,6 +18,7 @@ export default async function ReviewsListPage({
 }: {
   searchParams: Promise<{ region?: string; type?: string; star?: string }>
 }) {
+  unstable_noStore()
   const params = await searchParams
   const region = params.region ?? 'all'
   const type = params.type ?? 'all'

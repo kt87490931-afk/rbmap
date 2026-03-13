@@ -1,3 +1,4 @@
+import { unstable_noStore } from "next/cache";
 import { getServerSession } from "next-auth";
 import Header from "@/components/Header";
 import Ticker from "@/components/Ticker";
@@ -36,6 +37,7 @@ type FeedConfig = { display_limit?: number };
 type ReviewConfig = { grid_limit?: number; full_limit?: number };
 
 export default async function Home() {
+  unstable_noStore();
   let isAdmin = await hasDevAdminCookie();
   if (!isAdmin) {
     try {

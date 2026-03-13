@@ -140,7 +140,7 @@ export default function AdminVenueIntroPage() {
   const [introAiContent, setIntroAiContent] = useState('')
   const [generating, setGenerating] = useState(false)
   const [testingApi, setTestingApi] = useState(false)
-  const [savedIntros, setSavedIntros] = useState<Array<{ id: string; form_json: Record<string, unknown>; ai_tone: string; period_days: number; intro_ai_json?: { content?: string }; created_at: string }>>([])
+  const [savedIntros, setSavedIntros] = useState<Array<{ id: string; form_json: Record<string, unknown>; ai_tone: string; period_days: number; intro_ai_json?: { content?: string; v2?: unknown }; created_at: string }>>([])
   const [loadingIntros, setLoadingIntros] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -158,6 +158,16 @@ export default function AdminVenueIntroPage() {
       })))
     } catch { /* ignore */ }
   }, [])
+
+  const buildContentFromV2 = (v2: { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }) => {
+    if (!v2?.intro) return ''
+    const parts = [
+      v2.intro.lead,
+      v2.intro.quote,
+      ...(v2.intro.body_paragraphs ?? []),
+    ].filter(Boolean)
+    return parts.join('\n\n')
+  }
 
   const fetchSavedIntros = useCallback(async () => {
     setLoadingIntros(true)
@@ -182,7 +192,7 @@ export default function AdminVenueIntroPage() {
     if (item) loadSavedIntro(item)
   }, [loadId, savedIntros])
 
-  const loadSavedIntro = (item: { form_json: Record<string, unknown>; ai_tone: string; period_days: number; intro_ai_json?: { content?: string } }) => {
+  const loadSavedIntro = (item: { form_json: Record<string, unknown>; ai_tone: string; period_days: number; intro_ai_json?: { content?: string; v2?: unknown } }) => {
     const f = item.form_json
     setName(String(f.name ?? ''))
     setRegion(String(f.region ?? ''))
@@ -208,7 +218,10 @@ export default function AdminVenueIntroPage() {
     setStaffCount(String(f.staff_count ?? ''))
     setAiTone(item.ai_tone === 'partner_pro' ? 'partner_pro' : 'pro')
     setPeriodDays(Number(item.period_days) || 30)
-    setIntroAiContent(item.intro_ai_json?.content ?? '')
+    const ij = item.intro_ai_json
+    const v2 = ij?.v2 as { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } } | undefined
+    const content = v2 ? buildContentFromV2(v2) : (ij?.content ?? '')
+    setIntroAiContent(content)
     showMsg('저장된 소개글을 불러왔습니다.')
   }
 
@@ -285,25 +298,30 @@ export default function AdminVenueIntroPage() {
       const res = await fetch('/api/admin/gemini/intro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ form: formData, ai_tone: aiTone }),
+        body: JSON.stringify({ form: formData, ai_tone: aiTone, format: 'json' }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || data.error || `생성 실패 (HTTP ${res.status})`)
       if (!data.success || !data.text) throw new Error(data.message || 'AI 응답이 비어 있습니다.')
       const aiText = data.text
-      setIntroAiContent(aiText)
+      const v2 = data.v2
+      const contentForDisplay = v2 ? buildContentFromV2(v2) : aiText
+      setIntroAiContent(contentForDisplay)
 
-      // AI 생성 성공 시 즉시 저장 후 리스트로 이동 (이브알바처럼)
+      // AI 생성 성공 시 즉시 저장 (v2 구조 포함 — 업소 상세 페이지 DOM 매핑용)
+      const introJson: Record<string, unknown> = {
+        content: contentForDisplay,
+        generated_at: new Date().toISOString(),
+        elapsed_ms: data.elapsedMs ?? null,
+      }
+      if (v2) introJson.v2 = v2
+
       const payload: Record<string, unknown> = {
         partner_id: selectedPartnerId || null,
         form: formData,
         ai_tone: aiTone,
         period_days: periodDays,
-        intro_ai_json: {
-          content: aiText,
-          generated_at: new Date().toISOString(),
-          elapsed_ms: data.elapsedMs ?? null,
-        },
+        intro_ai_json: introJson,
       }
       const saveRes = await fetch('/api/admin/venues/intro', {
         method: 'POST',

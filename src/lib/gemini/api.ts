@@ -144,14 +144,15 @@ export type VenueIntroResult =
 
 const V2_JSON_INSTRUCTION = `
 [출력 형식 - JSON] 반드시 아래 JSON만 출력해라. 다른 설명 없이 JSON만.
+전체 길이: lead+quote+body_paragraphs 합계 2,500자 이상 3,000자 이내.
 {
   "tagline": "지역명 업종명 — 한 줄 캐치프레이즈 (예: 강남 가라오케의 기준 — 20년 업력이 만든 신뢰)",
   "intro": {
     "label": "ABOUT · 업소 소개",
     "headline": "업소명 — 지역명 업종명의 새로운 기준 (em dash 기준 앞/뒤)",
-    "lead": "리드 문장 1개 (크게 표시할 핵심 요약)",
-    "quote": "인용 강조할 문장 1개 (선택, 없으면 null)",
-    "body_paragraphs": ["본문 단락1", "본문 단락2", "본문 단락3"]
+    "lead": "리드 문장 1개 (크게 표시할 핵심 요약, 300자 내외)",
+    "quote": "인용 강조할 문장 1개 (선택, 없으면 null, 200자 내외)",
+    "body_paragraphs": ["본문 단락1", "본문 단락2", "본문 단락3", "..."]
   }
 }
 `

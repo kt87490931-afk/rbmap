@@ -342,7 +342,6 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
         <section className="section" aria-label={`${r.name} 제휴 업체`}>
           <div className="sec-header">
             <div>
-              <div className="partner-ad-badge" style={{ marginBottom: 6 }}>✦ AD PARTNER</div>
               <p className="sec-label">FEATURED · {r.name} 제휴 업체</p>
               <h2 className="sec-title">{r.name} <span>제휴 업체</span></h2>
             </div>
@@ -354,20 +353,13 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
               const venueSlug = p.href?.split("/").filter(Boolean).pop() || p.id || "venue";
               const partnerHref = buildVenueUrl(region, categorySlug, venueSlug);
               return (
-                <Link key={p.id} href={partnerHref} className="pv-card">
-                  <div className="pv-photo">
-                    <div className="pv-photo-placeholder">{p.icon}</div>
-                    <div className="pv-photo-overlay" />
-                    <div className="pv-photo-badges">
-                      <span className="pv-ad-label">AD</span>
-                      <span className="pv-type-label" style={p.type_style}>{p.type}</span>
-                    </div>
-                    <div className="pv-photo-bottom">
-                      <span className="pv-name-big">{p.name}</span>
-                      <span className="pv-stars-photo">{p.stars}</span>
-                    </div>
-                  </div>
+                <Link key={p.id} href={partnerHref} className="pv-card pv-card-text">
                   <div className="pv-body">
+                    <div className="pv-card-header">
+                      <span className="pv-name">{p.name}</span>
+                      <span className="pv-type-label" style={p.type_style}>{p.type}</span>
+                      <span className="pv-stars">{p.stars}</span>
+                    </div>
                     <div className="pv-meta-row">
                       <span className="pv-contact">{p.contact}</span>
                       {(p.tags ?? []).slice(0, 2).map((tag) => (
@@ -380,7 +372,6 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
                       <div className="pv-map-placeholder"><span>🗺</span>구글맵 연동 예정<br /><span style={{ fontSize: 10 }}>Google Maps embed URL을 입력하세요</span></div>
                     </div>
                     <div className="pv-footer">
-                      <span className="pv-char-count">{p.char_count || "소개글 약 230자"}</span>
                       <span className="pv-cta">업소 상세 페이지 →</span>
                     </div>
                   </div>

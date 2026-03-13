@@ -20,8 +20,7 @@ export default function PartnerSection({ partners }: PartnerSectionProps) {
       <div className="page-wrap">
         <div className="sec-header">
           <div>
-            <div className="partner-ad-badge">✦ AD PARTNER</div>
-            <p className="sec-label" style={{ marginTop: 6 }}>FEATURED VENUES</p>
+            <p className="sec-label">FEATURED VENUES</p>
             <h2 className="sec-title">룸빵여지도 <span>제휴 업체</span></h2>
           </div>
           <Link href="/partners" className="see-all">전체 제휴 업체 →</Link>
@@ -29,24 +28,16 @@ export default function PartnerSection({ partners }: PartnerSectionProps) {
 
         <div className="partner-grid">
           {list.map((p) => (
-            <Link key={p.id} href={p.href} className="pv-card">
-              <div className="pv-photo">
-                <div className="pv-photo-placeholder">{p.icon}</div>
-                <div className="pv-photo-overlay" />
-                <div className="pv-photo-badges">
-                  <span className="pv-ad-label">AD</span>
-                  <span className="pv-region-label">{p.region}</span>
-                  <span className="pv-type-label" style={p.type_style}>{p.type}</span>
-                </div>
-                <div className="pv-photo-bottom">
-                  <span className="pv-name-big">{p.name}</span>
-                  <span className="pv-stars-photo">{p.stars}</span>
-                </div>
-              </div>
+            <Link key={p.id} href={p.href} className="pv-card pv-card-text">
               <div className="pv-body">
+                <div className="pv-card-header">
+                  <span className="pv-name">{p.name}</span>
+                  <span className="pv-type-label" style={p.type_style}>{p.type}</span>
+                  <span className="pv-stars">{p.stars}</span>
+                </div>
                 <div className="pv-meta-row">
                   <span className="pv-contact">{p.contact}</span>
-                  {p.tags.map((tag) => (
+                  {(p.tags ?? []).map((tag) => (
                     <span key={tag} className="pv-tag">{tag}</span>
                   ))}
                 </div>
@@ -64,9 +55,6 @@ export default function PartnerSection({ partners }: PartnerSectionProps) {
                   </div>
                 </div>
                 <div className="pv-footer">
-                  <div className="pv-footer-left">
-                    <span className="pv-char-count">{p.char_count}</span>
-                  </div>
                   <span className="pv-cta">업소 상세 페이지 →</span>
                 </div>
               </div>

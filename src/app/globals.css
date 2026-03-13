@@ -1997,6 +1997,34 @@ body::after {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
+.pv-card-text .pv-body {
+  padding-top: 16px;
+}
+
+.pv-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border2);
+}
+
+.pv-card-header .pv-name {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.pv-card-header .pv-stars {
+  color: var(--gold);
+  font-size: 11px;
+  letter-spacing: 1px;
+  margin-left: auto;
+}
+
 .pv-body {
   padding: 16px 18px;
   position: relative;
@@ -2049,7 +2077,7 @@ body::after {
   margin-bottom: 14px;
   word-break: keep-all;
   display: -webkit-box;
-  -webkit-line-clamp: 6;
+  -webkit-line-clamp: 10;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

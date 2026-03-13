@@ -339,13 +339,13 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
       </div>
 
       <div className="page-wrap">
-        <section className="section" aria-label={`${r.name} 제휴 업체`}>
+        <section className="section" aria-label={`${r.name} 업체 소개`}>
           <div className="sec-header">
             <div>
-              <p className="sec-label">FEATURED · {r.name} 제휴 업체</p>
-              <h2 className="sec-title">{r.name} <span>제휴 업체</span></h2>
+              <p className="sec-label">FEATURED · {r.name} 업체 소개</p>
+              <h2 className="sec-title">{r.name} <span>업체 소개</span></h2>
             </div>
-            <Link href={`/${region}/partners`} className="see-all">전체 제휴 업체 →</Link>
+            <Link href={`/${region}/partners`} className="see-all">전체 업체 →</Link>
           </div>
           <div className="partner-grid">
             {displayPartners.map((p) => {

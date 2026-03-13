@@ -16,14 +16,14 @@ export default function PartnerSection({ partners }: PartnerSectionProps) {
   const list = partners?.length ? partners : FALLBACK_PARTNERS;
 
   return (
-    <section className="partner-section section" aria-label="제휴 업체">
+    <section className="partner-section section" aria-label="업체 소개">
       <div className="page-wrap">
         <div className="sec-header">
           <div>
             <p className="sec-label">FEATURED VENUES</p>
-            <h2 className="sec-title">룸빵여지도 <span>제휴 업체</span></h2>
+            <h2 className="sec-title">룸빵여지도 <span>업체 소개</span></h2>
           </div>
-          <Link href="/partners" className="see-all">전체 제휴 업체 →</Link>
+          <Link href="/partners" className="see-all">전체 업체 →</Link>
         </div>
 
         <div className="partner-grid">

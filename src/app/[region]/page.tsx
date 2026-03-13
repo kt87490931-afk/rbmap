@@ -95,32 +95,6 @@ const REGION_CFG: Record<
   },
 };
 
-/** SEO URL 형식: /지역/종목/업소명 */
-const FALLBACK_VENUES: Record<string, { href: string; rank: number; top: boolean; name: string; type: string; typeStyle: React.CSSProperties; ad?: boolean; score: string; meta: string[]; price: string; tags: string[]; reviewPreview: string; stars: string; reviewCount: string }[]> = {
-  gangnam: [
-    { href: "/gangnam/karaoke/dalto", rank: 1, top: true, name: "달토 가라오케", type: "가라오케", typeStyle: { background: "rgba(192,57,43,.15)", border: "1px solid rgba(192,57,43,.25)", color: "#e05c50" }, ad: true, score: "9.8", meta: ["역삼동", "50명+", "24시"], price: "1인 55만원~", tags: ["예약권장", "발렛", "프리미엄"], reviewPreview: '"강남 최상급. 3월 라인업 완전히 새로 꾸렸는데 수준이 확실히 올라갔음. 실장 서비스도 최고."', stars: "★★★★★", reviewCount: "리뷰 87개" },
-    { href: "/gangnam/karaoke/perfect", rank: 2, top: true, name: "퍼펙트 가라오케", type: "가라오케", typeStyle: { background: "rgba(192,57,43,.15)", border: "1px solid rgba(192,57,43,.25)", color: "#e05c50" }, ad: true, score: "9.4", meta: ["논현동", "50명+", "24시"], price: "1인 52만원~", tags: ["예약가능", "넓은룸", "정찰제"], reviewPreview: '"처음 방문인데 실장 안내가 세심해서 편했음. 라인업도 고르게 수준 높고 추가 비용 없어서 좋았음."', stars: "★★★★★", reviewCount: "리뷰 61개" },
-    { href: "/gangnam/highpublic/intro", rank: 3, top: true, name: "인트로 하이퍼블릭", type: "하이퍼블릭", typeStyle: { background: "rgba(155,89,182,.12)", border: "1px solid rgba(155,89,182,.25)", color: "#9b59b6" }, score: "9.1", meta: ["역삼동", "40명+", "20시~"], price: "1인 78만원~", tags: ["하이퍼블릭", "프리미엄", "신규오픈"], reviewPreview: '"강남 하이퍼블릭 중 가성비 최고. 오픈한 지 얼마 안 됐는데 서비스 완성도가 높음."', stars: "★★★★☆", reviewCount: "리뷰 42개" },
-    { href: "/gangnam/jjomoh/99", rank: 4, top: false, name: "구구단 쩜오", type: "쩜오", typeStyle: { background: "rgba(241,196,15,.1)", border: "1px solid rgba(241,196,15,.2)", color: "#f1c40f" }, score: "8.9", meta: ["청담동", "35명+", "21시~"], price: "1인 48만원~", tags: ["쩜오", "가성비", "청담"], reviewPreview: '"하이퍼블릭 가격 부담스러울 때 가기 딱 좋음. 서비스 수준은 하이퍼블릭이랑 크게 차이 없다."', stars: "★★★★☆", reviewCount: "리뷰 38개" },
-    { href: "/gangnam/highpublic/diamond", rank: 5, top: false, name: "다이아몬드 하이퍼블릭", type: "하이퍼블릭", typeStyle: { background: "rgba(155,89,182,.12)", border: "1px solid rgba(155,89,182,.25)", color: "#9b59b6" }, score: "8.7", meta: ["역삼동", "45명+", "19시~"], price: "1인 80만원~", tags: ["하이퍼블릭", "프리미엄"], reviewPreview: '"강남 하이퍼블릭 탑5 안에 드는 곳. 룸 상태랑 라인업 모두 최상급 유지 중."', stars: "★★★★☆", reviewCount: "리뷰 34개" },
-    { href: "/gangnam/public/skylounge", rank: 6, top: false, name: "스카이라운지 퍼블릭", type: "퍼블릭", typeStyle: { background: "rgba(58,123,213,.12)", border: "1px solid rgba(58,123,213,.22)", color: "#3a7bd5" }, score: "8.4", meta: ["강남대로", "30명+", "18시~"], price: "1인 38만원~", tags: ["퍼블릭", "입문자추천", "정찰제"], reviewPreview: '"강남에서 가성비 찾는다면 여기. 퍼블릭치고 라인업 수준이 꽤 높고 실장도 친절함."', stars: "★★★★☆", reviewCount: "리뷰 29개" },
-  ],
-  suwon: [
-    { href: "/suwon/highpublic/aura", rank: 1, top: true, name: "아우라 가라오케", type: "하이퍼블릭", typeStyle: { background: "rgba(58,123,213,.15)", border: "1px solid rgba(58,123,213,.25)", color: "#3a7bd5" }, ad: true, score: "9.6", meta: ["인계동", "40명+", "24시"], price: "1인 45만원~", tags: ["예약가능", "주차", "프리미엄"], reviewPreview: '"인계동 1위. 하이퍼블릭 라인 수준 높고 가격 대비 최고."', stars: "★★★★★", reviewCount: "리뷰 72개" },
-    { href: "/suwon/public/mazinga", rank: 2, top: true, name: "마징가 가라오케", type: "퍼블릭", typeStyle: { background: "rgba(58,123,213,.12)", border: "1px solid rgba(58,123,213,.22)", color: "#3a7bd5" }, score: "8.9", meta: ["인계동", "35명+", "20시~"], price: "1인 33만원~", tags: ["퍼블릭", "정찰제", "가성비"], reviewPreview: '"인계동 퍼블릭 대표. 오랜 영업으로 안정적. 처음 수원 가면 여기 추천."', stars: "★★★★☆", reviewCount: "리뷰 58개" },
-    { href: "/suwon/shirtroom/mechander", rank: 3, top: true, name: "메칸더 셔츠룸", type: "셔츠룸", typeStyle: { background: "rgba(46,204,113,.12)", border: "1px solid rgba(46,204,113,.22)", color: "#2ecc71" }, score: "8.7", meta: ["인계동", "30명+", "19시~"], price: "1인 36만원~", tags: ["셔츠룸", "입문자추천"], reviewPreview: '"셔츠룸 처음이면 메칸더. 실장이 시스템 상세히 설명해줘서 편함."', stars: "★★★★☆", reviewCount: "리뷰 45개" },
-  ],
-  dongtan: [
-    { href: "/dongtan/shirtroom/venus", rank: 1, top: true, name: "비너스 셔츠룸", type: "셔츠룸", typeStyle: { background: "rgba(46,204,113,.15)", border: "1px solid rgba(46,204,113,.25)", color: "#2ecc71" }, ad: true, score: "9.1", meta: ["동탄면", "35명+", "20시~"], price: "1인 38만원~", tags: ["발렛", "주차", "1위"], reviewPreview: '"동탄 셔츠룸 압도적 1위. 넓은 룸, 라인업 수준 높음."', stars: "★★★★★", reviewCount: "리뷰 52개" },
-    { href: "/dongtan/karaoke/aurora", rank: 2, top: true, name: "오로라 가라오케", type: "가라오케", typeStyle: { background: "rgba(192,57,43,.15)", border: "1px solid rgba(192,57,43,.25)", color: "#e05c50" }, score: "8.6", meta: ["동탄면", "25명+", "19시~"], price: "1인 28만원~", tags: ["가성비", "퍼블릭"], reviewPreview: '"동탄 가성비 최고. 부담 없이 가볍게 즐기기 좋음."', stars: "★★★★☆", reviewCount: "리뷰 38개" },
-    { href: "/dongtan/public/star", rank: 3, top: true, name: "스타 퍼블릭", type: "퍼블릭", typeStyle: { background: "rgba(58,123,213,.12)", border: "1px solid rgba(58,123,213,.22)", color: "#3a7bd5" }, score: "8.4", meta: ["동탄면", "30명+", "18시~"], price: "1인 26만원~", tags: ["퍼블릭", "정찰제"], reviewPreview: '"동탄 퍼블릭 대표. 신축이라 시설 깨끗하고 가격 합리적."', stars: "★★★★☆", reviewCount: "리뷰 29개" },
-  ],
-  jeju: [
-    { href: "/jeju/karaoke/zenith", rank: 1, top: true, name: "제니스 클럽", type: "가라오케", typeStyle: { background: "rgba(155,89,182,.15)", border: "1px solid rgba(155,89,182,.25)", color: "#9b59b6" }, ad: true, score: "8.7", meta: ["연동", "25명+", "20시~"], price: "1인 30만원~", tags: ["픽업", "관광객환영"], reviewPreview: '"제주 최고급. 관광 중 현지인 추천으로 갔는데 만족. 픽업 서비스 좋음."', stars: "★★★★★", reviewCount: "리뷰 41개" },
-    { href: "/jeju/karaoke/oceanview", rank: 2, top: true, name: "오션뷰 가라오케", type: "가라오케", typeStyle: { background: "rgba(155,89,182,.12)", border: "1px solid rgba(155,89,182,.25)", color: "#9b59b6" }, score: "8.4", meta: ["노형동", "20명+", "19시~"], price: "1인 32만원~", tags: ["뷰맛집", "야경"], reviewPreview: '"제주 바다 조망 맛집. 분위기 좋고 서비스 수준도 상위권."', stars: "★★★★☆", reviewCount: "리뷰 28개" },
-  ],
-};
-
 const SEO_CONTENT: Record<string, { cols: { blocks: { type: "h3" | "p"; content: string }[] }[]; kwLinks: { href: string; text: string }[] }> = {
   gangnam: {
     cols: [
@@ -226,32 +200,41 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
   const regionFeed = feedItems.filter((f) => f.pill?.includes(r.name ?? "") || f.href?.includes(`/${region}/`)).slice(0, 5);
   const regionReviews = reviews.filter((rev) => rev.region?.includes(r.name ?? "") || rev.href?.includes(`/${region}/`)).slice(0, 3);
   const otherRegions = regions.filter((x) => x.slug !== region && !x.coming).slice(0, 4);
-  const venues = FALLBACK_VENUES[region] ?? FALLBACK_VENUES.gangnam;
   const seo = SEO_CONTENT[region] ?? SEO_CONTENT.gangnam;
 
-  const DISPLAY_PARTNERS_LIMIT = 6
-  const displayPartners: Partner[] =
-    regionPartners.length >= 2
-      ? regionPartners.slice(0, DISPLAY_PARTNERS_LIMIT)
-      : regionPartners.length === 1
-        ? regionPartners
-        : venues.slice(0, 2).map((v) => ({
-            id: v.name,
-            href: v.href,
-            icon: "🎤",
-            region: r.name ?? "",
-            type: v.type,
-            type_class: "",
-            type_style: v.typeStyle,
-            name: v.name,
-            stars: v.stars,
-            contact: "📞 02-000-0000",
-            tags: v.tags,
-            location: "",
-            desc: v.reviewPreview,
-            char_count: `소개글 약 ${v.reviewPreview?.length ?? 0}자`,
-            sort_order: 0,
-          })) as Partner[];
+  const DISPLAY_PARTNERS_LIMIT = 6;
+  const displayPartners: Partner[] = regionPartners.slice(0, DISPLAY_PARTNERS_LIMIT);
+
+  const filterCounts: Record<string, number> = regionPartners.length > 0
+    ? (() => {
+        const counts: Record<string, number> = { 전체: regionPartners.length, 리뷰: r.reviews ?? cfg.filterCounts?.리뷰 ?? 0 };
+        for (const p of regionPartners) {
+          const t = p.type || "기타";
+          counts[t] = (counts[t] ?? 0) + 1;
+        }
+        return counts;
+      })()
+    : (cfg.filterCounts ?? {});
+
+  const venueCards = regionPartners.map((p, i) => {
+    const href = p.href?.startsWith("/") ? p.href : `/${region}/${TYPE_TO_SLUG[p.type] || "karaoke"}/${p.id}`;
+    return {
+      href,
+      rank: i + 1,
+      top: i < 3,
+      name: p.name,
+      type: p.type,
+      typeStyle: p.type_style && typeof p.type_style === "object" ? p.type_style : {},
+      score: "—",
+      meta: p.location ? [p.location] : [],
+      price: "문의",
+      tags: p.tags ?? [],
+      reviewPreview: p.desc ?? "",
+      stars: p.stars ?? "★★★★☆",
+      reviewCount: "—",
+      ad: false,
+    };
+  });
 
   return (
     <>
@@ -288,7 +271,7 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
               </p>
               <div className="rh-kpi">
                 <div className="rh-kpi-item">
-                  <strong>{r.venues ?? cfg.filterCounts?.전체 ?? 0}</strong>
+                  <strong>{regionPartners.length > 0 ? regionPartners.length : (r.venues ?? cfg.filterCounts?.전체 ?? 0)}</strong>
                   <span>등록 업소</span>
                 </div>
                 <div className="rh-kpi-item">
@@ -322,18 +305,18 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
 
       <div className="filter-bar">
         <div className="filter-inner">
-          <Link href={`/${region}`} className="filter-tab active">전체<span className="filter-count">{cfg.filterCounts?.전체 ?? r.venues ?? 0}</span></Link>
+          <Link href={`/${region}`} className="filter-tab active">전체<span className="filter-count">{filterCounts.전체 ?? r.venues ?? 0}</span></Link>
           <div className="filter-divider" />
-          {Object.entries(cfg.filterCounts ?? {})
+          {Object.entries(filterCounts)
             .filter(([k]) => !["전체", "리뷰"].includes(k))
             .map(([label, count]) => (
-              <Link key={label} href={`/${region}/category/${label === "가라오케" ? "karaoke" : label === "하이퍼블릭" ? "highpublic" : label === "쩜오" ? "jjomoh" : label === "퍼블릭" ? "public" : label === "셔츠룸" ? "shirtroom" : "karaoke"}`} className="filter-tab">
+              <Link key={label} href={`/${region}/category/${label === "가라오케" ? "karaoke" : label === "하이퍼블릭" ? "highpublic" : label === "쩜오" ? "jjomoh" : label === "퍼블릭" ? "public" : label === "셔츠룸" ? "shirtroom" : label === "바" ? "bar" : "karaoke"}`} className="filter-tab">
                 {label}
                 <span className="filter-count">{count}</span>
               </Link>
             ))}
           <div className="filter-divider" />
-          <Link href={`/${region}/reviews`} className="filter-tab">리뷰<span className="filter-count">{cfg.filterCounts?.리뷰 ?? r.reviews ?? 0}</span></Link>
+          <Link href={`/${region}/reviews`} className="filter-tab">리뷰<span className="filter-count">{filterCounts.리뷰 ?? r.reviews ?? 0}</span></Link>
           <Link href={`/${region}/ranking`} className="filter-tab">랭킹</Link>
         </div>
       </div>
@@ -348,7 +331,11 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
             <Link href={`/${region}/partners`} className="see-all">전체 업체 →</Link>
           </div>
           <div className="partner-grid">
-            {displayPartners.map((p) => {
+            {displayPartners.length === 0 ? (
+              <div style={{ gridColumn: "1/-1", padding: 32, textAlign: "center", color: "var(--muted)", fontSize: 14 }}>
+                이 지역에 등록된 제휴업체가 없습니다.
+              </div>
+            ) : displayPartners.map((p) => {
               const categorySlug = TYPE_TO_SLUG[p.type] || "karaoke";
               const venueSlug = p.href?.split("/").filter(Boolean).pop() || p.id || "venue";
               const partnerHref = buildVenueUrl(region, categorySlug, venueSlug);
@@ -391,7 +378,11 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
                 <Link href={`/${region}/ranking`} className="see-all">전체 순위 →</Link>
               </div>
               <div className="venue-grid">
-                {venues.map((v) => (
+                {venueCards.length === 0 ? (
+                  <div style={{ gridColumn: "1/-1", padding: 24, textAlign: "center", color: "var(--muted)", fontSize: 14 }}>
+                    이 지역에 등록된 업소가 없습니다.
+                  </div>
+                ) : venueCards.map((v) => (
                   <Link key={v.href} href={v.href} className="vc-card">
                     <div className="vc-top">
                       <span className={`vc-rank ${v.top && v.rank <= 3 ? `top${v.rank}` : ""}`}>{v.rank}</span>
@@ -403,7 +394,7 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
                     </div>
                     <div className="vc-name">{v.name}</div>
                     <div className="vc-meta">
-                      {v.meta.map((m, i) => (
+                      {(v.meta ?? []).map((m, i) => (
                         <span key={i} className="vc-meta-item">{(m.includes("동") || m.includes("면") || m.includes("시") ? "📍 " : m.includes("명") ? "👥 " : "🕐 ")}{m}</span>
                       ))}
                     </div>
@@ -423,7 +414,7 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
                 ))}
               </div>
               <div style={{ textAlign: "center", marginTop: 20 }}>
-                <Link href={`/${region}/venues`} className="btn-ghost btn-sm">{r.name} 전체 업소 {r.venues ?? venues.length}개 보기 →</Link>
+                <Link href={`/${region}/venues`} className="btn-ghost btn-sm">{r.name} 전체 업소 {Math.max(r.venues ?? 0, venueCards.length)}개 보기 →</Link>
               </div>
             </div>
             <div className="sidebar">

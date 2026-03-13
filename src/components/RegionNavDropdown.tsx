@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 
-const REGIONS = [
-  { slug: "gangnam", name: "강남" },
-  { slug: "suwon", name: "수원 인계동" },
-  { slug: "dongtan", name: "동탄" },
-  { slug: "jeju", name: "제주" },
-];
-
 export default function RegionNavDropdown() {
   const [open, setOpen] = useState(false);
+  const [regions, setRegions] = useState<{ slug: string; name: string }[]>([]);
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/regions-active")
+      .then((r) => r.json())
+      .then((data) => setRegions(Array.isArray(data) ? data : []))
+      .catch(() => setRegions([]));
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -38,7 +39,7 @@ export default function RegionNavDropdown() {
       </button>
       {open && (
         <div className="nav-dropdown-panel">
-          {REGIONS.map((r) => (
+          {regions.map((r) => (
             <Link
               key={r.slug}
               href={`/${r.slug}`}

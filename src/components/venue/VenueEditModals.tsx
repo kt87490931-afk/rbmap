@@ -261,14 +261,7 @@ export function VenueEditModals({ regionSlug, categorySlug, venueSlug, data }: V
     };
     (window as unknown as { openModal: (id: string) => void }).openModal = openModal;
     (window as unknown as { closeModal: (id: string) => void }).closeModal = closeModal;
-    document.querySelectorAll(".modal-backdrop").forEach((bd) => {
-      bd.addEventListener("click", (e) => {
-        if (e.target === bd) {
-          bd.classList.remove("open");
-          document.body.style.overflow = "";
-        }
-      });
-    });
+    // 백드롭 클릭으로 닫지 않음 — 저장/취소 버튼으로만 닫기 (메인 톱니바퀴 모달과 동일)
     return () => {
       delete (window as unknown as { openModal?: (id: string) => void }).openModal;
       delete (window as unknown as { closeModal?: (id: string) => void }).closeModal;

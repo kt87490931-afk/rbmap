@@ -16,6 +16,7 @@ jobs:
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
             set -e
+            echo "=== Deploy start ==="
             if [ ! -d /var/www/rbmap/.git ]; then
               rm -rf /var/www/rbmap
               git clone git@github.com:${{ github.repository }}.git /var/www/rbmap
@@ -23,9 +24,13 @@ jobs:
             cd /var/www/rbmap
             git fetch origin
             git reset --hard origin/main
+            echo "=== Git OK: $(git rev-parse --short HEAD) ==="
 
-            npm ci
-            npm run build
+            echo "=== npm ci ==="
+            npm ci || { echo "npm ci FAILED"; exit 1; }
+            echo "=== npm run build ==="
+            export NODE_OPTIONS="--max-old-space-size=1024"
+            npm run build || { echo "npm run build FAILED"; exit 1; }
 
             cp -r .next/static .next/standalone/.next/static 2>/dev/null || true
             [ -d public ] && cp -r public .next/standalone/public 2>/dev/null || true

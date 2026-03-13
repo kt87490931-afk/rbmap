@@ -431,6 +431,9 @@ export default async function VenueDetailPage({
 
       {/* 편집 모달 */}
       <VenueEditModals
+        regionSlug={region}
+        categorySlug={category}
+        venueSlug={venue}
         data={{
           name: data.name,
           region: regionName,

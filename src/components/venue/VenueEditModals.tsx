@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 type PriceRow = { name: string; desc: string; duration: string; price: string; badge?: "recommend" | "popular" };
 
@@ -11,6 +12,9 @@ function escapeHtml(s: string): string {
 }
 
 type VenueEditModalsProps = {
+  regionSlug: string;
+  categorySlug: string;
+  venueSlug: string;
   data: {
     name: string;
     region: string;
@@ -45,7 +49,34 @@ function setEl(id: string | null, content: string, useInnerHtml = false) {
   }
 }
 
-export function VenueEditModals({ data }: VenueEditModalsProps) {
+async function saveEdit(
+  regionSlug: string,
+  categorySlug: string,
+  venueSlug: string,
+  section: "hero" | "price" | "intro" | "map",
+  payload: Record<string, unknown>
+): Promise<boolean> {
+  const res = await fetch("/api/admin/venues/edit", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      region_slug: regionSlug,
+      category_slug: categorySlug,
+      venue_slug: venueSlug,
+      section,
+      payload,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    alert(err?.error || `저장 실패 (${res.status})`);
+    return false;
+  }
+  return true;
+}
+
+export function VenueEditModals({ regionSlug, categorySlug, venueSlug, data }: VenueEditModalsProps) {
+  const router = useRouter();
   const closeModal = useCallback((id: string) => {
     const el = document.getElementById("modal-" + id);
     if (el) {
@@ -58,7 +89,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
     document.querySelectorAll(`[data-edit="${key}"]`).forEach((el) => { el.textContent = content; });
   }, []);
 
-  const handleSaveHero = useCallback(() => {
+  const handleSaveHero = useCallback(async () => {
     const name = (document.getElementById("m-name") as HTMLInputElement)?.value ?? "";
     const tagline = (document.getElementById("m-tagline") as HTMLInputElement)?.value ?? "";
     const phone = (document.getElementById("m-phone") as HTMLInputElement)?.value ?? "";
@@ -67,6 +98,18 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
     const lineup = (document.getElementById("m-lineup") as HTMLInputElement)?.value ?? "";
     const parking = (document.getElementById("m-parking") as HTMLInputElement)?.value ?? "";
     const kakaoUrl = (document.getElementById("m-kakao") as HTMLInputElement)?.value?.trim() ?? "";
+    const base = data.infoCards ?? [];
+    const infoCards = [
+      { ...(base[0] ?? { label: "1인 주대", sub: "" }), val: price },
+      { ...(base[1] ?? { label: "라인업", sub: "" }), val: lineup },
+      { ...(base[2] ?? { label: "영업시간", sub: "" }), val: hours },
+      { ...(base[3] ?? { label: "주차", sub: "" }), val: parking },
+      ...base.slice(4),
+    ];
+    const ok = await saveEdit(regionSlug, categorySlug, venueSlug, "hero", {
+      name, tagline, contact: phone, kakaoUrl: kakaoUrl || undefined, hours, infoCards,
+    });
+    if (!ok) return;
     setEl("d-name", name);
     setEl("d-tagline", tagline);
     setEl("d-phone", phone);
@@ -89,14 +132,19 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
       }
     }
     closeModal("hero");
-  }, [closeModal, setDataEdit]);
+    router.refresh();
+  }, [closeModal, setDataEdit, regionSlug, categorySlug, venueSlug, data.infoCards, router]);
 
-  const handleSaveIntro = useCallback(() => {
+  const handleSaveIntro = useCallback(async () => {
     const headlineRaw = (document.getElementById("m-intro-headline") as HTMLInputElement)?.value ?? "";
     const lead = (document.getElementById("m-intro-lead") as HTMLTextAreaElement)?.value ?? "";
     const quote = (document.getElementById("m-intro-quote") as HTMLTextAreaElement)?.value?.trim() ?? "";
     const bodyText = (document.getElementById("m-intro-body") as HTMLTextAreaElement)?.value ?? "";
     const bodyParagraphs = bodyText.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+    const ok = await saveEdit(regionSlug, categorySlug, venueSlug, "intro", {
+      headline: headlineRaw, lead, quote, bodyParagraphs,
+    });
+    if (!ok) return;
     const parts = headlineRaw.split("—");
     const headlineHtml = parts.length > 1 ? `${parts[0].trim()} — <em>${parts[1].trim()}</em>` : headlineRaw;
     setEl("intro-headline", headlineHtml, true);
@@ -134,11 +182,24 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
       });
     }
     closeModal("intro");
-  }, [closeModal]);
+    router.refresh();
+  }, [closeModal, regionSlug, categorySlug, venueSlug, router]);
 
-  const handleSavePrice = useCallback(() => {
+  const handleSavePrice = useCallback(async () => {
     const lead = (document.getElementById("m-price-lead") as HTMLTextAreaElement)?.value ?? "";
     const note = (document.getElementById("m-price-note") as HTMLTextAreaElement)?.value ?? "";
+    const rows: PriceRow[] = [];
+    for (let i = 0; i < 4; i++) {
+      const name = (document.getElementById(`m-price-row-${i}-name`) as HTMLInputElement)?.value?.trim();
+      if (!name) continue;
+      const desc = (document.getElementById(`m-price-row-${i}-desc`) as HTMLInputElement)?.value?.trim() ?? "";
+      const duration = (document.getElementById(`m-price-row-${i}-duration`) as HTMLInputElement)?.value?.trim() ?? "";
+      const price = (document.getElementById(`m-price-row-${i}-price`) as HTMLInputElement)?.value?.trim() ?? "";
+      const badge = (document.getElementById(`m-price-row-${i}-badge`) as HTMLSelectElement)?.value as "" | "recommend" | "popular" | undefined;
+      rows.push({ name, desc, duration, price, badge: badge || undefined });
+    }
+    const ok = await saveEdit(regionSlug, categorySlug, venueSlug, "price", { lead, note, rows });
+    if (!ok) return;
     const leadEl = document.getElementById("price-lead");
     if (leadEl) {
       leadEl.textContent = lead;
@@ -160,28 +221,23 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
     }
     const tbody = document.getElementById("price-tbody");
     if (tbody) {
-      const rows: PriceRow[] = [];
-      for (let i = 0; i < 4; i++) {
-        const name = (document.getElementById(`m-price-row-${i}-name`) as HTMLInputElement)?.value?.trim();
-        if (!name) continue;
-        const desc = (document.getElementById(`m-price-row-${i}-desc`) as HTMLInputElement)?.value?.trim() ?? "";
-        const duration = (document.getElementById(`m-price-row-${i}-duration`) as HTMLInputElement)?.value?.trim() ?? "";
-        const price = (document.getElementById(`m-price-row-${i}-price`) as HTMLInputElement)?.value?.trim() ?? "";
-        const badge = (document.getElementById(`m-price-row-${i}-badge`) as HTMLSelectElement)?.value as "" | "recommend" | "popular" | undefined;
-        rows.push({ name, desc, duration, price, badge: badge || undefined });
-      }
       tbody.innerHTML = rows.map((row) => {
         const badgeHtml = row.badge ? `<span class="pt-badge ${row.badge}">${row.badge === "recommend" ? "추천" : "인기"}</span>` : "";
         return `<tr><td><div class="pt-name">${escapeHtml(row.name)}</div>${row.desc ? `<div style="font-size:11px;color:var(--dim)">${escapeHtml(row.desc)}</div>` : ""}</td><td style="font-size:12px;color:var(--muted)">${escapeHtml(row.duration || "—")}</td><td style="text-align:right"><span class="pt-price">${escapeHtml(row.price)}</span></td><td style="text-align:right">${badgeHtml}</td></tr>`;
       }).join("");
     }
     closeModal("price");
-  }, [closeModal]);
+    router.refresh();
+  }, [closeModal, regionSlug, categorySlug, venueSlug, router]);
 
-  const handleSaveMap = useCallback(() => {
+  const handleSaveMap = useCallback(async () => {
     const url = (document.getElementById("m-map-url") as HTMLTextAreaElement)?.value?.trim() ?? "";
     const address = (document.getElementById("m-address") as HTMLInputElement)?.value ?? "";
     const addressSub = (document.getElementById("m-address-sub") as HTMLInputElement)?.value ?? "";
+    const ok = await saveEdit(regionSlug, categorySlug, venueSlug, "map", {
+      embed: url || undefined, address, addressSub: addressSub || undefined,
+    });
+    if (!ok) return;
     setEl("d-address", address);
     const subEl = document.getElementById("d-address-sub");
     if (addressSub && subEl) subEl.textContent = addressSub;
@@ -204,7 +260,8 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
       }
     }
     closeModal("map");
-  }, [closeModal]);
+    router.refresh();
+  }, [closeModal, regionSlug, categorySlug, venueSlug, router]);
 
   useEffect(() => {
     const openModal = (id: string) => {

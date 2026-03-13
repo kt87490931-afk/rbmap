@@ -467,7 +467,7 @@ export async function getVenueDetail(
     } catch {
       /* ignore */
     }
-    return venue;
+    return await applyVenueEdits(venue, regionSlug, categorySlug, venueSlug);
   }
 
   // 2) Fallback 데이터로 대체 (partners에 없을 때)
@@ -543,10 +543,75 @@ export async function getVenueDetail(
         introParagraphs: paras.length > 0 ? paras : [aiIntro],
       };
     }
-    return fallbackVenue;
+    return await applyVenueEdits(fallbackVenue, regionSlug, categorySlug, venueSlug);
   }
 
   return null;
+}
+
+/** venue_edits 테이블의 편집 데이터를 venue에 병합 */
+async function applyVenueEdits(
+  venue: VenueDetail,
+  regionSlug: string,
+  categorySlug: string,
+  venueSlug: string
+): Promise<VenueDetail> {
+  try {
+    const { data: row } = await supabaseAdmin
+      .from("venue_edits")
+      .select("edits_json")
+      .eq("region_slug", regionSlug)
+      .eq("category_slug", categorySlug)
+      .eq("venue_slug", venueSlug)
+      .maybeSingle();
+
+    const edits = (row?.edits_json ?? {}) as Record<string, Record<string, unknown>>;
+    if (Object.keys(edits).length === 0) return venue;
+
+    let out = { ...venue };
+
+    const hero = edits.hero;
+    if (hero && typeof hero === "object") {
+      if (typeof hero.name === "string") out.name = hero.name;
+      if (typeof hero.tagline === "string") out.tagline = hero.tagline;
+      if (typeof hero.contact === "string") out.contact = hero.contact;
+      if (typeof hero.kakaoUrl === "string") out.kakaoUrl = hero.kakaoUrl;
+      if (typeof hero.hours === "string") out.hours = hero.hours;
+      if (typeof hero.locationDetail === "string") out.locationDetail = hero.locationDetail;
+      if (typeof hero.locationSub === "string") out.locationSub = hero.locationSub;
+      if (Array.isArray(hero.infoCards) && hero.infoCards.length > 0) {
+        out.infoCards = hero.infoCards as VenueDetail["infoCards"];
+      }
+    }
+
+    const price = edits.price;
+    if (price && typeof price === "object") {
+      if (typeof price.lead === "string") out.priceLead = price.lead;
+      if (typeof price.note === "string") out.priceNote = price.note;
+      if (Array.isArray(price.rows) && price.rows.length > 0) {
+        out.priceRows = price.rows as VenueDetail["priceRows"];
+      }
+    }
+
+    const intro = edits.intro;
+    if (intro && typeof intro === "object") {
+      if (typeof intro.headline === "string") out.introHeadline = intro.headline;
+      if (typeof intro.lead === "string") out.introLead = intro.lead;
+      if (typeof intro.quote === "string") out.introQuote = intro.quote;
+      if (Array.isArray(intro.bodyParagraphs)) out.introBodyParagraphs = intro.bodyParagraphs as string[];
+    }
+
+    const map = edits.map;
+    if (map && typeof map === "object") {
+      if (typeof map.embed === "string") out.mapEmbed = map.embed;
+      if (typeof map.address === "string") out.locationDetail = map.address;
+      if (typeof map.addressSub === "string") out.locationSub = map.addressSub;
+    }
+
+    return out;
+  } catch {
+    return venue;
+  }
 }
 
 /** AI 소개 텍스트를 페이지 introParagraphs 형식으로 변환 (빈 줄로 단락 구분) */

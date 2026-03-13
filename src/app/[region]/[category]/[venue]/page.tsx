@@ -1,10 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { getServerSession } from "next-auth";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { VenueEditModals } from "@/components/venue/VenueEditModals";
 import { VenueEditButton } from "@/components/venue/VenueEditButton";
+import { authOptions } from "@/lib/auth";
+import { hasDevAdminCookie } from "@/lib/admin-auth";
+import { verifyOtpSession } from "@/lib/otp";
 
 export const dynamic = "force-dynamic";
 import {
@@ -101,6 +105,18 @@ export default async function VenueDetailPage({
 
   if (!data) notFound();
 
+  let isAdmin = await hasDevAdminCookie();
+  if (!isAdmin) {
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.role === "admin" && session?.user?.id) {
+        isAdmin = await verifyOtpSession(session.user.id);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   const regionName = REGION_SLUG_TO_NAME[region] ?? region;
   const typeName = SLUG_TO_TYPE[category] ?? category;
 
@@ -165,7 +181,7 @@ export default async function VenueDetailPage({
 
       {/* Hero Banner v2 */}
       <section className="hero-banner" id="hero">
-        <VenueEditButton section="hero" />
+        {isAdmin && <VenueEditButton section="hero" />}
         <div className="hb-bg" aria-hidden />
         <div className="hb-wave" aria-hidden>
           <svg viewBox="0 0 1200 400" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -249,7 +265,7 @@ export default async function VenueDetailPage({
       <div className="article-wrap">
         {/* 섹션 1: 업소 소개 — v2 DOM id 매핑 */}
         <section className="art-section" id="intro">
-          <VenueEditButton section="intro" />
+          {isAdmin && <VenueEditButton section="intro" />}
           <span className="sec-label" id="intro-label">{introLabel}</span>
           <h2 className="art-h2" id="intro-headline" dangerouslySetInnerHTML={{ __html: introHeadlineHtml }} />
           {introLead && <p className="art-lead" id="intro-lead">{introLead}</p>}
@@ -281,7 +297,7 @@ export default async function VenueDetailPage({
 
         {/* 섹션 2: 가격 정보 — v2 DOM id 매핑 */}
         <section className="art-section" id="price">
-          <VenueEditButton section="price" />
+          {isAdmin && <VenueEditButton section="price" />}
           <span className="sec-label">PRICE · 가격 안내</span>
           <h2 className="art-h2">가격 <em>안내</em></h2>
           {data.priceLead ? <p className="art-lead" id="price-lead">{data.priceLead}</p> : <p className="art-lead" id="price-lead" style={{ display: "none" }} />}
@@ -319,7 +335,7 @@ export default async function VenueDetailPage({
 
         {/* 섹션 3: 위치·지도 */}
         <section className="art-section" id="map">
-          <VenueEditButton section="map" />
+          {isAdmin && <VenueEditButton section="map" />}
           <span className="sec-label">LOCATION · 위치 및 오시는 길</span>
           <h2 className="art-h2">찾아오시는 <em>길</em></h2>
           <div className="map-wrap">
@@ -343,7 +359,7 @@ export default async function VenueDetailPage({
 
         {/* 섹션 4: 리뷰 */}
         <section className="art-section" id="reviews">
-          <VenueEditButton section="reviews" />
+          {isAdmin && <VenueEditButton section="reviews" />}
           <span className="sec-label">REVIEWS · 이용 후기</span>
           <h2 className="art-h2">{data.name} <em>이용 후기</em></h2>
           <p className="art-lead">Gemini AI가 6시간마다 최신 후기를 수집·정리합니다.</p>
@@ -371,7 +387,7 @@ export default async function VenueDetailPage({
 
         {/* 섹션 5: 유사 업소 */}
         <section className="art-section" id="similar">
-          <VenueEditButton section="similar" />
+          {isAdmin && <VenueEditButton section="similar" />}
           <span className="sec-label">SIMILAR · {regionName} 유사 업소</span>
           <h2 className="art-h2">함께 보면 좋은 <em>{regionName} {typeName}</em></h2>
           {(data.similarVenues ?? []).length > 0 ? (
@@ -420,7 +436,8 @@ export default async function VenueDetailPage({
         )}
       </div>
 
-      {/* 편집 모달 */}
+      {/* 편집 모달 (운영자 로그인 시에만) */}
+      {isAdmin && (
       <VenueEditModals
         regionSlug={region}
         categorySlug={category}
@@ -450,6 +467,7 @@ export default async function VenueDetailPage({
           infoCards: data.infoCards ?? [],
         }}
       />
+      )}
 
       {/* Mobile CTA */}
       <div className="mobile-cta">

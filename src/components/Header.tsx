@@ -1,6 +1,7 @@
 import Link from "next/link";
 import RegionNavDropdown from "./RegionNavDropdown";
 import LogoWithAdminTrigger from "./LogoWithAdminTrigger";
+import { HeaderLoginButton } from "./HeaderLoginButton";
 
 interface NavItem {
   label: string;
@@ -23,13 +24,13 @@ const DEFAULT: HeaderData = {
     { label: "업소별리뷰", href: "/reviews" },
     { label: "랭킹", href: "/ranking" },
     { label: "가이드", href: "/guide" },
-    { label: "광고문의", href: "/contact", cta: true },
+    { label: "문의", href: "/contact", cta: true },
   ],
 };
 
 export default function Header({ data }: { data?: HeaderData | null }) {
   const d = { ...DEFAULT, ...data };
-  const nav = DEFAULT.nav ?? [];
+  const nav = d.nav ?? DEFAULT.nav ?? [];
   return (
     <header className="header-main">
       <LogoWithAdminTrigger
@@ -48,6 +49,7 @@ export default function Header({ data }: { data?: HeaderData | null }) {
             {item.label}
           </Link>
         ))}
+        <HeaderLoginButton />
       </nav>
     </header>
   );

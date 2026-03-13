@@ -22,6 +22,7 @@ import { getReviews } from "@/lib/data/reviews";
 import { getSiteSection } from "@/lib/data/site";
 import { authOptions } from "@/lib/auth";
 import { hasDevAdminCookie } from "@/lib/admin-auth";
+import { verifyOtpSession } from "@/lib/otp";
 
 type PartnersConfig = { display_limit?: number };
 type FeedConfig = { display_limit?: number };
@@ -32,7 +33,9 @@ export default async function Home() {
   if (!isAdmin) {
     try {
       const session = await getServerSession(authOptions);
-      isAdmin = session?.user?.role === "admin";
+      if (session?.user?.role === "admin" && session?.user?.id) {
+        isAdmin = await verifyOtpSession(session.user.id);
+      }
     } catch {
       // NEXTAUTH_SECRET 미설정 등
     }

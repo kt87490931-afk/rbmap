@@ -2,12 +2,21 @@
 
 import { useCallback, useEffect } from "react";
 
+type PriceRow = { name: string; desc: string; duration: string; price: string; badge?: "recommend" | "popular" };
+
+function escapeHtml(s: string): string {
+  const div = document.createElement("div");
+  div.textContent = s;
+  return div.innerHTML;
+}
+
 type VenueEditModalsProps = {
   data: {
     name: string;
     region: string;
     type: string;
     contact: string;
+    kakaoUrl?: string;
     location: string;
     locationDetail?: string;
     locationSub?: string;
@@ -22,6 +31,7 @@ type VenueEditModalsProps = {
     introParagraphs: string[];
     priceLead?: string;
     priceNote?: string;
+    priceRows?: PriceRow[];
     mapEmbed?: string;
     infoCards: { label: string; val: string; sub: string }[];
   };
@@ -44,6 +54,10 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
     }
   }, []);
 
+  const setDataEdit = useCallback((key: string, content: string) => {
+    document.querySelectorAll(`[data-edit="${key}"]`).forEach((el) => { el.textContent = content; });
+  }, []);
+
   const handleSaveHero = useCallback(() => {
     const name = (document.getElementById("m-name") as HTMLInputElement)?.value ?? "";
     const tagline = (document.getElementById("m-tagline") as HTMLInputElement)?.value ?? "";
@@ -52,18 +66,30 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
     const price = (document.getElementById("m-price") as HTMLInputElement)?.value ?? "";
     const lineup = (document.getElementById("m-lineup") as HTMLInputElement)?.value ?? "";
     const parking = (document.getElementById("m-parking") as HTMLInputElement)?.value ?? "";
+    const kakaoUrl = (document.getElementById("m-kakao") as HTMLInputElement)?.value?.trim() ?? "";
     setEl("d-name", name);
     setEl("d-tagline", tagline);
     setEl("d-phone", phone);
     setEl("d-phone-sub", `${hours} · 전화·카카오 예약 가능`);
     const link = document.getElementById("d-phone-link") as HTMLAnchorElement;
     if (link) link.href = `tel:${phone.replace(/\D/g, "")}`;
-    setEl("d-price", price);
-    setEl("d-lineup", lineup);
-    setEl("d-hours", hours);
-    setEl("d-parking", parking);
+    setDataEdit("price", price);
+    setDataEdit("lineup", lineup);
+    setDataEdit("hours", hours);
+    setDataEdit("parking", parking);
+    const kakaoLink = document.getElementById("d-kakao-link") as HTMLAnchorElement;
+    if (kakaoLink) {
+      kakaoLink.href = kakaoUrl || "/contact";
+      if (kakaoUrl) {
+        kakaoLink.setAttribute("target", "_blank");
+        kakaoLink.setAttribute("rel", "noopener noreferrer");
+      } else {
+        kakaoLink.removeAttribute("target");
+        kakaoLink.removeAttribute("rel");
+      }
+    }
     closeModal("hero");
-  }, [closeModal]);
+  }, [closeModal, setDataEdit]);
 
   const handleSaveIntro = useCallback(() => {
     const headlineRaw = (document.getElementById("m-intro-headline") as HTMLInputElement)?.value ?? "";
@@ -131,6 +157,23 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
         p.innerHTML = note.split("\n").join("<br />");
         wrap.appendChild(p);
       }
+    }
+    const tbody = document.getElementById("price-tbody");
+    if (tbody) {
+      const rows: PriceRow[] = [];
+      for (let i = 0; i < 4; i++) {
+        const name = (document.getElementById(`m-price-row-${i}-name`) as HTMLInputElement)?.value?.trim();
+        if (!name) continue;
+        const desc = (document.getElementById(`m-price-row-${i}-desc`) as HTMLInputElement)?.value?.trim() ?? "";
+        const duration = (document.getElementById(`m-price-row-${i}-duration`) as HTMLInputElement)?.value?.trim() ?? "";
+        const price = (document.getElementById(`m-price-row-${i}-price`) as HTMLInputElement)?.value?.trim() ?? "";
+        const badge = (document.getElementById(`m-price-row-${i}-badge`) as HTMLSelectElement)?.value as "" | "recommend" | "popular" | undefined;
+        rows.push({ name, desc, duration, price, badge: badge || undefined });
+      }
+      tbody.innerHTML = rows.map((row) => {
+        const badgeHtml = row.badge ? `<span class="pt-badge ${row.badge}">${row.badge === "recommend" ? "추천" : "인기"}</span>` : "";
+        return `<tr><td><div class="pt-name">${escapeHtml(row.name)}</div>${row.desc ? `<div style="font-size:11px;color:var(--dim)">${escapeHtml(row.desc)}</div>` : ""}</td><td style="font-size:12px;color:var(--muted)">${escapeHtml(row.duration || "—")}</td><td style="text-align:right"><span class="pt-price">${escapeHtml(row.price)}</span></td><td style="text-align:right">${badgeHtml}</td></tr>`;
+      }).join("");
     }
     closeModal("price");
   }, [closeModal]);
@@ -202,6 +245,12 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
   const introQuote = data.introQuote ?? "";
   const introBody = (data.introBodyParagraphs ?? (data.introParagraphs ?? []).slice(1)).join("\n\n") || "입장부터 퇴장까지 1:1 전담 실장이 밀착 관리합니다.";
   const priceLead = data.priceLead ?? "달토는 입장 전 가격을 명확히 안내하며, 안내받은 금액 그대로 결제됩니다.";
+  const priceRows: PriceRow[] = (data.priceRows ?? []).length > 0 ? data.priceRows! : [
+    { name: "기본 세트", desc: "양주 1병 + 안주 + 초이스", duration: "2인 이상·2시간", price: "55만원~", badge: "recommend" },
+    { name: "프리미엄 세트", desc: "양주 2병 + 안주 풀세팅 + 초이스", duration: "2인 이상·3시간", price: "85만원~", badge: "popular" },
+    { name: "VIP 패키지", desc: "프리미엄 양주 + 풀세팅 + 전담 실장", duration: "2인 이상·무제한", price: "130만원~" },
+    { name: "추가 연장", desc: "시간 연장 시 추가 요금", duration: "1시간 단위", price: "협의" },
+  ];
 
   return (
     <>
@@ -226,6 +275,10 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             <div className="mf-row">
               <label>전화번호</label>
               <input type="tel" id="m-phone" defaultValue={safe.contact} />
+            </div>
+            <div className="mf-row">
+              <label>카카오톡 상담 URL</label>
+              <input type="text" id="m-kakao" defaultValue={data.kakaoUrl ?? ""} placeholder="https://open.kakao.com/o/... 또는 pf.kakao.com URL" />
             </div>
             <div className="mf-row">
               <label>1인 주대</label>
@@ -311,6 +364,38 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
               <label>주의사항 (하단 노트)</label>
               <textarea id="m-price-note" rows={3} defaultValue={safe.priceNote} />
             </div>
+            <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid var(--border)" }} />
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>가격 테이블 행</div>
+            {[0, 1, 2, 3].map((i) => {
+              const row = priceRows[i] ?? { name: "", desc: "", duration: "", price: "" as string };
+              return (
+              <div key={i} style={{ marginBottom: 16, padding: 12, background: "var(--bg-2)", borderRadius: 8 }}>
+                <div className="mf-row" style={{ marginBottom: 8 }}>
+                  <label>구성명</label>
+                  <input type="text" id={`m-price-row-${i}-name`} defaultValue={row.name} placeholder="예: 기본 세트" />
+                </div>
+                <div className="mf-row" style={{ marginBottom: 8 }}>
+                  <label>내용</label>
+                  <input type="text" id={`m-price-row-${i}-desc`} defaultValue={row.desc} placeholder="예: 양주 1병 + 안주 + 초이스" />
+                </div>
+                <div className="mf-row" style={{ marginBottom: 8 }}>
+                  <label>조건 (내용 열)</label>
+                  <input type="text" id={`m-price-row-${i}-duration`} defaultValue={row.duration} placeholder="예: 2인 이상·2시간" />
+                </div>
+                <div className="mf-row" style={{ marginBottom: 8 }}>
+                  <label>가격 (1인)</label>
+                  <input type="text" id={`m-price-row-${i}-price`} defaultValue={row.price} placeholder="예: 55만원~" />
+                </div>
+                <div className="mf-row">
+                  <label>비고</label>
+                  <select id={`m-price-row-${i}-badge`} defaultValue={(row as PriceRow).badge ?? ""}>
+                    <option value="">없음</option>
+                    <option value="recommend">추천</option>
+                    <option value="popular">인기</option>
+                  </select>
+                </div>
+              </div>
+            ); })}
           </div>
           <div className="modal-foot">
             <button type="button" className="mf-cancel" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("price")}>

@@ -98,6 +98,8 @@ export interface VenueDetail {
   reviewCount: number;
   updateText: string;
   contact: string;
+  /** 카카오톡 상담 링크 (open.kakao.com 또는 pf.kakao.com URL) */
+  kakaoUrl?: string;
   location: string;
   locationDetail: string;
   locationSub?: string;

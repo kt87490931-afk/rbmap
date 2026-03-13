@@ -217,18 +217,24 @@ export default async function VenueDetailPage({
               <a href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} className="btn-call-hero" id="d-phone-link">
                 <span>📞</span> 전화 예약
               </a>
-              <Link href="/contact" className="btn-kakao">
+              <a
+                href={data.kakaoUrl || "/contact"}
+                className="btn-kakao"
+                id="d-kakao-link"
+                target={data.kakaoUrl ? "_blank" : undefined}
+                rel={data.kakaoUrl ? "noopener noreferrer" : undefined}
+              >
                 💬 카카오 상담
-              </Link>
+              </a>
             </div>
           </div>
           <div className="hb-info-strip">
             {infoCards.slice(0, 5).map((card, i) => {
-              const editId = i === 0 ? "d-price" : i === 1 ? "d-lineup" : i === 2 ? "d-hours" : i === 3 ? "d-parking" : undefined;
+              const dataEdit = i === 0 ? "price" : i === 1 ? "lineup" : i === 2 ? "hours" : i === 3 ? "parking" : undefined;
               return (
                 <div key={i} className="hb-info-item">
                   <span className="hb-info-label">{stripEmoji(card.label)}</span>
-                  <span id={editId} className={`hb-info-val ${card.gold ? "gold" : ""} ${card.green ? "green" : ""}`}>{card.val}</span>
+                  <span data-edit={dataEdit} className={`hb-info-val ${card.gold ? "gold" : ""} ${card.green ? "green" : ""}`}>{card.val}</span>
                 </div>
               );
             })}
@@ -258,13 +264,16 @@ export default async function VenueDetailPage({
           {introLead && <p className="art-lead" id="intro-lead">{introLead}</p>}
           {infoCards.length > 0 && (
             <div className="art-info-grid">
-              {infoCards.slice(0, 4).map((card, i) => (
-                <div key={i} className="art-info-card">
-                  <div className="aic-label">{stripEmoji(card.label)}</div>
-                  <div className={`aic-val ${card.green ? "green" : ""}`} style={card.gold && !card.green ? { color: "var(--gold)" } : undefined}>{card.val}</div>
-                  <div className="aic-sub">{card.sub}</div>
-                </div>
-              ))}
+              {infoCards.slice(0, 4).map((card, i) => {
+                const dataEdit = i === 0 ? "price" : i === 1 ? "lineup" : i === 2 ? "hours" : i === 3 ? "parking" : undefined;
+                return (
+                  <div key={i} className="art-info-card">
+                    <div className="aic-label">{stripEmoji(card.label)}</div>
+                    <div data-edit={dataEdit} className={`aic-val ${card.green ? "green" : ""}`} style={card.gold && !card.green ? { color: "var(--gold)" } : undefined}>{card.val}</div>
+                    <div className="aic-sub">{card.sub}</div>
+                  </div>
+                );
+              })}
             </div>
           )}
           <div id="intro-body">
@@ -295,7 +304,7 @@ export default async function VenueDetailPage({
                   <th style={{ textAlign: "right" }}>비고</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="price-tbody">
                 {(data.priceRows ?? []).map((row, i) => (
                   <tr key={i}>
                     <td>
@@ -427,6 +436,7 @@ export default async function VenueDetailPage({
           region: regionName,
           type: data.type,
           contact: data.contact,
+          kakaoUrl: data.kakaoUrl,
           location: data.location,
           locationDetail: data.locationDetail,
           locationSub: data.locationSub,
@@ -441,6 +451,7 @@ export default async function VenueDetailPage({
           introParagraphs: data.introParagraphs ?? [],
           priceLead: data.priceLead,
           priceNote: data.priceNote ?? "",
+          priceRows: data.priceRows ?? [],
           mapEmbed: data.mapEmbed,
           infoCards: data.infoCards ?? [],
         }}
@@ -449,7 +460,7 @@ export default async function VenueDetailPage({
       {/* Mobile CTA */}
       <div className="mobile-cta">
         <a href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} className="btn-m mcta-call">📞 전화 예약</a>
-        <Link href="/contact" className="btn-m mcta-kakao">💬 카카오</Link>
+        <a href={data.kakaoUrl || "/contact"} className="btn-m mcta-kakao" target={data.kakaoUrl ? "_blank" : undefined} rel={data.kakaoUrl ? "noopener noreferrer" : undefined}>💬 카카오</a>
       </div>
 
       {/* CTA Strip */}

@@ -1,23 +1,28 @@
 /**
- * 리뷰 자동 생성 Cron API
- * 6시간마다 호출: 활성 제휴업체 중 is_applied된 소개글이 있는 곳에 1건씩 리뷰 생성
- * GET ?cron_secret=xxx 또는 Authorization: Bearer xxx
+ * 수동 실행: 선택한 제휴업체에 대해 리뷰 생성 (스케줄 무관)
  */
-
 import { NextResponse } from 'next/server'
+import { requireAdminOrSetup } from '@/lib/admin-auth'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { runGenerateReviews } from '@/lib/cron-generate-reviews'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
-export async function GET(request: Request) {
-  const authHeader = request.headers.get('authorization')
-  const url = new URL(request.url)
-  const secret = url.searchParams.get('cron_secret') || authHeader?.replace(/^Bearer\s+/i, '')
-  const envSecret = process.env.CRON_SECRET || process.env.CRON_GENERATE_REVIEWS_SECRET
-  if (envSecret && secret !== envSecret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function POST(request: Request) {
+  const authErr = await requireAdminOrSetup()
+  if (authErr) return authErr
+
+  let partnerIds: string[] = []
+  try {
+    const body = await request.json()
+    partnerIds = Array.isArray(body?.partnerIds) ? body.partnerIds : []
+  } catch {
+    return NextResponse.json({ error: 'partnerIds 배열이 필요합니다.' }, { status: 400 })
+  }
+
+  if (partnerIds.length === 0) {
+    return NextResponse.json({ error: '제휴업체를 1개 이상 선택하세요.' }, { status: 400 })
   }
 
   const startAt = Date.now()
@@ -27,13 +32,18 @@ export async function GET(request: Request) {
     try {
       const { data: healthRow } = await supabaseAdmin
         .from('cron_health')
-        .insert({ job_name: 'generate-reviews', started_at: new Date().toISOString(), ok: false })
+        .insert({
+          job_name: 'generate-reviews',
+          started_at: new Date().toISOString(),
+          ok: false,
+          msg: '수동 실행 중',
+        })
         .select('id')
         .single()
       healthId = healthRow?.id ?? null
-    } catch { /* cron_health 테이블 없으면 무시 */ }
+    } catch { /* ignore */ }
 
-    const { results, durationMs } = await runGenerateReviews(null)
+    const { results, durationMs } = await runGenerateReviews(partnerIds)
     const successCount = results.filter((r) => r.ok).length
 
     if (healthId) {
@@ -43,7 +53,7 @@ export async function GET(request: Request) {
           .update({
             ended_at: new Date().toISOString(),
             ok: true,
-            msg: `완료: ${successCount}/${results.length}건`,
+            msg: `수동 실행: ${successCount}/${results.length}건`,
             processed: results.length,
             success_count: successCount,
             results,
@@ -71,17 +81,11 @@ export async function GET(request: Request) {
             ended_at: new Date().toISOString(),
             ok: false,
             msg: errMsg,
-            processed: 0,
-            success_count: 0,
-            results: [],
             duration_ms: durationMs,
           })
           .eq('id', healthId)
       } catch { /* ignore */ }
     }
-    return NextResponse.json(
-      { error: errMsg, results: [], duration_ms: durationMs },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: errMsg, duration_ms: durationMs }, { status: 500 })
   }
 }

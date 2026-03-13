@@ -21,9 +21,19 @@ interface CronHealthResponse {
   error?: string
 }
 
+interface PartnerOption {
+  id: string
+  name: string
+}
+
 export default function AdminCronHealthPage() {
   const [data, setData] = useState<CronHealthResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [partners, setPartners] = useState<PartnerOption[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [running, setRunning] = useState(false)
+  const [runMsg, setRunMsg] = useState('')
+  const [runOk, setRunOk] = useState(true)
 
   const fetchData = useCallback(async () => {
     try {
@@ -34,7 +44,63 @@ export default function AdminCronHealthPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  const fetchPartners = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/cron-health/partners', { credentials: 'include' })
+      const json = await res.json()
+      setPartners(Array.isArray(json.partners) ? json.partners : [])
+    } catch { setPartners([]) }
+  }, [])
+
+  useEffect(() => { fetchData(); fetchPartners() }, [fetchData, fetchPartners])
+
+  async function runManual() {
+    if (selectedIds.size === 0) {
+      setRunOk(false)
+      setRunMsg('제휴업체를 1개 이상 선택하세요.')
+      setTimeout(() => setRunMsg(''), 3000)
+      return
+    }
+    setRunning(true)
+    setRunMsg('')
+    try {
+      const res = await fetch('/api/admin/cron-health/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ partnerIds: Array.from(selectedIds) }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setRunOk(true)
+        setRunMsg(`수동 실행 완료: ${json.success}/${json.processed}건`)
+        setSelectedIds(new Set())
+        fetchData()
+      } else {
+        setRunOk(false)
+        setRunMsg(json?.error ?? '실행 실패')
+      }
+    } catch {
+      setRunOk(false)
+      setRunMsg('요청 실패')
+    }
+    setRunning(false)
+    setTimeout(() => setRunMsg(''), 5000)
+  }
+
+  function togglePartner(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function selectAll() {
+    if (selectedIds.size === partners.length) setSelectedIds(new Set())
+    else setSelectedIds(new Set(partners.map((p) => p.id)))
+  }
 
   function formatDate(iso: string | null) {
     if (!iso) return '-'
@@ -82,6 +148,56 @@ export default function AdminCronHealthPage() {
         <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 12 }}>
           Cron은 0시, 6시, 12시, 18시에 실행됩니다. 매 실행 시 적용된 소개글이 있는 제휴업체마다 리뷰 1건 생성.
         </p>
+      </div>
+
+      <div className="card-box" style={{ marginBottom: 16 }}>
+        <div className="card-box-title">▶ 수동 실행 (스케줄 무관)</div>
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+          제휴업체를 선택한 뒤 수동 실행하면 즉시 리뷰가 생성되며, 실행 이력에 기록됩니다.
+        </p>
+        {partners.length > 0 ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <button
+                type="button"
+                onClick={selectAll}
+                className="btn-secondary"
+                style={{ padding: '6px 12px', fontSize: 12 }}
+              >
+                {selectedIds.size === partners.length ? '전체 해제' : '전체 선택'}
+              </button>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+                {selectedIds.size}개 선택
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+              {partners.map((p) => (
+                <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(p.id)}
+                    onChange={() => togglePartner(p.id)}
+                  />
+                  {p.name}
+                </label>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={runManual}
+              disabled={running || selectedIds.size === 0}
+              className="btn-save"
+              style={{ padding: '8px 20px', fontSize: 13 }}
+            >
+              {running ? '실행 중...' : '수동 실행'}
+            </button>
+            {runMsg && (
+              <span style={{ marginLeft: 12, fontSize: 13, color: runOk ? 'var(--green)' : 'var(--red)' }}>{runMsg}</span>
+            )}
+          </>
+        ) : (
+          <p style={{ fontSize: 12, color: 'var(--muted)' }}>적용된 소개글이 있는 제휴업체가 없습니다.</p>
+        )}
       </div>
 
       <div className="card-box">

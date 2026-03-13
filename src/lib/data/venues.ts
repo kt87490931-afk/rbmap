@@ -375,9 +375,12 @@ export async function getVenueDetail(
   } catch {
     partners = [];
   }
+  // 유형 매칭 유연화: 노래방↔가라오케 등 동일 종목 slug
+  const typeSlug = TYPE_TO_SLUG[typeName];
   const match = partners.find((p) => {
     const pRegionMatch = p.region?.includes(regionName) || regionName?.includes(p.region ?? "");
-    const pTypeMatch = p.type === typeName;
+    const pTypeSlug = TYPE_TO_SLUG[p.type];
+    const pTypeMatch = p.type === typeName || (pTypeSlug && typeSlug && pTypeSlug === typeSlug);
     const pVenueSlug = extractVenueSlugFromHref(p.href) || nameToSlug(p.name);
     const pSlugMatch = pVenueSlug === venueSlug;
     return pRegionMatch && pTypeMatch && pSlugMatch;
@@ -389,8 +392,22 @@ export async function getVenueDetail(
 
   // 2) Fallback 데이터로 대체 (partners에 없을 때)
   const regionFallback = FALLBACK_DETAIL[regionSlug];
-  const fallbackVenue = regionFallback?.[venueSlug];
+  let fallbackVenue = regionFallback?.[venueSlug];
   if (fallbackVenue) {
+    // AI 소개글 보강: partners에서 동일 업체(지역+이름) desc가 있으면 intro 덮어쓰기
+    const introPartner = partners.find((p) => {
+      const regionOk = p.region?.includes(regionName) || regionName?.includes(p.region ?? "");
+      const nameNorm = (s: string) => s?.replace(/\s+/g, "") ?? "";
+      const nameOk = nameNorm(p.name) === nameNorm(fallbackVenue!.name) || nameToSlug(p.name) === venueSlug;
+      return regionOk && nameOk && (p.desc ?? "").trim().length > 0;
+    });
+    if (introPartner?.desc?.trim()) {
+      fallbackVenue = {
+        ...fallbackVenue,
+        introTitle: `${introPartner.name} 소개`,
+        introParagraphs: [introPartner.desc.trim()],
+      };
+    }
     return fallbackVenue;
   }
 

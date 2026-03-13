@@ -439,9 +439,10 @@ export async function getVenueDetail(
     try {
       const { data: introRow } = await supabaseAdmin
         .from("venue_intros")
-        .select("intro_ai_json")
+        .select("intro_ai_json, is_applied")
         .eq("partner_id", match.id)
         .not("intro_ai_json", "is", null)
+        .order("is_applied", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -480,17 +481,16 @@ export async function getVenueDetail(
       const nameOk = nameNorm(p.name) === nameNorm(fallbackVenue!.name);
       return (regionOk && (slugOk || nameOk)) && (p.desc ?? "").trim().length > 0;
     });
-    let aiIntro = introPartner?.desc?.trim();
-    if (!aiIntro) {
-      try {
+    let aiIntro: string | undefined;
+    try {
         const { data: intros } = await supabaseAdmin
           .from("venue_intros")
-          .select("form_json, intro_ai_json")
+          .select("form_json, intro_ai_json, is_applied, created_at")
           .order("created_at", { ascending: false })
-          .limit(20);
+          .limit(50);
         const nameNorm = (s: string) => (s ?? "").replace(/\s+/g, "");
         const targetName = nameNorm(fallbackVenue.name);
-        const row = (intros ?? []).find((r) => {
+        const matching = (intros ?? []).filter((r) => {
           const form = r.form_json as { name?: string; region?: string } | null;
           if (!form?.name) return false;
           const rName = nameNorm(String(form.name));
@@ -498,6 +498,12 @@ export async function getVenueDetail(
           const regionOk = rRegion.includes(regionName) || regionName.includes(rRegion) || rRegion === regionSlug;
           return (rName === targetName || nameToSlug(form.name) === venueSlug) && regionOk;
         });
+        const row = matching.sort((a, b) => {
+          const aApplied = (a as { is_applied?: boolean }).is_applied ? 1 : 0;
+          const bApplied = (b as { is_applied?: boolean }).is_applied ? 1 : 0;
+          if (bApplied !== aApplied) return bApplied - aApplied;
+          return new Date((b as { created_at?: string }).created_at ?? 0).getTime() - new Date((a as { created_at?: string }).created_at ?? 0).getTime();
+        })[0];
         const introJson = row?.intro_ai_json as { content?: string; v2?: { tagline?: string; intro?: { label?: string; headline?: string; lead?: string; quote?: string; body_paragraphs?: string[] } } } | null;
         const content = introJson?.content?.trim();
         const v2 = introJson?.v2;
@@ -508,20 +514,20 @@ export async function getVenueDetail(
           fallbackVenue = {
             ...fallbackVenue,
             tagline: v2.tagline ?? fallbackVenue.tagline,
-            introLabel: v2Intro.label ?? "ABOUT · 업소 소개",
-            introHeadline: v2Intro.headline ?? `${name} 소개`,
-            introLead: v2Intro.lead ?? "",
-            introQuote: v2Intro.quote ?? undefined,
-            introBodyParagraphs: v2Intro.body_paragraphs ?? [],
-            introTitle: v2Intro.headline ?? `${name} 소개`,
-            introParagraphs: [v2Intro.lead ?? "", ...(v2Intro.body_paragraphs ?? [])].filter(Boolean),
+            introLabel: v2Intro!.label ?? "ABOUT · 업소 소개",
+            introHeadline: v2Intro!.headline ?? `${name} 소개`,
+            introLead: v2Intro!.lead ?? "",
+            introQuote: v2Intro!.quote ?? undefined,
+            introBodyParagraphs: v2Intro!.body_paragraphs ?? [],
+            introTitle: v2Intro!.headline ?? `${name} 소개`,
+            introParagraphs: [v2Intro!.lead ?? "", ...(v2Intro!.body_paragraphs ?? [])].filter(Boolean),
           };
           return fallbackVenue;
         }
       } catch {
         /* ignore */
       }
-    }
+    if (!aiIntro) aiIntro = introPartner?.desc?.trim();
     if (aiIntro) {
       const paras = descToIntroParagraphs(aiIntro);
       const name = introPartner?.name ?? fallbackVenue.name;

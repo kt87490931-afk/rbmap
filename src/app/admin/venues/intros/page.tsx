@@ -5,10 +5,12 @@ import Link from 'next/link'
 
 interface IntroItem {
   id: string
+  partner_id?: string | null
   form_json: { name?: string; region?: string; type?: string }
   ai_tone: string
   period_days: number
   intro_ai_json?: { content?: string; v2?: { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }; generated_at?: string; elapsed_ms?: number }
+  is_applied?: boolean
   is_public?: boolean
   created_at: string
 }
@@ -50,6 +52,7 @@ export default function AdminVenueIntrosPage() {
   const [editingItem, setEditingItem] = useState<IntroItem | null>(null)
   const [editContent, setEditContent] = useState('')
   const [savingEdit, setSavingEdit] = useState(false)
+  const [applyingId, setApplyingId] = useState<string | null>(null)
 
   const fetchItems = useCallback(async () => {
     try {
@@ -121,6 +124,25 @@ export default function AdminVenueIntrosPage() {
   function openEditModal(item: IntroItem) {
     setEditingItem(item)
     setEditContent(contentToDisplayText(item))
+  }
+
+  async function applyIntro(item: IntroItem) {
+    if (!contentToDisplayText(item).trim()) {
+      alert('적용할 AI 작성글이 없습니다.')
+      return
+    }
+    setApplyingId(item.id)
+    try {
+      const res = await fetch(`/api/admin/venues/intro/${item.id}/apply`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || '적용 실패')
+      await fetchItems()
+      showMsg('페이지에 적용되었습니다.')
+    } catch (e) {
+      alert(String(e))
+    } finally {
+      setApplyingId(null)
+    }
   }
 
   const getName = (x: IntroItem) =>
@@ -255,6 +277,11 @@ export default function AdminVenueIntrosPage() {
                       >
                         {hasAi ? '성공' : '실패'}
                       </span>
+                      {r.is_applied && (
+                        <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'var(--accent)', color: '#fff', fontWeight: 600 }}>
+                          적용됨
+                        </span>
+                      )}
                       <span style={{ fontSize: 11, color: 'var(--muted)' }}>
                         생성일시 {formatDateTime(r.intro_ai_json?.generated_at || r.created_at)}
                         {r.intro_ai_json?.elapsed_ms != null && ` · ${Number(r.intro_ai_json.elapsed_ms).toLocaleString()}ms`}
@@ -263,7 +290,28 @@ export default function AdminVenueIntrosPage() {
                         {String(r.form_json?.region || '')} · {r.ai_tone === 'partner_pro' ? '파트너' : '전문가'}
                       </span>
                     </div>
-                    <div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        className="btn-apply"
+                        style={{
+                          marginRight: 4,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          padding: '6px 14px',
+                          cursor: hasAi && !r.is_applied ? 'pointer' : 'default',
+                          background: r.is_applied ? '#2ecc71' : hasAi ? 'var(--gold, #c8a84b)' : 'var(--card)',
+                          color: (hasAi || r.is_applied) ? '#fff' : 'var(--muted)',
+                          border: `1px solid ${r.is_applied ? '#2ecc71' : hasAi ? 'var(--gold, #c8a84b)' : 'var(--border)'}`,
+                          borderRadius: 6,
+                          opacity: applyingId === r.id ? 0.7 : 1,
+                        }}
+                        onClick={() => hasAi && applyIntro(r)}
+                        disabled={!hasAi || applyingId !== null}
+                        title={r.is_applied ? '페이지에 적용됨' : hasAi ? '이 글로 상세 페이지에 적용' : 'AI 작성글이 없습니다'}
+                      >
+                        {applyingId === r.id ? '적용 중...' : r.is_applied ? '✓ 적용됨' : '적용'}
+                      </button>
                       <button
                         type="button"
                         style={{ marginRight: 8, fontSize: 12, padding: '4px 10px', cursor: 'pointer', background: hasAi ? 'var(--accent)' : 'var(--bg)', color: hasAi ? '#fff' : 'var(--muted)', border: '1px solid var(--border)', borderRadius: 6 }}

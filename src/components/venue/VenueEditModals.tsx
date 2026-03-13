@@ -97,7 +97,6 @@ export function VenueEditModals({ regionSlug, categorySlug, venueSlug, data }: V
     const price = (document.getElementById("m-price") as HTMLInputElement)?.value ?? "";
     const lineup = (document.getElementById("m-lineup") as HTMLInputElement)?.value ?? "";
     const parking = (document.getElementById("m-parking") as HTMLInputElement)?.value ?? "";
-    const kakaoUrl = (document.getElementById("m-kakao") as HTMLInputElement)?.value?.trim() ?? "";
     const base = data.infoCards ?? [];
     const infoCards = [
       { ...(base[0] ?? { label: "1인 주대", sub: "" }), val: price },
@@ -107,30 +106,19 @@ export function VenueEditModals({ regionSlug, categorySlug, venueSlug, data }: V
       ...base.slice(4),
     ];
     const ok = await saveEdit(regionSlug, categorySlug, venueSlug, "hero", {
-      name, tagline, contact: phone, kakaoUrl: kakaoUrl || undefined, hours, infoCards,
+      name, tagline, contact: phone, hours, infoCards,
     });
     if (!ok) return;
     setEl("d-name", name);
     setEl("d-tagline", tagline);
     setEl("d-phone", phone);
-    setEl("d-phone-sub", `${hours} · 전화·카카오 예약 가능`);
+    setEl("d-phone-sub", `${hours} · 전화·문자 예약 가능`);
     const link = document.getElementById("d-phone-link") as HTMLAnchorElement;
     if (link) link.href = `tel:${phone.replace(/\D/g, "")}`;
     setDataEdit("price", price);
     setDataEdit("lineup", lineup);
     setDataEdit("hours", hours);
     setDataEdit("parking", parking);
-    const kakaoLink = document.getElementById("d-kakao-link") as HTMLAnchorElement;
-    if (kakaoLink) {
-      kakaoLink.href = kakaoUrl || "/contact";
-      if (kakaoUrl) {
-        kakaoLink.setAttribute("target", "_blank");
-        kakaoLink.setAttribute("rel", "noopener noreferrer");
-      } else {
-        kakaoLink.removeAttribute("target");
-        kakaoLink.removeAttribute("rel");
-      }
-    }
     closeModal("hero");
     router.refresh();
   }, [closeModal, setDataEdit, regionSlug, categorySlug, venueSlug, data.infoCards, router]);
@@ -332,10 +320,6 @@ export function VenueEditModals({ regionSlug, categorySlug, venueSlug, data }: V
             <div className="mf-row">
               <label>전화번호</label>
               <input type="tel" id="m-phone" defaultValue={safe.contact} />
-            </div>
-            <div className="mf-row">
-              <label>카카오톡 상담 URL</label>
-              <input type="text" id="m-kakao" defaultValue={data.kakaoUrl ?? ""} placeholder="https://open.kakao.com/o/... 또는 pf.kakao.com URL" />
             </div>
             <div className="mf-row">
               <label>1인 주대</label>

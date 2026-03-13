@@ -126,7 +126,7 @@ export default async function VenueDetailPage({
 
   const infoCards = data.infoCards ?? [];
   const tagline = data.tagline ?? data.introTitle ?? `${regionName} ${typeName} — ${data.name}`;
-  const phoneSub = `${data.hours} · 전화·카카오 예약 가능`;
+  const phoneSub = `${data.hours} · 전화·문자 예약 가능`;
 
   /** v2: headline em 처리 (— 뒷부분 골드 강조) */
   const introHeadlineRaw = data.introHeadline ?? data.introTitle ?? `${data.name} — ${regionName} 소개`;
@@ -216,15 +216,6 @@ export default async function VenueDetailPage({
             <div className="hb-phone-right">
               <a href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} className="btn-call-hero" id="d-phone-link">
                 <span>📞</span> 전화 예약
-              </a>
-              <a
-                href={data.kakaoUrl || "/contact"}
-                className="btn-kakao"
-                id="d-kakao-link"
-                target={data.kakaoUrl ? "_blank" : undefined}
-                rel={data.kakaoUrl ? "noopener noreferrer" : undefined}
-              >
-                💬 카카오 상담
               </a>
             </div>
           </div>
@@ -463,14 +454,13 @@ export default async function VenueDetailPage({
       {/* Mobile CTA */}
       <div className="mobile-cta">
         <a href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} className="btn-m mcta-call">📞 전화 예약</a>
-        <a href={data.kakaoUrl || "/contact"} className="btn-m mcta-kakao" target={data.kakaoUrl ? "_blank" : undefined} rel={data.kakaoUrl ? "noopener noreferrer" : undefined}>💬 카카오</a>
       </div>
 
       {/* CTA Strip */}
       <div className="page-wrap">
         <div className="cta-strip">
           <h2>{data.name} 예약 및 문의</h2>
-          <p>전화·카카오톡으로 편하게 예약하세요. 방문 전 가격 확인을 권장합니다.</p>
+          <p>전화·문자로 편하게 예약하세요. 방문 전 가격 확인을 권장합니다.</p>
           <a href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} className="btn-primary">전화 예약하기</a>
         </div>
       </div>

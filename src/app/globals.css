@@ -4994,7 +4994,7 @@ footer {
 }
 .hb-phone-left { flex: 1; min-width: 180px; }
 .hb-phone-label { font-size: 9px; letter-spacing: 0.16em; color: var(--gold-dim); text-transform: uppercase; margin-bottom: 5px; }
-.hb-phone-num { font-family: 'Black Han Sans', sans-serif; font-size: clamp(22px, 4vw, 34px); color: var(--gold-lt); letter-spacing: 0.05em; line-height: 1; }
+.hb-phone-num { font-family: 'Black Han Sans', sans-serif; font-size: clamp(22px, 4vw, 34px); font-weight: 700; color: var(--gold-lt); letter-spacing: 0.05em; line-height: 1; }
 .hb-phone-sub { font-size: 11px; color: #6a6255; margin-top: 6px; line-height: 1.6; }
 .hb-phone-right { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 .btn-call-hero {

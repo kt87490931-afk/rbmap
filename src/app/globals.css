@@ -5127,3 +5127,30 @@ footer {
 /* Map wrap v2 */
 .article-wrap .map-wrap { width: 100%; aspect-ratio: 16/7; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); margin-bottom: 12px; background: var(--card); }
 .article-wrap .map-wrap iframe { width: 100%; height: 100%; border: none; }
+
+/* 편집 버튼 & 모달 (venue-detail-v2_1.html) */
+.section-edit-btn { position: absolute; top: 40px; right: 0; display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--dim); background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; cursor: pointer; transition: all 0.2s; z-index: 10; }
+.section-edit-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+.section-edit-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+.modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); z-index: 2000; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px); }
+.modal-backdrop.open { display: flex; }
+.modal { background: var(--card); border: 1px solid var(--border2); border-radius: 12px; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; animation: modalIn 0.2s ease both; }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.modal-head { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-head h3 { font-size: 14px; font-weight: 700; color: var(--text); }
+.modal-close { background: none; border: none; color: var(--dim); font-size: 20px; cursor: pointer; line-height: 1; padding: 0; transition: color 0.2s; }
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 20px; }
+.mf-row { margin-bottom: 16px; }
+.mf-row:last-child { margin-bottom: 0; }
+.mf-row label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 6px; }
+.mf-row input, .mf-row textarea, .mf-row select { width: 100%; background: var(--card2); border: 1px solid var(--border2); border-radius: 6px; padding: 9px 12px; font-size: 13px; color: var(--text); font-family: 'Noto Sans KR', sans-serif; outline: none; transition: border-color 0.2s; }
+.mf-row input:focus, .mf-row textarea:focus, .mf-row select:focus { border-color: var(--gold-dim); }
+.mf-row textarea { resize: vertical; min-height: 90px; line-height: 1.75; }
+.mf-hint { font-size: 10px; color: var(--dim); margin-top: 4px; line-height: 1.6; }
+.modal-foot { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+.mf-cancel { padding: 9px 18px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 12px; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; transition: all 0.2s; }
+.mf-cancel:hover { border-color: var(--border2); color: var(--text); }
+.mf-save { padding: 9px 22px; border-radius: 6px; background: var(--gold); border: none; color: #000; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; transition: background 0.2s; }
+.mf-save:hover { background: var(--gold-lt); }

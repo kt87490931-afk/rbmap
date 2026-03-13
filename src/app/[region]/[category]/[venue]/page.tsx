@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { VenueEditModals } from "@/components/venue/VenueEditModals";
+import { VenueEditButton } from "@/components/venue/VenueEditButton";
 
 export const dynamic = "force-dynamic";
 import {
@@ -149,6 +151,7 @@ export default async function VenueDetailPage({
 
       {/* Hero Banner v2 */}
       <section className="hero-banner" id="hero">
+        <VenueEditButton section="hero" />
         <div className="hb-bg" aria-hidden />
         <div className="hb-wave" aria-hidden>
           <svg viewBox="0 0 1200 400" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -220,11 +223,11 @@ export default async function VenueDetailPage({
       {/* Tab Nav v2 */}
       <nav className="tab-nav">
         <div className="tab-nav-inner">
-          <a href="#intro" className="tab-btn active">업소 소개</a>
-          <a href="#price" className="tab-btn">가격 정보</a>
-          <a href="#map" className="tab-btn">위치·지도</a>
-          <a href="#reviews" className="tab-btn">리뷰 <span style={{ fontSize: 10, opacity: 0.6 }}>({data.reviewCount})</span></a>
-          <a href="#similar" className="tab-btn">유사 업소</a>
+          <a href="#intro" className="tab-btn active" data-tab="intro">업소 소개</a>
+          <a href="#price" className="tab-btn" data-tab="price">가격 정보</a>
+          <a href="#map" className="tab-btn" data-tab="map">위치·지도</a>
+          <a href="#reviews" className="tab-btn" data-tab="reviews">리뷰 <span style={{ fontSize: 10, opacity: 0.6 }}>({data.reviewCount})</span></a>
+          <a href="#similar" className="tab-btn" data-tab="similar">유사 업소</a>
         </div>
       </nav>
 
@@ -232,6 +235,7 @@ export default async function VenueDetailPage({
       <div className="article-wrap">
         {/* 섹션 1: 업소 소개 */}
         <section className="art-section" id="intro">
+          <VenueEditButton section="intro" />
           <span className="sec-label">ABOUT · 업소 소개</span>
           <h2 className="art-h2">{data.introTitle}</h2>
           {(data.introParagraphs ?? []).length > 0 && (
@@ -257,6 +261,7 @@ export default async function VenueDetailPage({
 
         {/* 섹션 2: 가격 정보 */}
         <section className="art-section" id="price">
+          <VenueEditButton section="price" />
           <span className="sec-label">PRICE · 가격 안내</span>
           <h2 className="art-h2">가격 <em>안내</em></h2>
           <div>
@@ -293,6 +298,7 @@ export default async function VenueDetailPage({
 
         {/* 섹션 3: 위치·지도 */}
         <section className="art-section" id="map">
+          <VenueEditButton section="map" />
           <span className="sec-label">LOCATION · 위치 및 오시는 길</span>
           <h2 className="art-h2">찾아오시는 <em>길</em></h2>
           <div className="map-wrap">
@@ -316,6 +322,7 @@ export default async function VenueDetailPage({
 
         {/* 섹션 4: 리뷰 */}
         <section className="art-section" id="reviews">
+          <VenueEditButton section="reviews" />
           <span className="sec-label">REVIEWS · 이용 후기</span>
           <h2 className="art-h2">{data.name} <em>이용 후기</em></h2>
           <p className="art-lead">Gemini AI가 6시간마다 최신 후기를 수집·정리합니다.</p>
@@ -342,12 +349,13 @@ export default async function VenueDetailPage({
         </section>
 
         {/* 섹션 5: 유사 업소 */}
-        {(data.similarVenues ?? []).length > 0 && (
-          <section className="art-section" id="similar">
-            <span className="sec-label">SIMILAR · {regionName} 유사 업소</span>
-            <h2 className="art-h2">함께 보면 좋은 <em>{regionName} {typeName}</em></h2>
+        <section className="art-section" id="similar">
+          <VenueEditButton section="similar" />
+          <span className="sec-label">SIMILAR · {regionName} 유사 업소</span>
+          <h2 className="art-h2">함께 보면 좋은 <em>{regionName} {typeName}</em></h2>
+          {(data.similarVenues ?? []).length > 0 ? (
             <div className="similar-grid">
-              {data.similarVenues.map((sim) => (
+              {data.similarVenues!.map((sim) => (
                 <Link key={sim.name} href={sim.href} className="sim-card">
                   <div className="sim-top">
                     <span className="sim-type" style={sim.typeStyle}>{sim.type}</span>
@@ -359,8 +367,10 @@ export default async function VenueDetailPage({
                 </Link>
               ))}
             </div>
-          </section>
-        )}
+          ) : (
+            <p className="art-p" style={{ color: "var(--dim)" }}>등록된 유사 업소가 없습니다.</p>
+          )}
+        </section>
 
         {/* SEO 섹션 */}
         {(data.seoCols ?? []).length > 0 && (
@@ -388,6 +398,25 @@ export default async function VenueDetailPage({
           </section>
         )}
       </div>
+
+      {/* 편집 모달 */}
+      <VenueEditModals
+        data={{
+          name: data.name,
+          region: regionName,
+          type: data.type,
+          contact: data.contact,
+          location: data.location,
+          locationDetail: data.locationDetail,
+          locationSub: data.locationSub,
+          hours: data.hours,
+          introTitle: data.introTitle,
+          introParagraphs: data.introParagraphs ?? [],
+          priceNote: data.priceNote,
+          mapEmbed: data.mapEmbed,
+          infoCards: data.infoCards ?? [],
+        }}
+      />
 
       {/* Mobile CTA */}
       <div className="mobile-cta">

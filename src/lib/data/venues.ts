@@ -6,6 +6,7 @@
 
 import { getPartners } from "./partners";
 import type { Partner } from "./partners";
+import { supabaseAdmin } from "../supabase-server";
 
 /** 종목(업종) → URL slug 매핑 */
 export const TYPE_TO_SLUG: Record<string, string> = {
@@ -394,18 +395,44 @@ export async function getVenueDetail(
   const regionFallback = FALLBACK_DETAIL[regionSlug];
   let fallbackVenue = regionFallback?.[venueSlug];
   if (fallbackVenue) {
-    // AI 소개글 보강: partners에서 동일 업체(지역+이름) desc가 있으면 intro 덮어쓰기
+    // AI 소개글 보강: partners에서 동일 업체 desc가 있으면 intro 덮어쓰기
+    const pSlug = (p: Partner) => extractVenueSlugFromHref(p.href) || nameToSlug(p.name);
     const introPartner = partners.find((p) => {
       const regionOk = p.region?.includes(regionName) || regionName?.includes(p.region ?? "");
-      const nameNorm = (s: string) => s?.replace(/\s+/g, "") ?? "";
-      const nameOk = nameNorm(p.name) === nameNorm(fallbackVenue!.name) || nameToSlug(p.name) === venueSlug;
-      return regionOk && nameOk && (p.desc ?? "").trim().length > 0;
+      const slugOk = pSlug(p) === venueSlug;
+      const nameNorm = (s: string) => (s ?? "").replace(/\s+/g, "");
+      const nameOk = nameNorm(p.name) === nameNorm(fallbackVenue!.name);
+      return (regionOk && (slugOk || nameOk)) && (p.desc ?? "").trim().length > 0;
     });
-    if (introPartner?.desc?.trim()) {
+    let aiIntro = introPartner?.desc?.trim();
+    if (!aiIntro) {
+      try {
+        const { data: intros } = await supabaseAdmin
+          .from("venue_intros")
+          .select("form_json, intro_ai_json")
+          .order("created_at", { ascending: false })
+          .limit(20);
+        const nameNorm = (s: string) => (s ?? "").replace(/\s+/g, "");
+        const targetName = nameNorm(fallbackVenue.name);
+        const row = (intros ?? []).find((r) => {
+          const form = r.form_json as { name?: string; region?: string } | null;
+          if (!form?.name) return false;
+          const rName = nameNorm(String(form.name));
+          const rRegion = String(form.region ?? "");
+          const regionOk = rRegion.includes(regionName) || regionName.includes(rRegion) || rRegion === regionSlug;
+          return (rName === targetName || nameToSlug(form.name) === venueSlug) && regionOk;
+        });
+        const content = (row?.intro_ai_json as { content?: string } | null)?.content?.trim();
+        if (content) aiIntro = content;
+      } catch {
+        /* ignore */
+      }
+    }
+    if (aiIntro) {
       fallbackVenue = {
         ...fallbackVenue,
-        introTitle: `${introPartner.name} 소개`,
-        introParagraphs: [introPartner.desc.trim()],
+        introTitle: `${introPartner?.name ?? fallbackVenue.name} 소개`,
+        introParagraphs: [aiIntro],
       };
     }
     return fallbackVenue;

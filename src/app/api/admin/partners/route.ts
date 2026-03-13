@@ -19,6 +19,10 @@ export async function POST(request: Request) {
   if (authErr) return authErr
 
   const body = await request.json()
+  const days = Number(body.period_days) || 30
+  const periodEnd = new Date()
+  periodEnd.setDate(periodEnd.getDate() + days)
+
   const { data, error } = await supabaseAdmin
     .from('partners')
     .insert({
@@ -36,6 +40,9 @@ export async function POST(request: Request) {
       desc: body.desc ?? '',
       char_count: body.char_count ?? '',
       sort_order: body.sort_order ?? 0,
+      period_days: days,
+      period_end: periodEnd.toISOString().slice(0, 10),
+      is_active: body.is_active !== false,
     })
     .select()
     .single()

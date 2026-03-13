@@ -17,6 +17,9 @@ interface PartnerItem {
   location: string
   desc: string
   sort_order: number
+  period_days?: number
+  period_end?: string
+  is_active?: boolean
 }
 
 interface RegionItem {
@@ -57,6 +60,8 @@ export default function AdminPartnersPage() {
     location: '',
     desc: '',
     tags: '',
+    period_days: 30,
+    is_active: true,
   })
 
   const fetchItems = useCallback(async () => {
@@ -120,12 +125,14 @@ export default function AdminPartnersPage() {
           location: form.location.trim() || '',
           desc: form.desc.trim() || '',
           tags: form.tags ? form.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
+          period_days: form.period_days || 30,
+          is_active: form.is_active !== false,
         }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
         setItems((prev) => [...prev, data])
-        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '' })
+        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true })
         showMsg('추가 완료!')
       } else {
         const errMsg = data.error || (res.status === 403 ? 'OTP 인증이 필요합니다. OTP 인증 페이지에서 다시 인증해 주세요.' : '추가 실패')
@@ -179,6 +186,8 @@ export default function AdminPartnersPage() {
       location: item.location || '',
       desc: item.desc || '',
       tags: (item.tags || []).join(', '),
+      period_days: item.period_days ?? 30,
+      is_active: item.is_active !== false,
     })
     setEditingId(item.id)
   }
@@ -212,6 +221,8 @@ export default function AdminPartnersPage() {
       location: form.location.trim() || '',
       desc: form.desc.trim() || '',
       tags: form.tags ? form.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
+      period_days: form.period_days || 30,
+      is_active: form.is_active !== false,
     }
     try {
       const res = await fetch(`/api/admin/partners/${editingId}`, {
@@ -224,7 +235,7 @@ export default function AdminPartnersPage() {
       if (res.ok) {
         setItems((prev) => prev.map((p) => (p.id === editingId ? data : p)))
         setEditingId(null)
-        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '' })
+        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true })
         showMsg('수정 완료!')
       } else {
         showMsg(data.error || '수정 실패', 'error')
@@ -310,13 +321,24 @@ export default function AdminPartnersPage() {
           <input className="form-input" placeholder="별점 (예: ★★★★★)" value={form.stars} onChange={(e) => setForm((f) => ({ ...f, stars: e.target.value }))} />
           <input className="form-input" placeholder="위치/주소" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} />
         </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <select className="form-input" value={form.period_days} onChange={(e) => setForm((f) => ({ ...f, period_days: Number(e.target.value) }))} title="제휴 기간">
+            <option value={30}>30일</option>
+            <option value={60}>60일</option>
+            <option value={90}>90일</option>
+          </select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+            <input type="checkbox" checked={form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} />
+            활성화 (비활성 시 리뷰 생성 제외)
+          </label>
+        </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <input className="form-input" style={{ flex: 1, minWidth: 200 }} placeholder="태그 (쉼표 구분)" value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} />
           <input className="form-input" style={{ flex: 1, minWidth: 200 }} placeholder="설명 (선택)" value={form.desc} onChange={(e) => setForm((f) => ({ ...f, desc: e.target.value }))} />
           {editingId ? (
             <>
               <button className="btn-save" onClick={saveEdit} disabled={adding}>수정 저장</button>
-              <button className="btn-ghost" style={{ padding: '8px 14px' }} onClick={() => { setEditingId(null); setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '' }) }}>취소</button>
+              <button className="btn-ghost" style={{ padding: '8px 14px' }} onClick={() => { setEditingId(null); setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true }) }}>취소</button>
             </>
           ) : (
             <button className="btn-save" onClick={addItem} disabled={adding}>추가</button>
@@ -338,6 +360,8 @@ export default function AdminPartnersPage() {
                 <th>유형</th>
                 <th>이름</th>
                 <th>연락처</th>
+                <th>기간</th>
+                <th>활성</th>
                 <th>링크</th>
                 <th>작업</th>
               </tr>
@@ -350,6 +374,17 @@ export default function AdminPartnersPage() {
                   <td>{p.type}</td>
                   <td>{p.name}</td>
                   <td style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.contact}</td>
+                  <td style={{ fontSize: 11, whiteSpace: 'nowrap' }} title={`만료: ${p.period_end ?? '-'}`}>{p.period_days ?? 30}일{p.period_end ? ` (~${p.period_end})` : ''}</td>
+                  <td>
+                    <button
+                      className={p.is_active !== false ? 'btn-save' : 'btn-ghost'}
+                      style={{ padding: '4px 8px', fontSize: 11 }}
+                      onClick={() => updateItem(p.id, 'is_active', !(p.is_active !== false))}
+                      title={p.is_active !== false ? '활성 (클릭 시 비활성)' : '비활성 (클릭 시 활성)'}
+                    >
+                      {p.is_active !== false ? '활성' : '비활성'}
+                    </button>
+                  </td>
                   <td style={{ fontSize: 11, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }} title={p.href}>
                     {p.href?.startsWith('/') ? (
                       <a href={p.href} target="_blank" rel="noreferrer">{p.href}</a>

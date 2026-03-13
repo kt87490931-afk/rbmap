@@ -15,9 +15,15 @@ export async function PATCH(
   const body = await _request.json()
 
   const update: Record<string, unknown> = {}
-  const keys = ['href', 'icon', 'region', 'type', 'type_class', 'type_style', 'name', 'stars', 'contact', 'tags', 'location', 'desc', 'char_count', 'sort_order']
+  const keys = ['href', 'icon', 'region', 'type', 'type_class', 'type_style', 'name', 'stars', 'contact', 'tags', 'location', 'desc', 'char_count', 'sort_order', 'period_days', 'period_end', 'is_active']
   for (const k of keys) {
     if (body[k] !== undefined) update[k] = body[k]
+  }
+  if (body.period_days !== undefined) {
+    const days = Number(body.period_days) || 30
+    const pe = new Date()
+    pe.setDate(pe.getDate() + days)
+    update.period_end = pe.toISOString().slice(0, 10)
   }
   update.updated_at = new Date().toISOString()
 

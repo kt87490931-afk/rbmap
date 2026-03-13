@@ -59,7 +59,8 @@ export default async function ReviewReadPage({
     notFound()
   }
 
-  const post = await getReviewPostBySlug(region, category, venue, slug)
+  const slugDecoded = slug ? decodeURIComponent(slug) : slug
+  const post = await getReviewPostBySlug(region, category, venue, slugDecoded)
   if (!post) notFound()
 
   const [sameVenueReviews, sameRegionReviews, prevNext, header, footer] = await Promise.all([

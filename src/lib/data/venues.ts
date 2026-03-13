@@ -7,6 +7,7 @@
 import { getPartners } from "./partners";
 import type { Partner } from "./partners";
 import { supabaseAdmin } from "../supabase-server";
+import { getReviewPostsByVenue, buildReviewUrl, formatStars } from "./review-posts";
 
 /** 종목(업종) → URL slug 매핑 */
 export const TYPE_TO_SLUG: Record<string, string> = {
@@ -467,6 +468,7 @@ export async function getVenueDetail(
     } catch {
       /* ignore */
     }
+    venue = await enrichVenueWithReviewPosts(venue, regionSlug, categorySlug, venueSlug);
     return await applyVenueEdits(venue, regionSlug, categorySlug, venueSlug);
   }
 
@@ -542,10 +544,47 @@ export async function getVenueDetail(
         introParagraphs: paras.length > 0 ? paras : [aiIntro],
       };
     }
+    fallbackVenue = await enrichVenueWithReviewPosts(fallbackVenue, regionSlug, categorySlug, venueSlug);
     return await applyVenueEdits(fallbackVenue, regionSlug, categorySlug, venueSlug);
   }
 
   return null;
+}
+
+/** review_posts에서 해당 업체 리뷰 조회 후 venue.reviews/reviewCount 덮어쓰기 */
+async function enrichVenueWithReviewPosts(
+  venue: VenueDetail,
+  regionSlug: string,
+  categorySlug: string,
+  venueSlug: string
+): Promise<VenueDetail> {
+  try {
+    const posts = await getReviewPostsByVenue(regionSlug, venueSlug, undefined, 20);
+    if (posts.length === 0) return venue;
+    const reviews = posts.map((p) => {
+      const body = (p.sec_overview || p.sec_summary || "").trim();
+      const totalChars = p.sec_overview.length + p.sec_lineup.length + p.sec_price.length + p.sec_facility.length + p.sec_summary.length;
+      return {
+        id: p.id,
+        href: buildReviewUrl(regionSlug, p.type, venueSlug, p.slug),
+        title: p.title,
+        stars: formatStars(p.star),
+        starsNum: String(p.star),
+        body: body.slice(0, 200) + (body.length > 200 ? "..." : ""),
+        date: p.published_at
+          ? new Date(p.published_at).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(/\. /g, ".").replace(/\.$/, "")
+          : "",
+        charCount: `약 ${Math.round(totalChars / 100) * 100 || 300}자`,
+      };
+    });
+    return {
+      ...venue,
+      reviewCount: posts.length,
+      reviews,
+    };
+  } catch {
+    return venue;
+  }
 }
 
 /** venue_edits 테이블의 편집 데이터를 venue에 병합 */

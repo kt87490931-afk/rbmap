@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
 import { REGION_SLUG_TO_NAME } from '@/lib/data/venues'
 import { REVIEW_TYPE_TO_NAME } from '@/lib/data/review-posts'
+import { REVIEW_TONES } from '@/lib/review-scenarios'
 
 interface ReviewItem {
   id: string
@@ -13,18 +14,41 @@ interface ReviewItem {
   venue_slug: string
   slug: string
   title: string
+  star: number
   published_at: string | null
   created_at: string
-  star: number
   status: string
   is_ai_written: boolean
   sec_overview?: string
+  sec_lineup?: string
+  sec_price?: string
+  sec_facility?: string
+  sec_summary?: string
+  scenario_used?: { tone?: string }
+}
+
+function getToneName(toneId: string | undefined): string {
+  if (!toneId) return '-'
+  const t = REVIEW_TONES.find((x) => x.id === toneId)
+  return t ? t.name : toneId
+}
+
+function getCharCount(r: ReviewItem): number {
+  return (
+    (r.sec_overview?.length ?? 0) +
+    (r.sec_lineup?.length ?? 0) +
+    (r.sec_price?.length ?? 0) +
+    (r.sec_facility?.length ?? 0) +
+    (r.sec_summary?.length ?? 0)
+  )
 }
 
 export default function AdminReviewsPage() {
   const [items, setItems] = useState<ReviewItem[]>([])
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
+  const [editItem, setEditItem] = useState<ReviewItem | null>(null)
+  const [editForm, setEditForm] = useState<{ title: string; star: number; sec_overview: string; sec_lineup: string; sec_price: string; sec_facility: string; sec_summary: string } | null>(null)
 
   const fetchItems = useCallback(async () => {
     try {
@@ -51,6 +75,47 @@ export default function AdminReviewsPage() {
     }
   }
 
+  function openEdit(r: ReviewItem) {
+    setEditItem(r)
+    setEditForm({
+      title: r.title,
+      star: r.star,
+      sec_overview: r.sec_overview ?? '',
+      sec_lineup: r.sec_lineup ?? '',
+      sec_price: r.sec_price ?? '',
+      sec_facility: r.sec_facility ?? '',
+      sec_summary: r.sec_summary ?? '',
+    })
+  }
+
+  async function saveEdit() {
+    if (!editItem || !editForm) return
+    const res = await fetch(`/api/admin/reviews/${editItem.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(editForm),
+    })
+    if (res.ok) {
+      setItems((prev) =>
+        prev.map((r) =>
+          r.id === editItem.id
+            ? {
+                ...r,
+                ...editForm,
+              }
+            : r
+        )
+      )
+      setEditItem(null)
+      setEditForm(null)
+      showMsg('수정 완료!')
+    } else {
+      const err = await res.json()
+      showMsg(`수정 실패: ${err?.error ?? res.statusText}`)
+    }
+  }
+
   if (loading) return <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
 
   return (
@@ -74,6 +139,8 @@ export default function AdminReviewsPage() {
                 <th>업종</th>
                 <th>업소</th>
                 <th>제목</th>
+                <th>글자수</th>
+                <th>말투</th>
                 <th>날짜</th>
                 <th>AI</th>
                 <th>작업</th>
@@ -86,6 +153,9 @@ export default function AdminReviewsPage() {
                 const dateFormatted = dateStr
                   ? new Date(dateStr).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
                   : '-'
+                const toneId = (r.scenario_used as { tone?: string } | null)?.tone
+                const toneName = getToneName(toneId)
+                const charCount = getCharCount(r)
                 return (
                   <tr key={r.id}>
                     <td>{REGION_SLUG_TO_NAME[r.region] ?? r.region}</td>
@@ -96,9 +166,12 @@ export default function AdminReviewsPage() {
                         {r.title}
                       </Link>
                     </td>
+                    <td style={{ fontSize: 12 }}>약 {charCount}자</td>
+                    <td style={{ fontSize: 11, maxWidth: 140 }} title={toneName}>{toneName !== '-' ? toneName : '-'}</td>
                     <td style={{ fontSize: 12 }}>{dateFormatted}</td>
                     <td>{r.is_ai_written ? 'Y' : '-'}</td>
                     <td>
+                      <button className="btn-secondary" style={{ padding: '4px 10px', fontSize: 11, marginRight: 6 }} onClick={() => openEdit(r)}>수정</button>
                       <button className="btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => deleteItem(r.id, r.title)}>삭제</button>
                     </td>
                   </tr>
@@ -109,6 +182,79 @@ export default function AdminReviewsPage() {
         </div>
         {items.length === 0 && <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 24 }}>등록된 리뷰가 없습니다.</p>}
       </div>
+
+      {editItem && editForm && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
+          onClick={() => { setEditItem(null); setEditForm(null) }}
+        >
+          <div
+            style={{
+              background: 'var(--bg)',
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 560,
+              width: '90%',
+              maxHeight: '85vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: 16 }}>리뷰 수정</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <label>
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>제목</span>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  style={{ width: '100%', padding: 8 }}
+                />
+              </label>
+              <label>
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>별점 (1~5)</span>
+                <select value={editForm.star} onChange={(e) => setEditForm({ ...editForm, star: Number(e.target.value) })} style={{ padding: 8 }}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>{n}점</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>방문 개요</span>
+                <textarea value={editForm.sec_overview} onChange={(e) => setEditForm({ ...editForm, sec_overview: e.target.value })} rows={4} style={{ width: '100%', padding: 8 }} />
+              </label>
+              <label>
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>라인업 / 서비스</span>
+                <textarea value={editForm.sec_lineup} onChange={(e) => setEditForm({ ...editForm, sec_lineup: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
+              </label>
+              <label>
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>가격 분석</span>
+                <textarea value={editForm.sec_price} onChange={(e) => setEditForm({ ...editForm, sec_price: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
+              </label>
+              <label>
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>시설 / 분위기</span>
+                <textarea value={editForm.sec_facility} onChange={(e) => setEditForm({ ...editForm, sec_facility: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
+              </label>
+              <label>
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>종합 평가</span>
+                <textarea value={editForm.sec_summary} onChange={(e) => setEditForm({ ...editForm, sec_summary: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
+              </label>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+              <button className="btn-primary" onClick={saveEdit}>저장</button>
+              <button className="btn-secondary" onClick={() => { setEditItem(null); setEditForm(null) }}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

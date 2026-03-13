@@ -524,7 +524,6 @@ export async function getVenueDetail(
             introTitle: v2Intro!.headline ?? `${name} 소개`,
             introParagraphs: [v2Intro!.lead ?? "", ...(v2Intro!.body_paragraphs ?? [])].filter(Boolean),
           };
-          return fallbackVenue;
         }
       } catch {
         /* ignore */
@@ -557,13 +556,17 @@ async function applyVenueEdits(
   venueSlug: string
 ): Promise<VenueDetail> {
   try {
-    const { data: row } = await supabaseAdmin
+    const { data: row, error } = await supabaseAdmin
       .from("venue_edits")
       .select("edits_json")
       .eq("region_slug", regionSlug)
       .eq("category_slug", categorySlug)
       .eq("venue_slug", venueSlug)
       .maybeSingle();
+
+    if (error && process.env.NODE_ENV === "development") {
+      console.error("[venue_edits] select error:", error.message);
+    }
 
     const edits = (row?.edits_json ?? {}) as Record<string, Record<string, unknown>>;
     if (Object.keys(edits).length === 0) return venue;

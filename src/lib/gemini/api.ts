@@ -99,7 +99,7 @@ function buildDataBlock(data: FormDataForGemini, essentialKeywords?: string[]): 
   block += `연락처: ${data.contact || ''}\n`
   block += `주소: ${data.location || ''}\n\n`
 
-  block += '[작성할 데이터] (이 데이터를 바탕으로 2,000자 이내 업체소개글 작성)\n'
+  block += '[작성할 데이터] (이 데이터를 바탕으로 2,500자 이상 3,000자 이내 업체소개글 작성)\n'
   if (arr(data.interior).length) block += `인테리어: ${arr(data.interior)}\n`
   if (arr(data.room_condition).length) block += `룸 구성: ${arr(data.room_condition)}\n`
   if (arr(data.sound_facility).length) block += `음향/시설: ${arr(data.sound_facility)}\n`
@@ -135,7 +135,7 @@ export interface VenueIntroV2 {
 }
 
 /**
- * 업체소개글 텍스트 생성 (다이렉트 2,000자 이내)
+ * 업체소개글 텍스트 생성 (2,500자 이상 3,000자 이내)
  * format 'json' 시 v2 DOM 매핑용 구조화 JSON 반환
  */
 export type VenueIntroResult =

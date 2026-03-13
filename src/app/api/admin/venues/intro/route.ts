@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     await supabaseAdmin
       .from('partners')
       .update({
-        desc: aiContent.trim().slice(0, 2000),
+        desc: aiContent.trim().slice(0, 3000),
         char_count: `소개글 약 ${aiContent.trim().length}자`,
         updated_at: new Date().toISOString(),
       })

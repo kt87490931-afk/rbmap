@@ -155,7 +155,7 @@ export default function AdminVenueIntrosPage() {
       </div>
 
       <div className="card-box">
-        <div className="card-box-title">📋 AI 작성글 리스트 (2000자 이내)</div>
+        <div className="card-box-title">📋 AI 작성글 리스트 (2,500자 이상 3,000자 이내)</div>
         <div
           style={{
             display: 'flex',

@@ -42,6 +42,9 @@ export function isSetupModeEffective(): boolean {
   return isSetupMode() && !isProductionDomain()
 }
 
+/** 403 응답 시 클라이언트에서 구분용 코드 */
+export type AuthErrorCode = 'no-session' | 'not-admin' | 'otp-required'
+
 /**
  * 어드민 API용: dev 쿠키/설정 모드면 통과, 아니면 세션+OTP 검증
  */
@@ -51,12 +54,15 @@ export async function requireAdminOrSetup(): Promise<NextResponse | null> {
     return null
   }
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id || session.user.role !== 'admin') {
-    return NextResponse.json({ error: '권한 없음' }, { status: 403 })
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: '로그인이 필요합니다.', code: 'no-session' as AuthErrorCode }, { status: 403 })
+  }
+  if (session.user.role !== 'admin') {
+    return NextResponse.json({ error: '관리자 권한이 없습니다.', code: 'not-admin' as AuthErrorCode }, { status: 403 })
   }
   const verified = await verifyOtpSession(session.user.id)
   if (!verified) {
-    return NextResponse.json({ error: 'OTP 인증이 필요합니다.' }, { status: 403 })
+    return NextResponse.json({ error: 'OTP 인증이 필요합니다. OTP 인증 페이지에서 다시 인증해 주세요.', code: 'otp-required' as AuthErrorCode }, { status: 403 })
   }
   return null
 }

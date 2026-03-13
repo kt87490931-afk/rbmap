@@ -10,12 +10,14 @@ import type { Partner } from "./partners";
 /** 종목(업종) → URL slug 매핑 */
 export const TYPE_TO_SLUG: Record<string, string> = {
   가라오케: "karaoke",
+  노래방: "karaoke",
   룸싸롱: "room-salon",
   하이퍼블릭: "highpublic",
   쩜오: "jjomoh",
   퍼블릭: "public",
   셔츠룸: "shirtroom",
   바: "bar",
+  기타: "karaoke",
 };
 
 /** URL slug → 종목(업종) 매핑 */
@@ -29,6 +31,15 @@ export const REGION_SLUG_TO_NAME: Record<string, string> = {
   suwon: "수원 인계동",
   dongtan: "동탄",
   jeju: "제주",
+};
+
+/** 지역명 → URL slug (제휴업체 폼 등에서 사용) */
+export const REGION_NAME_TO_SLUG: Record<string, string> = {
+  강남: "gangnam",
+  "수원": "suwon",
+  "수원 인계동": "suwon",
+  동탄: "dongtan",
+  제주: "jeju",
 };
 
 /** SEO 최적화 URL 생성: /지역/종목/업소명 */
@@ -64,7 +75,12 @@ function nameToSlug(name: string): string {
     "제니스 클럽": "zenith",
     "오션뷰 가라오케": "oceanview",
   };
-  return map[name] ?? name.replace(/\s+/g, "-").toLowerCase();
+  const slugMap: Record<string, string> = {
+    ...map,
+    "동탄 최저가": "dongtan-choigga",
+    "동탄최저가": "dongtan-choigga",
+  };
+  return slugMap[name] ?? name.replace(/\s+/g, "-").toLowerCase();
 }
 
 export interface VenueDetail {

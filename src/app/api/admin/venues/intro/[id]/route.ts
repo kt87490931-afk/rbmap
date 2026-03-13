@@ -29,6 +29,20 @@ export async function PATCH(
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  // intro_ai_json.content가 있으면 partners.desc에 동기화
+  const aiContent = body.intro_ai_json && typeof body.intro_ai_json === 'object' && (body.intro_ai_json as { content?: string }).content
+  const partnerId = data?.partner_id
+  if (partnerId && aiContent?.trim()) {
+    await supabaseAdmin
+      .from('partners')
+      .update({
+        desc: aiContent.trim().slice(0, 2000),
+        char_count: `소개글 약 ${aiContent.trim().length}자`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', partnerId)
+  }
   return NextResponse.json(data)
 }
 

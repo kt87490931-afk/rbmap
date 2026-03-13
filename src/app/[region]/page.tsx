@@ -229,9 +229,10 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
   const venues = FALLBACK_VENUES[region] ?? FALLBACK_VENUES.gangnam;
   const seo = SEO_CONTENT[region] ?? SEO_CONTENT.gangnam;
 
+  const DISPLAY_PARTNERS_LIMIT = 6
   const displayPartners: Partner[] =
     regionPartners.length >= 2
-      ? regionPartners.slice(0, 2)
+      ? regionPartners.slice(0, DISPLAY_PARTNERS_LIMIT)
       : regionPartners.length === 1
         ? regionPartners
         : venues.slice(0, 2).map((v) => ({

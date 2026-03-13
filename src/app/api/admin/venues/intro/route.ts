@@ -60,6 +60,18 @@ export async function POST(request: Request) {
     console.error('[venues/intro POST]', { error: error.message })
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
+  // partner_id가 있고 AI 본문이 있으면 partners.desc에 동기화 (지역 페이지 카드에 노출)
+  const aiContent = intro_ai_json && typeof intro_ai_json === 'object' && (intro_ai_json as { content?: string }).content
+  if (partner_id && aiContent?.trim()) {
+    await supabaseAdmin
+      .from('partners')
+      .update({
+        desc: aiContent.trim().slice(0, 2000),
+        char_count: `소개글 약 ${aiContent.trim().length}자`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', partner_id)
+  }
   // eslint-disable-next-line no-console
   console.log('[venues/intro POST] ok', { id: data?.id, name: (form as { name?: string }).name, hasAi: !!intro_ai_json })
   return NextResponse.json(data)

@@ -22,6 +22,7 @@ export default function AdminRegionsPage() {
   const [items, setItems] = useState<RegionItem[]>([])
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
+  const [msgType, setMsgType] = useState<'success' | 'error'>('success')
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({ slug: '', name: '', short: '', thumb_class: 'gangnam', tags: '', venues: 0, reviews: 0, badge: '', coming: false })
   const [editingTags, setEditingTags] = useState<Record<string, string>>({})
@@ -29,7 +30,7 @@ export default function AdminRegionsPage() {
 
   const fetchItems = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/regions')
+      const res = await fetch('/api/admin/regions', { credentials: 'include' })
       const data = await res.json()
       setItems(Array.isArray(data) ? data : [])
     } catch { /* ignore */ }
@@ -38,34 +39,43 @@ export default function AdminRegionsPage() {
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
-  function showMsg(text: string) {
+  function showMsg(text: string, type: 'success' | 'error' = 'success') {
+    setMsgType(type)
     setMsg(text)
-    setTimeout(() => setMsg(''), 3000)
+    setTimeout(() => setMsg(''), 4000)
   }
 
   async function addItem() {
-    if (!form.slug || !form.name || !form.short) return
+    if (!form.slug?.trim() || !form.name?.trim() || !form.short?.trim()) {
+      showMsg('slug, 이름, short를 모두 입력해 주세요.', 'error')
+      return
+    }
     setAdding(true)
     try {
       const res = await fetch('/api/admin/regions', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
+          slug: form.slug.trim(),
+          name: form.name.trim(),
+          short: form.short.trim(),
           tags: form.tags ? form.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
         }),
       })
+      const data = await res.json().catch(() => ({}))
       if (res.ok) {
-        const data = await res.json()
         setItems((prev) => [...prev, data])
         setForm({ slug: '', name: '', short: '', thumb_class: 'gangnam', tags: '', venues: 0, reviews: 0, badge: '', coming: false })
         showMsg('추가 완료!')
       } else {
-        const err = await res.json()
-        showMsg(err.error || '추가 실패')
+        const errMsg = data.error || (res.status === 403 ? 'OTP 인증이 필요합니다. OTP 인증 페이지에서 다시 인증해 주세요.' : '추가 실패')
+        showMsg(errMsg, 'error')
       }
-    } catch {
-      showMsg('추가 실패')
+    } catch (e) {
+      showMsg('네트워크 오류 또는 서버 연결 실패', 'error')
+      console.error('[regions add]', e)
     }
     setAdding(false)
   }
@@ -74,27 +84,38 @@ export default function AdminRegionsPage() {
     const item = items.find((r) => r.id === id)
     if (!item) return
     const payload = { ...item, [field]: value }
-    const res = await fetch(`/api/admin/regions/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    if (res.ok) {
-      const data = await res.json()
-      setItems((prev) => prev.map((r) => (r.id === id ? data : r)))
-      showMsg('저장 완료!')
+    try {
+      const res = await fetch(`/api/admin/regions/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setItems((prev) => prev.map((r) => (r.id === id ? data : r)))
+        showMsg('저장 완료!')
+      } else {
+        showMsg(data.error || (res.status === 403 ? 'OTP 인증이 필요합니다.' : '저장 실패'), 'error')
+      }
+    } catch {
+      showMsg('저장 실패', 'error')
     }
   }
 
   async function deleteItem(id: string, name: string) {
     if (!confirm(`"${name}" 지역을 삭제하시겠습니까?`)) return
-    const res = await fetch(`/api/admin/regions/${id}`, { method: 'DELETE' })
-    if (res.ok) {
-      setItems((prev) => prev.filter((r) => r.id !== id))
-      showMsg('삭제 완료!')
-    } else {
-      const err = await res.json()
-      showMsg(err.error || '삭제 실패')
+    try {
+      const res = await fetch(`/api/admin/regions/${id}`, { method: 'DELETE', credentials: 'include' })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setItems((prev) => prev.filter((r) => r.id !== id))
+        showMsg('삭제 완료!')
+      } else {
+        showMsg(data.error || (res.status === 403 ? 'OTP 인증이 필요합니다.' : '삭제 실패'), 'error')
+      }
+    } catch {
+      showMsg('삭제 실패', 'error')
     }
   }
 
@@ -108,7 +129,25 @@ export default function AdminRegionsPage() {
       </div>
 
       {msg && (
-        <div style={{ padding: '10px 16px', marginBottom: 14, borderRadius: 8, fontSize: 13, fontWeight: 600, background: 'rgba(46,204,113,.1)', color: 'var(--green)', border: '1px solid rgba(46,204,113,.3)' }}>{msg}</div>
+        <div
+          style={{
+            padding: '10px 16px',
+            marginBottom: 14,
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 600,
+            background: msgType === 'error' ? 'rgba(255,71,87,.15)' : 'rgba(46,204,113,.1)',
+            color: msgType === 'error' ? 'var(--red, #ff4757)' : 'var(--green)',
+            border: msgType === 'error' ? '1px solid rgba(255,71,87,.3)' : '1px solid rgba(46,204,113,.3)',
+          }}
+        >
+          {msg}
+          {msgType === 'error' && msg.includes('OTP') && (
+            <span style={{ marginLeft: 8 }}>
+              <a href="/admin/verify-otp" style={{ color: 'inherit', textDecoration: 'underline' }}>OTP 인증하기 →</a>
+            </span>
+          )}
+        </div>
       )}
 
       <div className="card-box" style={{ marginBottom: 16 }}>

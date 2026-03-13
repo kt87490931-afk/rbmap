@@ -36,6 +36,9 @@ export async function POST(request: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  if (error) {
+    const msg = error.code === '23505' ? `이미 존재하는 slug입니다: ${body.slug}` : error.message
+    return NextResponse.json({ error: msg }, { status: 400 })
+  }
   return NextResponse.json(data)
 }

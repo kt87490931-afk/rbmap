@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { buildPartnerHref } from '@/lib/partner-url'
 
 interface PartnerItem {
   id: string
@@ -32,6 +33,7 @@ export default function AdminPartnersPage() {
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState<'success' | 'error'>('success')
   const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({
     href: '',
     region: '',
@@ -67,10 +69,27 @@ export default function AdminPartnersPage() {
     setTimeout(() => setMsg(''), 4000)
   }
 
+  function getHref(): string {
+    const regionVal = form.region.trim()
+    const typeVal = form.type.trim()
+    const nameVal = form.name.trim()
+    const manual = form.href?.trim()
+    if (manual && manual.startsWith('/') && manual.split('/').length >= 4) return manual
+    if (regionVal && typeVal && nameVal) return buildPartnerHref(regionVal, typeVal, nameVal)
+    return manual || ''
+  }
+
   async function addItem() {
     const regionVal = form.region.trim()
-    if (!form.href?.trim() || !regionVal || !form.type?.trim() || !form.name?.trim()) {
-      showMsg('링크, 지역, 유형, 이름을 모두 입력해 주세요.', 'error')
+    const typeVal = form.type.trim()
+    const nameVal = form.name.trim()
+    if (!regionVal || !typeVal || !nameVal) {
+      showMsg('지역, 유형, 이름을 입력해 주세요. 링크는 자동 생성됩니다.', 'error')
+      return
+    }
+    const href = getHref()
+    if (!href.startsWith('/')) {
+      showMsg('링크는 /지역/종목/업소명 형식이어야 합니다. (예: /dongtan/karaoke/dongtan-choigga)', 'error')
       return
     }
     setAdding(true)
@@ -80,10 +99,10 @@ export default function AdminPartnersPage() {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          href: form.href.trim(),
+          href,
           region: regionVal,
-          type: form.type.trim(),
-          name: form.name.trim(),
+          type: typeVal,
+          name: nameVal,
           icon: form.icon || '🎤',
           contact: form.contact.trim() || '',
           stars: form.stars || '★★★★★',
@@ -106,6 +125,96 @@ export default function AdminPartnersPage() {
       console.error('[partners add]', e)
     }
     setAdding(false)
+  }
+
+  async function updateItem(id: string, field: string, value: unknown) {
+    const item = items.find((p) => p.id === id)
+    if (!item) return
+    const payload = { ...item, [field]: value }
+    try {
+      const res = await fetch(`/api/admin/partners/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setItems((prev) => prev.map((p) => (p.id === id ? data : p)))
+        if (editingId === id) setEditingId(null)
+        showMsg('저장 완료!')
+      } else {
+        showMsg(data.error || (res.status === 403 ? 'OTP 인증이 필요합니다.' : '저장 실패'), 'error')
+      }
+    } catch {
+      showMsg('저장 실패', 'error')
+    }
+  }
+
+  function startEdit(item: PartnerItem) {
+    setForm({
+      href: item.href || '',
+      region: item.region || '',
+      type: item.type || '',
+      name: item.name || '',
+      icon: item.icon || '🎤',
+      contact: item.contact || '',
+      stars: item.stars || '★★★★★',
+      location: item.location || '',
+      desc: item.desc || '',
+      tags: (item.tags || []).join(', '),
+    })
+    setEditingId(item.id)
+  }
+
+  async function saveEdit() {
+    if (!editingId) return
+    const regionVal = form.region.trim()
+    const typeVal = form.type.trim()
+    const nameVal = form.name.trim()
+    if (!regionVal || !typeVal || !nameVal) {
+      showMsg('지역, 유형, 이름은 필수입니다.', 'error')
+      return
+    }
+    const href = getHref()
+    if (!href.startsWith('/')) {
+      showMsg('링크는 /지역/종목/업소명 형식이어야 합니다.', 'error')
+      return
+    }
+    const item = items.find((p) => p.id === editingId)
+    if (!item) return
+    const payload = {
+      ...item,
+      href,
+      region: regionVal,
+      type: typeVal,
+      name: nameVal,
+      icon: form.icon || '🎤',
+      contact: form.contact.trim() || '',
+      stars: form.stars || '★★★★★',
+      location: form.location.trim() || '',
+      desc: form.desc.trim() || '',
+      tags: form.tags ? form.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
+    }
+    try {
+      const res = await fetch(`/api/admin/partners/${editingId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setItems((prev) => prev.map((p) => (p.id === editingId ? data : p)))
+        setEditingId(null)
+        setForm({ href: '', region: '', type: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '' })
+        showMsg('수정 완료!')
+      } else {
+        showMsg(data.error || '수정 실패', 'error')
+      }
+    } catch {
+      showMsg('수정 실패', 'error')
+    }
   }
 
   async function deleteItem(id: string, name: string) {
@@ -156,14 +265,17 @@ export default function AdminPartnersPage() {
       )}
 
       <div className="card-box" style={{ marginBottom: 16 }}>
-        <div className="card-box-title">➕ 제휴업체 추가</div>
+        <div className="card-box-title">{editingId ? '✏️ 제휴업체 수정' : '➕ 제휴업체 추가'}</div>
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+          <strong>링크 형식</strong>: rbbmap.com/지역/종목/업소명 (예: <code>/dongtan/karaoke/dongtan-choigga</code>). 지역·유형·이름 입력 시 자동 생성됩니다.
+        </p>
         <datalist id="partner-region-list">
           {regions.map((r) => (
             <option key={r.id} value={r.name} />
           ))}
         </datalist>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
-          <input className="form-input" placeholder="링크 (예: https://...)" value={form.href} onChange={(e) => setForm((f) => ({ ...f, href: e.target.value }))} />
+          <input className="form-input" placeholder="링크 (비워두면 자동생성)" value={form.href} onChange={(e) => setForm((f) => ({ ...f, href: e.target.value }))} title="/지역/종목/업소명 예: /dongtan/karaoke/dongtan-choigga" />
           <input className="form-input" list="partner-region-list" placeholder="지역 (예: 강남)" value={form.region} onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))} />
           <select className="form-input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
             <option value="">유형 선택</option>
@@ -184,8 +296,18 @@ export default function AdminPartnersPage() {
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <input className="form-input" style={{ flex: 1, minWidth: 200 }} placeholder="태그 (쉼표 구분)" value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} />
           <input className="form-input" style={{ flex: 1, minWidth: 200 }} placeholder="설명 (선택)" value={form.desc} onChange={(e) => setForm((f) => ({ ...f, desc: e.target.value }))} />
-          <button className="btn-save" onClick={addItem} disabled={adding}>추가</button>
+          {editingId ? (
+            <>
+              <button className="btn-save" onClick={saveEdit} disabled={adding}>수정 저장</button>
+              <button className="btn-ghost" style={{ padding: '8px 14px' }} onClick={() => { setEditingId(null); setForm({ href: '', region: '', type: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '' }) }}>취소</button>
+            </>
+          ) : (
+            <button className="btn-save" onClick={addItem} disabled={adding}>추가</button>
+          )}
         </div>
+        {!form.href && form.region && form.type && form.name && (
+          <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>→ 링크 자동 생성: {buildPartnerHref(form.region, form.type, form.name)}</p>
+        )}
       </div>
 
       <div className="card-box">
@@ -211,8 +333,17 @@ export default function AdminPartnersPage() {
                   <td>{p.type}</td>
                   <td>{p.name}</td>
                   <td style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.contact}</td>
-                  <td><a href={p.href} target="_blank" rel="noreferrer" style={{ fontSize: 11 }}>{p.href.slice(0, 30)}...</a></td>
-                  <td><button className="btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => deleteItem(p.id, p.name)}>삭제</button></td>
+                  <td style={{ fontSize: 11, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }} title={p.href}>
+                    {p.href?.startsWith('/') ? (
+                      <a href={p.href} target="_blank" rel="noreferrer">{p.href}</a>
+                    ) : (
+                      <span style={{ color: 'var(--red)' }}>{p.href || '(잘못된 링크)'}</span>
+                    )}
+                  </td>
+                  <td>
+                    <button className="btn-save" style={{ padding: '4px 8px', fontSize: 11, marginRight: 4 }} onClick={() => startEdit(p)}>수정</button>
+                    <button className="btn-danger" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => deleteItem(p.id, p.name)}>삭제</button>
+                  </td>
                 </tr>
               ))}
             </tbody>

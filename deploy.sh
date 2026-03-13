@@ -51,8 +51,20 @@ else
   echo "PM2 최초 시작 완료"
 fi
 
-# 6. 상태 확인
-echo "[5/6] PM2 상태..."
+# 6. Cron 설정 (리뷰 6시간 자동생성)
+echo "[5/6] Cron 확인..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CRON_SCRIPT="${SCRIPT_DIR}/scripts/cron-generate-reviews.sh"
+if [ -f "$CRON_SCRIPT" ]; then
+  chmod +x "$CRON_SCRIPT"
+  if ! crontab -l 2>/dev/null | grep -q "cron-generate-reviews"; then
+    (crontab -l 2>/dev/null; echo "0 0,6,12,18 * * * $CRON_SCRIPT") | crontab -
+    echo "Cron 추가됨: 0,6,12,18시 리뷰 생성"
+  fi
+fi
+
+# 7. 상태 확인
+echo "[6/6] PM2 상태..."
 pm2 status rbmap
 
 echo ""

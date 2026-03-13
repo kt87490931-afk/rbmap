@@ -49,3 +49,10 @@ jobs:
               pm2 save
             fi
             pm2 status rbmap
+
+            # Cron: 리뷰 6시간 자동생성
+            chmod +x /var/www/rbmap/scripts/cron-generate-reviews.sh 2>/dev/null || true
+            if ! crontab -l 2>/dev/null | grep -q "cron-generate-reviews"; then
+              (crontab -l 2>/dev/null; echo "0 0,6,12,18 * * * /var/www/rbmap/scripts/cron-generate-reviews.sh") | crontab -
+              echo "Cron 추가됨: 리뷰 생성 (0,6,12,18시)"
+            fi

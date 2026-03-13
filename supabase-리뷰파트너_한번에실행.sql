@@ -54,3 +54,19 @@ CREATE POLICY "review_posts_anon_read_published" ON review_posts FOR SELECT USIN
 -- === 3. review_posts 시나리오·파트너 컬럼 ===
 ALTER TABLE review_posts ADD COLUMN IF NOT EXISTS scenario_used JSONB DEFAULT '{}';
 ALTER TABLE review_posts ADD COLUMN IF NOT EXISTS partner_id UUID REFERENCES partners(id) ON DELETE SET NULL;
+
+-- === 4. cron_health (크론헬스 페이지용) ===
+CREATE TABLE IF NOT EXISTS cron_health (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_name TEXT NOT NULL DEFAULT 'generate-reviews',
+  started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ended_at TIMESTAMPTZ,
+  ok BOOLEAN NOT NULL DEFAULT false,
+  msg TEXT,
+  processed INTEGER DEFAULT 0,
+  success_count INTEGER DEFAULT 0,
+  results JSONB DEFAULT '[]',
+  duration_ms INTEGER,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_cron_health_job_started ON cron_health(job_name, started_at DESC);

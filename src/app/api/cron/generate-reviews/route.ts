@@ -66,8 +66,17 @@ export async function GET(request: Request) {
 
   const startAt = Date.now()
   const results: { partnerId: string; name: string; ok: boolean; msg: string }[] = []
+  let healthId: string | null = null
 
   try {
+    try {
+      const { data: healthRow } = await supabaseAdmin
+        .from('cron_health')
+        .insert({ job_name: 'generate-reviews', started_at: new Date().toISOString(), ok: false })
+        .select('id')
+        .single()
+      healthId = healthRow?.id ?? null
+    } catch { /* cron_health 테이블 없으면 무시 */ }
     // 1. 활성 제휴업체 + 적용된 소개글
     const { data: partners, error: partnersErr } = await supabaseAdmin
       .from('partners')
@@ -223,17 +232,51 @@ export async function GET(request: Request) {
     }
 
     const duration = Date.now() - startAt
+    const successCount = results.filter((r) => r.ok).length
+    if (healthId) {
+      try {
+        await supabaseAdmin
+          .from('cron_health')
+          .update({
+            ended_at: new Date().toISOString(),
+            ok: true,
+            msg: `완료: ${successCount}/${results.length}건`,
+            processed: results.length,
+            success_count: successCount,
+            results,
+            duration_ms: duration,
+          })
+          .eq('id', healthId)
+      } catch { /* ignore */ }
+    }
     return NextResponse.json({
       ok: true,
       duration_ms: duration,
       processed: results.length,
-      success: results.filter((r) => r.ok).length,
+      success: successCount,
       results,
     })
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Unknown error'
+    const errMsg = e instanceof Error ? e.message : 'Unknown error'
+    const duration = Date.now() - startAt
+    if (healthId) {
+      try {
+        await supabaseAdmin
+          .from('cron_health')
+          .update({
+            ended_at: new Date().toISOString(),
+            ok: false,
+            msg: errMsg,
+          processed: results.length,
+          success_count: results.filter((r) => r.ok).length,
+          results,
+          duration_ms: duration,
+        })
+        .eq('id', healthId)
+      } catch { /* ignore */ }
+    }
     return NextResponse.json(
-      { error: msg, results, duration_ms: Date.now() - startAt },
+      { error: errMsg, results, duration_ms: duration },
       { status: 500 }
     )
   }

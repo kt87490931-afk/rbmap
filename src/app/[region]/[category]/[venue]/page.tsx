@@ -125,8 +125,22 @@ export default async function VenueDetailPage({
   };
 
   const infoCards = data.infoCards ?? [];
-  const tagline = data.introTitle || `${regionName} ${typeName} — ${data.name}`;
+  const tagline = data.tagline ?? data.introTitle ?? `${regionName} ${typeName} — ${data.name}`;
   const phoneSub = `${data.hours} · 전화·카카오 예약 가능`;
+
+  /** v2: headline em 처리 (— 뒷부분 골드 강조) */
+  const introHeadlineRaw = data.introHeadline ?? data.introTitle ?? `${data.name} — ${regionName} 소개`;
+  const introHeadlineParts = introHeadlineRaw.split("—");
+  const introHeadlineHtml = introHeadlineParts.length > 1
+    ? `${introHeadlineParts[0].trim()} — <em>${introHeadlineParts[1].trim()}</em>`
+    : introHeadlineRaw;
+
+  const introLabel = data.introLabel ?? "ABOUT · 업소 소개";
+  const introLead = data.introLead ?? (data.introParagraphs ?? [])[0] ?? "";
+  const introQuote = data.introQuote;
+  const introBodyParagraphs = (data.introBodyParagraphs ?? []).length > 0
+    ? data.introBodyParagraphs!
+    : (data.introParagraphs ?? []).slice(1);
 
   return (
     <div data-region={region} className="venue-detail-v2">
@@ -177,16 +191,16 @@ export default async function VenueDetailPage({
         <div className="hb-inner">
           <div className="hb-top">
             <div className="hb-badges">
-              <span className="hb-badge hb-badge-region">{regionName}</span>
-              <span className="hb-badge hb-badge-type">{data.type}</span>
+              <span className="hb-badge hb-badge-region" id="d-region">{regionName}</span>
+              <span className="hb-badge hb-badge-type" id="d-type">{data.type}</span>
             </div>
-            <h1 className="hb-name">{data.name}</h1>
-            <p className="hb-tagline">{tagline}</p>
+            <h1 className="hb-name" id="d-name">{data.name}</h1>
+            <p className="hb-tagline" id="d-tagline">{tagline}</p>
             <div className="hb-rating">
-              <span className="hb-stars">{data.stars}</span>
-              <span className="hb-rnum">{data.rating}</span>
+              <span className="hb-stars" id="d-stars">{data.stars}</span>
+              <span className="hb-rnum" id="d-rnum">{data.rating}</span>
               <span className="hb-rmax">/ 5.0</span>
-              <span className="hb-rcnt">리뷰 {data.reviewCount}개</span>
+              <span className="hb-rcnt" id="d-rcnt">리뷰 {data.reviewCount}개</span>
               <span className="hb-live">
                 <span className="hb-dot" />
                 {data.updateText}
@@ -196,11 +210,11 @@ export default async function VenueDetailPage({
           <div className="hb-phone-banner">
             <div className="hb-phone-left">
               <div className="hb-phone-label">예약 · 문의 전화</div>
-              <div className="hb-phone-num">{data.contact}</div>
-              <div className="hb-phone-sub">{phoneSub}</div>
+              <div className="hb-phone-num" id="d-phone">{data.contact}</div>
+              <div className="hb-phone-sub" id="d-phone-sub">{phoneSub}</div>
             </div>
             <div className="hb-phone-right">
-              <a href={`tel:${data.contact.replace(/\D/g, "")}`} className="btn-call-hero">
+              <a href={`tel:${data.contact.replace(/\D/g, "")}`} className="btn-call-hero" id="d-phone-link">
                 <span>📞</span> 전화 예약
               </a>
               <Link href="/contact" className="btn-kakao">
@@ -233,14 +247,12 @@ export default async function VenueDetailPage({
 
       {/* Article Body — 단일 컬럼 */}
       <div className="article-wrap">
-        {/* 섹션 1: 업소 소개 */}
+        {/* 섹션 1: 업소 소개 — v2 DOM id 매핑 */}
         <section className="art-section" id="intro">
           <VenueEditButton section="intro" />
-          <span className="sec-label">ABOUT · 업소 소개</span>
-          <h2 className="art-h2">{data.introTitle}</h2>
-          {(data.introParagraphs ?? []).length > 0 && (
-            <p className="art-lead">{(data.introParagraphs ?? [])[0]}</p>
-          )}
+          <span className="sec-label" id="intro-label">{introLabel}</span>
+          <h2 className="art-h2" id="intro-headline" dangerouslySetInnerHTML={{ __html: introHeadlineHtml }} />
+          {introLead && <p className="art-lead" id="intro-lead">{introLead}</p>}
           {infoCards.length > 0 && (
             <div className="art-info-grid">
               {infoCards.slice(0, 4).map((card, i) => (
@@ -252,19 +264,25 @@ export default async function VenueDetailPage({
               ))}
             </div>
           )}
-          <div>
-            {(data.introParagraphs ?? []).slice(1).map((p, i) => (
+          <div id="intro-body">
+            {introQuote && (
+              <div className="art-quote">
+                <p>{introQuote}</p>
+              </div>
+            )}
+            {introBodyParagraphs.map((p, i) => (
               <p key={i} className="art-p" dangerouslySetInnerHTML={{ __html: p.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\*(.*?)\*/g, "<em>$1</em>") }} />
             ))}
           </div>
         </section>
 
-        {/* 섹션 2: 가격 정보 */}
+        {/* 섹션 2: 가격 정보 — v2 DOM id 매핑 */}
         <section className="art-section" id="price">
           <VenueEditButton section="price" />
           <span className="sec-label">PRICE · 가격 안내</span>
           <h2 className="art-h2">가격 <em>안내</em></h2>
-          <div>
+          {data.priceLead && <p className="art-lead" id="price-lead">{data.priceLead}</p>}
+          <div id="price-table-wrap">
             <table className="price-table">
               <thead>
                 <tr>
@@ -291,7 +309,7 @@ export default async function VenueDetailPage({
               </tbody>
             </table>
             {data.priceNote && (
-              <div className="price-note art" dangerouslySetInnerHTML={{ __html: data.priceNote.split("\n").map((l) => l).join("<br />") }} />
+              <p className="price-note" id="price-note" dangerouslySetInnerHTML={{ __html: data.priceNote.split("\n").map((l) => l).join("<br />") }} />
             )}
           </div>
         </section>
@@ -314,8 +332,8 @@ export default async function VenueDetailPage({
           <div className="map-address-bar">
             <span className="ma-icon">📍</span>
             <div>
-              <div className="ma-main">{data.locationDetail || data.location}</div>
-              {data.locationSub && <div className="ma-sub">{data.locationSub}</div>}
+              <div className="ma-main" id="d-address">{data.locationDetail || data.location}</div>
+              {data.locationSub && <div className="ma-sub" id="d-address-sub">{data.locationSub}</div>}
             </div>
           </div>
         </section>
@@ -410,8 +428,15 @@ export default async function VenueDetailPage({
           locationDetail: data.locationDetail,
           locationSub: data.locationSub,
           hours: data.hours,
+          tagline: data.tagline,
+          introLabel: data.introLabel,
+          introHeadline: data.introHeadline ?? data.introTitle,
+          introLead: data.introLead ?? (data.introParagraphs ?? [])[0],
+          introQuote: data.introQuote,
+          introBodyParagraphs: data.introBodyParagraphs ?? [],
           introTitle: data.introTitle,
           introParagraphs: data.introParagraphs ?? [],
+          priceLead: data.priceLead,
           priceNote: data.priceNote,
           mapEmbed: data.mapEmbed,
           infoCards: data.infoCards ?? [],

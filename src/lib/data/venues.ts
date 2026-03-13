@@ -104,7 +104,23 @@ export interface VenueDetail {
   hours: string;
   hoursStyle?: "open" | "closed";
   infoCards: { label: string; val: string; sub: string; gold?: boolean; green?: boolean }[];
+  /** v2: 히어로 부제목 (hb-tagline) */
+  tagline?: string;
+  /** v2: 소개 섹션 라벨 (ABOUT · 업소 소개) */
+  introLabel?: string;
+  /** v2: 소개 섹션 h2 헤드라인 (em dash 기준 뒷부분 골드 강조) */
+  introHeadline?: string;
+  /** v2: 리드 문장 (art-lead) */
+  introLead?: string;
+  /** v2: 풀쿼트 강조 박스 (.art-quote) */
+  introQuote?: string;
+  /** v2: 본문 단락들 (.art-p) */
+  introBodyParagraphs?: string[];
+  /** v2: 가격 리드 문장 (#price-lead) */
+  priceLead?: string;
+  /** @deprecated v1 — v2에서는 tagline/introHeadline 사용. fallback용 유지 */
   introTitle: string;
+  /** @deprecated v1 — v2에서는 introLead/introQuote/introBodyParagraphs 사용. fallback용 유지 */
   introParagraphs: string[];
   mapEmbed?: string;
   priceRows: { name: string; desc: string; duration: string; price: string; badge?: "recommend" | "popular" }[];
@@ -147,6 +163,16 @@ const FALLBACK_DETAIL: Record<string, Record<string, VenueDetail>> = {
         { label: "🕐 영업시간", val: "24시간", sub: "연중무휴", green: true },
         { label: "🅿 주차", val: "발렛", sub: "전용 발렛 운영" },
       ],
+      tagline: "강남 가라오케의 기준 — 20년 업력이 만든 신뢰",
+      introLabel: "ABOUT · 업소 소개",
+      introHeadline: "달토 가라오케 — 강남 가라오케의 새로운 기준",
+      introLead: "강남 최상급 가라오케로 손꼽히는 달토입니다. **20년 이상의 업력**과 안정된 운영 시스템, 매달 새롭게 구성되는 신규 라인업이 강남 내 굳건한 1위 자리를 유지하게 해주는 핵심입니다.",
+      introQuote: "주말 기준 50명 이상이 출근 중이며 외모 수준이 고르게 높은 편입니다. 파트너 선택 폭이 넓고 초이스 후 교체 요청에도 부담 없이 응해드립니다. 정찰제 운영으로 안내받은 금액 그대로 결제되며 불필요한 추가 비용이 없습니다.",
+      introBodyParagraphs: [
+        "입장부터 퇴장까지 **1:1 전담 실장**이 밀착 관리해드립니다. 처음 방문하시는 분도 실장의 상세한 안내 덕분에 어색함 없이 편안하게 이용하실 수 있습니다. 예약 고객에게는 룸 우선 배정과 초이스 우선권을 드립니다.",
+        "주대 구성은 1인 기준 양주 세트 55만 원대부터 시작하며, 테이블 구성에 따라 조정 가능합니다. 강남 방문 시 반드시 경험해야 할 프리미엄 가라오케입니다.",
+      ],
+      priceLead: "달토는 입장 전 가격을 명확히 안내하며, 안내받은 금액 그대로 결제됩니다.",
       introTitle: "강남 가라오케의 기준",
       introParagraphs: [
         "강남 최상급 가라오케로 손꼽히는 달토입니다. **20년 이상의 업력**과 안정된 운영 시스템, 매달 새롭게 구성되는 신규 라인업이 강남 내 굳건한 1위 자리를 유지하게 해주는 핵심입니다.",
@@ -259,6 +285,10 @@ const dalto = FALLBACK_DETAIL.gangnam!.dalto!;
     { label: "🕐 영업시간", val: "24시간", sub: "연중무휴", green: true },
     { label: "🅿 주차", val: "발렛", sub: "전용 발렛 운영" },
   ],
+  tagline: "강남 가라오케 2위 — 전반적 완성도 높은 업소",
+  introHeadline: "퍼펙트 가라오케 — 강남 가라오케 2위",
+  introLead: "강남 퍼펙트는 이름처럼 전반적인 완성도가 높은 업소입니다. 달토 대비 소폭 저렴한 가격대와 안정적인 서비스로 인기가 높습니다.",
+  introBodyParagraphs: [],
   introTitle: "강남 가라오케 2위",
   introParagraphs: ["강남 퍼펙트는 이름처럼 전반적인 완성도가 높은 업소입니다. 달토 대비 소폭 저렴한 가격대와 안정적인 서비스로 인기가 높습니다."],
   priceRows: [
@@ -286,6 +316,10 @@ const dalto = FALLBACK_DETAIL.gangnam!.dalto!;
     { label: "🕐 영업시간", val: "20시~", sub: "연중무휴", green: true },
     { label: "🅿 주차", val: "발렛", sub: "운영" },
   ],
+  tagline: "강남 하이퍼블릭 가성비 1위",
+  introHeadline: "인트로 하이퍼블릭 — 강남 하이퍼블릭 가성비 1위",
+  introLead: "강남 인트로 하이퍼블릭은 신규 오픈 후 빠르게 자리 잡은 프리미엄 하이퍼블릭입니다.",
+  introBodyParagraphs: [],
   introTitle: "강남 하이퍼블릭 가성비 1위", introParagraphs: ["강남 인트로 하이퍼블릭은 신규 오픈 후 빠르게 자리 잡은 프리미엄 하이퍼블릭입니다."],
   priceRows: [
     { name: "기본", desc: "초이스 + 서비스", duration: "2인 이상 · 2시간", price: "78만원~", badge: "recommend" },
@@ -309,6 +343,10 @@ const dalto = FALLBACK_DETAIL.gangnam!.dalto!;
     { label: "🕐 영업시간", val: "21시~", sub: "연중무휴", green: true },
     { label: "🅿 주차", val: "가능", sub: "주차 가능" },
   ],
+  tagline: "강남 쩜오 가성비 1위",
+  introHeadline: "구구단 쩜오 — 강남 쩜오 가성비 1위",
+  introLead: "구구단 쩜오는 하이퍼블릭 대비 합리적인 가격대의 강남 대표 쩜오입니다.",
+  introBodyParagraphs: [],
   introTitle: "강남 쩜오 가성비 1위", introParagraphs: ["구구단 쩜오는 하이퍼블릭 대비 합리적인 가격대의 강남 대표 쩜오입니다."],
   priceRows: [{ name: "기본", desc: "초이스 + 서비스", duration: "2인 이상 · 2시간", price: "48만원~", badge: "recommend" }],
   seoKwLinks: [
@@ -324,6 +362,10 @@ const dalto = FALLBACK_DETAIL.gangnam!.dalto!;
     { label: "🕐 영업시간", val: "19시~", sub: "연중무휴", green: true },
     { label: "🅿 주차", val: "발렛", sub: "운영" },
   ],
+  tagline: "강남 하이퍼블릭 탑5",
+  introHeadline: "다이아몬드 하이퍼블릭 — 강남 하이퍼블릭 탑5",
+  introLead: "다이아몬드 하이퍼블릭은 강남 하이퍼블릭 탑5 안에 드는 프리미엄 업소입니다.",
+  introBodyParagraphs: [],
   introTitle: "강남 하이퍼블릭 탑5", introParagraphs: ["다이아몬드 하이퍼블릭은 강남 하이퍼블릭 탑5 안에 드는 프리미엄 업소입니다."],
   priceRows: [{ name: "기본", desc: "초이스 + 서비스", duration: "2인 이상 · 2시간", price: "80만원~", badge: "recommend" }],
   seoKwLinks: [{ href: "/gangnam/highpublic/diamond", text: "다이아몬드 하이퍼블릭" }, { href: "/gangnam/category/highpublic", text: "강남 하이퍼블릭" }],
@@ -336,6 +378,10 @@ const dalto = FALLBACK_DETAIL.gangnam!.dalto!;
     { label: "🕐 영업시간", val: "18시~", sub: "연중무휴", green: true },
     { label: "🅿 주차", val: "가능", sub: "주차 가능" },
   ],
+  tagline: "강남 퍼블릭 입문 추천",
+  introHeadline: "스카이라운지 퍼블릭 — 강남 퍼블릭 입문 추천",
+  introLead: "스카이라운지 퍼블릭은 강남에서 가성비를 찾는 분들에게 추천하는 퍼블릭입니다.",
+  introBodyParagraphs: [],
   introTitle: "강남 퍼블릭 입문 추천", introParagraphs: ["스카이라운지 퍼블릭은 강남에서 가성비를 찾는 분들에게 추천하는 퍼블릭입니다."],
   priceRows: [{ name: "기본", desc: "노래방 + 초이스", duration: "2인 이상 · 2시간", price: "38만원~", badge: "recommend" }],
   seoKwLinks: [{ href: "/gangnam/public/skylounge", text: "스카이라운지 퍼블릭" }, { href: "/gangnam/category/public", text: "강남 퍼블릭" }],
@@ -422,17 +468,40 @@ export async function getVenueDetail(
           const regionOk = rRegion.includes(regionName) || regionName.includes(rRegion) || rRegion === regionSlug;
           return (rName === targetName || nameToSlug(form.name) === venueSlug) && regionOk;
         });
-        const content = (row?.intro_ai_json as { content?: string } | null)?.content?.trim();
+        const introJson = row?.intro_ai_json as { content?: string; v2?: { tagline?: string; intro?: { label?: string; headline?: string; lead?: string; quote?: string; body_paragraphs?: string[] } } } | null;
+        const content = introJson?.content?.trim();
+        const v2 = introJson?.v2;
         if (content) aiIntro = content;
+        if (v2?.intro) {
+          const v2Intro = v2.intro;
+          const name = introPartner?.name ?? fallbackVenue.name;
+          fallbackVenue = {
+            ...fallbackVenue,
+            tagline: v2.tagline ?? fallbackVenue.tagline,
+            introLabel: v2Intro.label ?? "ABOUT · 업소 소개",
+            introHeadline: v2Intro.headline ?? `${name} 소개`,
+            introLead: v2Intro.lead ?? "",
+            introQuote: v2Intro.quote ?? undefined,
+            introBodyParagraphs: v2Intro.body_paragraphs ?? [],
+            introTitle: v2Intro.headline ?? `${name} 소개`,
+            introParagraphs: [v2Intro.lead ?? "", ...(v2Intro.body_paragraphs ?? [])].filter(Boolean),
+          };
+          return fallbackVenue;
+        }
       } catch {
         /* ignore */
       }
     }
     if (aiIntro) {
       const paras = descToIntroParagraphs(aiIntro);
+      const name = introPartner?.name ?? fallbackVenue.name;
+      const regionName = REGION_SLUG_TO_NAME[regionSlug] ?? regionSlug;
+      const typeName = SLUG_TO_TYPE[categorySlug] ?? "";
+      const v2 = plainToV2Intro(name, regionName, typeName, paras.length > 0 ? paras : [aiIntro]);
       fallbackVenue = {
         ...fallbackVenue,
-        introTitle: `${introPartner?.name ?? fallbackVenue.name} 소개`,
+        ...v2,
+        introTitle: `${name} 소개`,
         introParagraphs: paras.length > 0 ? paras : [aiIntro],
       };
     }
@@ -449,6 +518,29 @@ function descToIntroParagraphs(desc: string | undefined): string[] {
   return paras.length > 0 ? paras : [desc.trim()];
 }
 
+/** v1 paragraphs → v2 intro 필드 변환 (구조화 JSON 없을 때 fallback) */
+function plainToV2Intro(
+  name: string,
+  regionName: string,
+  typeName: string,
+  paras: string[]
+): Pick<VenueDetail, "tagline" | "introHeadline" | "introLead" | "introQuote" | "introBodyParagraphs"> {
+  const lead = paras[0] ?? "";
+  const rest = paras.slice(1);
+  // 2번째 단락이 30자 이상이고 인용 느낌이면 quote로 처리 (휴리스틱)
+  const maybeQuote = rest[0];
+  const useQuote = maybeQuote && maybeQuote.length >= 30 && (maybeQuote.includes("~") || maybeQuote.includes("·") || maybeQuote.includes("기준"));
+  const quote = useQuote ? maybeQuote : undefined;
+  const body = useQuote ? rest.slice(1) : rest;
+  return {
+    tagline: `${regionName} ${typeName} — ${name} 상세 정보`,
+    introHeadline: `${name} — ${regionName} ${typeName} 소개`,
+    introLead: lead,
+    introQuote: quote,
+    introBodyParagraphs: body,
+  };
+}
+
 function partnerToVenueDetail(
   p: Partner,
   regionSlug: string,
@@ -457,9 +549,14 @@ function partnerToVenueDetail(
 ): VenueDetail {
   const defaultDetail = FALLBACK_DETAIL.gangnam?.dalto;
   const base = defaultDetail ?? ({} as VenueDetail);
+  const paras = descToIntroParagraphs(p.desc);
+  const regionName = REGION_SLUG_TO_NAME[regionSlug] ?? p.region ?? regionSlug;
+  const typeName = SLUG_TO_TYPE[categorySlug] ?? p.type ?? "";
+  const v2 = paras.length > 0 ? plainToV2Intro(p.name, regionName, typeName, paras) : {};
 
   return {
     ...base,
+    ...v2,
     slug: venueSlug,
     name: p.name,
     region: p.region,
@@ -479,7 +576,7 @@ function partnerToVenueDetail(
     hours: "영업시간 문의",
     infoCards: base.infoCards ?? [],
     introTitle: `${p.name} 소개`,
-    introParagraphs: descToIntroParagraphs(p.desc),
+    introParagraphs: paras.length > 0 ? paras : [p.desc?.trim() || "업소 소개를 입력해 주세요."],
     priceRows: base.priceRows ?? [],
     priceNote: base.priceNote ?? "",
     opList: base.opList ?? [],

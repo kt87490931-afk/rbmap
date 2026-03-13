@@ -122,30 +122,63 @@ function buildDataBlock(data: FormDataForGemini, essentialKeywords?: string[]): 
 
 const DEFAULT_ESSENTIAL_KEYWORDS = ['가라오케', '룸싸롱', '퍼블릭', '노래방']
 
+/** v2 intro 구조 (venue-detail-mapping.md 6-2, 7장) */
+export interface VenueIntroV2 {
+  tagline?: string
+  intro?: {
+    label?: string
+    headline?: string
+    lead?: string
+    quote?: string
+    body_paragraphs?: string[]
+  }
+}
+
 /**
  * 업체소개글 텍스트 생성 (다이렉트 2,000자 이내)
+ * format 'json' 시 v2 DOM 매핑용 구조화 JSON 반환
  */
 export type VenueIntroResult =
-  | { success: true; text: string; elapsedMs?: number }
+  | { success: true; text: string; v2?: VenueIntroV2; elapsedMs?: number }
   | { success: false; message: string; httpStatus?: number; diag?: Record<string, unknown> }
+
+const V2_JSON_INSTRUCTION = `
+[출력 형식 - JSON] 반드시 아래 JSON만 출력해라. 다른 설명 없이 JSON만.
+{
+  "tagline": "지역명 업종명 — 한 줄 캐치프레이즈 (예: 강남 가라오케의 기준 — 20년 업력이 만든 신뢰)",
+  "intro": {
+    "label": "ABOUT · 업소 소개",
+    "headline": "업소명 — 지역명 업종명의 새로운 기준 (em dash 기준 앞/뒤)",
+    "lead": "리드 문장 1개 (크게 표시할 핵심 요약)",
+    "quote": "인용 강조할 문장 1개 (선택, 없으면 null)",
+    "body_paragraphs": ["본문 단락1", "본문 단락2", "본문 단락3"]
+  }
+}
+`
 
 export async function generateVenueIntro(
   data: FormDataForGemini,
   tone: IntroTone = 'pro',
-  essentialKeywords?: string[]
+  essentialKeywords?: string[],
+  options?: { format?: 'text' | 'json' }
 ): Promise<VenueIntroResult> {
   const apiKey = getApiKey()
   if (!apiKey) {
     return { success: false, message: 'API 키가 설정되지 않았습니다.' }
   }
 
+  const format = options?.format ?? 'text'
   const keywords = essentialKeywords && essentialKeywords.length > 0
     ? essentialKeywords
     : DEFAULT_ESSENTIAL_KEYWORDS
 
   const roleId = tone === 'partner_pro' ? 'partner_pro' : 'pro'
   const role = geminiRoles[roleId] || geminiRoles.pro
-  const basePrompt = role.prompt
+  let basePrompt = role.prompt
+  if (format === 'json') {
+    basePrompt += '\n[중요] JSON 형식으로만 출력할 것. 마크다운 코드블록 없이 순수 JSON만 출력.\n'
+    basePrompt += V2_JSON_INSTRUCTION
+  }
   const dataBlock = buildDataBlock(data, keywords)
   const fullPrompt = basePrompt + '\n' + dataBlock
 
@@ -174,9 +207,19 @@ export async function generateVenueIntro(
     const json = await res.json()
     const elapsedMs = Date.now() - start
 
-    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text
-    if (text && typeof text === 'string') {
-      return { success: true, text: text.trim(), elapsedMs }
+    const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text
+    if (rawText && typeof rawText === 'string') {
+      const text = rawText.trim()
+      let v2: VenueIntroV2 | undefined
+      if (format === 'json') {
+        try {
+          const cleaned = text.replace(/^```json?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+          v2 = JSON.parse(cleaned) as VenueIntroV2
+        } catch {
+          v2 = undefined
+        }
+      }
+      return { success: true, text, v2, elapsedMs }
     }
 
     const errMsg = json?.error?.message || '알 수 없는 오류'

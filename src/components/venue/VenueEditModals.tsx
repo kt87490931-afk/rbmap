@@ -12,8 +12,15 @@ type VenueEditModalsProps = {
     locationDetail?: string;
     locationSub?: string;
     hours: string;
+    tagline?: string;
+    introLabel?: string;
+    introHeadline?: string;
+    introLead?: string;
+    introQuote?: string;
+    introBodyParagraphs?: string[];
     introTitle: string;
     introParagraphs: string[];
+    priceLead?: string;
     priceNote: string;
     mapEmbed?: string;
     infoCards: { label: string; val: string; sub: string }[];
@@ -55,9 +62,12 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
   const firstPrice = data.infoCards?.find((c) => c.val?.includes("만"))?.val ?? "55만원~";
   const lineup = data.infoCards?.find((c) => c.label?.includes("라인") || c.label?.includes("룸"))?.val ?? "50명+";
   const parking = data.infoCards?.find((c) => c.label?.includes("주차"))?.val ?? "발렛";
-  const introLead = (data.introParagraphs ?? [])[0] ?? "";
-  const introBody = (data.introParagraphs ?? []).slice(1).join("\n\n") || "입장부터 퇴장까지 1:1 전담 실장이 밀착 관리합니다.";
-  const priceLead = "달토는 입장 전 가격을 명확히 안내하며, 안내받은 금액 그대로 결제됩니다.";
+  const tagline = data.tagline ?? data.introTitle ?? "";
+  const introHeadline = data.introHeadline ?? `${data.name} — 소개`;
+  const introLead = data.introLead ?? (data.introParagraphs ?? [])[0] ?? "";
+  const introQuote = data.introQuote ?? "";
+  const introBody = (data.introBodyParagraphs ?? (data.introParagraphs ?? []).slice(1)).join("\n\n") || "입장부터 퇴장까지 1:1 전담 실장이 밀착 관리합니다.";
+  const priceLead = data.priceLead ?? "달토는 입장 전 가격을 명확히 안내하며, 안내받은 금액 그대로 결제됩니다.";
 
   return (
     <>
@@ -77,7 +87,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             </div>
             <div className="mf-row">
               <label>부제목 (tagline)</label>
-              <input type="text" id="m-tagline" defaultValue={data.introTitle} />
+              <input type="text" id="m-tagline" defaultValue={tagline} placeholder="강남 가라오케의 기준 — 20년 업력이 만든 신뢰" />
             </div>
             <div className="mf-row">
               <label>전화번호</label>
@@ -122,15 +132,19 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
           </div>
           <div className="modal-body">
             <div className="mf-row">
-              <label>소개 헤드라인 (h2)</label>
-              <input type="text" id="m-intro-headline" defaultValue={`${data.name} — 소개`} />
+              <label>소개 헤드라인 (h2) — em dash 뒷부분 골드 강조</label>
+              <input type="text" id="m-intro-headline" defaultValue={introHeadline} placeholder="업소명 — 강남 가라오케의 새로운 기준" />
             </div>
             <div className="mf-row">
-              <label>리드 문장</label>
-              <textarea id="m-intro-lead" rows={3} defaultValue={introLead} />
+              <label>리드 문장 (#intro-lead)</label>
+              <textarea id="m-intro-lead" rows={3} defaultValue={introLead} placeholder="핵심 요약 문장" />
             </div>
             <div className="mf-row">
-              <label>본문 (단락 구분: 빈 줄)</label>
+              <label>인용 박스 (.art-quote)</label>
+              <textarea id="m-intro-quote" rows={2} defaultValue={introQuote} placeholder="강조할 문장 (선택)" />
+            </div>
+            <div className="mf-row">
+              <label>본문 단락들 (단락 구분: 빈 줄)</label>
               <textarea id="m-intro-body" rows={8} defaultValue={introBody} placeholder="AI 생성 텍스트를 붙여넣거나 직접 작성하세요." />
             </div>
           </div>

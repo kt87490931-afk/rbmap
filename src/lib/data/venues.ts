@@ -349,6 +349,7 @@ const dalto = FALLBACK_DETAIL.gangnam!.dalto!;
   venus: fillVenueFromBase(dalto, { slug: "venus", name: "비너스 셔츠룸", type: "셔츠룸", categorySlug: "shirtroom", region: "동탄", regionSlug: "dongtan", url: "/dongtan/shirtroom/venus", rating: "4.5", reviewCount: 52, contact: "031-000-0003", location: "동탄면", nearbyVenues: [], similarVenues: [], seoKwLinks: [], seoCols: [] }),
   aurora: fillVenueFromBase(dalto, { slug: "aurora", name: "오로라 가라오케", type: "가라오케", categorySlug: "karaoke", region: "동탄", regionSlug: "dongtan", url: "/dongtan/karaoke/aurora", rating: "4.3", reviewCount: 38, contact: "031-000-0004", location: "동탄면", nearbyVenues: [], similarVenues: [], seoKwLinks: [], seoCols: [] }),
   star: fillVenueFromBase(dalto, { slug: "star", name: "스타 퍼블릭", type: "퍼블릭", categorySlug: "public", region: "동탄", regionSlug: "dongtan", url: "/dongtan/public/star", rating: "4.2", reviewCount: 29, contact: "031-000-0005", location: "동탄면", nearbyVenues: [], similarVenues: [], seoKwLinks: [], seoCols: [] }),
+  "dongtan-choigga": fillVenueFromBase(dalto, { slug: "dongtan-choigga", name: "동탄최저가", type: "가라오케", categorySlug: "karaoke", region: "동탄", regionSlug: "dongtan", url: "/dongtan/karaoke/dongtan-choigga", rating: "4.0", reviewCount: 0, contact: "", location: "동탄", nearbyVenues: [], similarVenues: [], seoKwLinks: [], seoCols: [] }),
 };
 (FALLBACK_DETAIL as Record<string, Record<string, VenueDetail>>).jeju = {
   zenith: fillVenueFromBase(dalto, { slug: "zenith", name: "제니스 클럽", type: "가라오케", categorySlug: "karaoke", region: "제주", regionSlug: "jeju", url: "/jeju/karaoke/zenith", rating: "4.4", reviewCount: 41, contact: "064-000-0000", location: "연동", nearbyVenues: [], similarVenues: [], seoKwLinks: [], seoCols: [] }),
@@ -367,13 +368,7 @@ export async function getVenueDetail(
     return null;
   }
 
-  // 1) Fallback 데이터 먼저 확인
-  const regionFallback = FALLBACK_DETAIL[regionSlug];
-  if (regionFallback?.[venueSlug]) {
-    return regionFallback[venueSlug];
-  }
-
-  // 2) Partners에서 매칭 시도
+  // 1) Partners에서 매칭 시도 (DB 제휴업체가 우선)
   const partners = await getPartners();
   const match = partners.find((p) => {
     const pRegionMatch = p.region?.includes(regionName) || regionName?.includes(p.region ?? "");
@@ -385,6 +380,12 @@ export async function getVenueDetail(
 
   if (match) {
     return partnerToVenueDetail(match, regionSlug, categorySlug, venueSlug);
+  }
+
+  // 2) Fallback 데이터로 대체 (partners에 없을 때)
+  const regionFallback = FALLBACK_DETAIL[regionSlug];
+  if (regionFallback?.[venueSlug]) {
+    return regionFallback[venueSlug];
   }
 
   return null;

@@ -19,8 +19,6 @@ import { parseUrlSuffixFromHref } from '@/lib/partner-url'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
-const SIX_HOURS_MS = 6 * 60 * 60 * 1000
-
 function parseHref(href: string): { regionSlug: string; typeSlug: string; venueSlug: string } {
   const parts = (href || '').replace(/\/$/, '').split('/').filter(Boolean)
   return {
@@ -113,30 +111,9 @@ export async function GET(request: Request) {
         continue
       }
 
-      // 2. 최근 6시간 내 리뷰 확인 (partner_id 또는 region+type+venue_slug)
       const { regionSlug, typeSlug, venueSlug } = parseHref(partner.href)
-      const sixHoursAgo = new Date(Date.now() - SIX_HOURS_MS).toISOString()
 
-      const { data: recentReviews } = await supabaseAdmin
-        .from('review_posts')
-        .select('id, scenario_used')
-        .eq('region', regionSlug)
-        .eq('type', typeSlug)
-        .eq('venue_slug', venueSlug)
-        .gte('created_at', sixHoursAgo)
-        .limit(10)
-
-      if (recentReviews && recentReviews.length > 0) {
-        results.push({
-          partnerId: partner.id,
-          name: partner.name,
-          ok: false,
-          msg: `6시간 내 리뷰 ${recentReviews.length}건 존재`,
-        })
-        continue
-      }
-
-      // 3. 시나리오/톤 선택 (최근 이력 기반)
+      // 시나리오/톤 선택 (최근 이력 기반)
       const { data: historyRows } = await supabaseAdmin
         .from('review_posts')
         .select('scenario_used')

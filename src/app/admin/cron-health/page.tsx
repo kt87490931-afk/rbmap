@@ -80,10 +80,7 @@ export default function AdminCronHealthPage() {
           </div>
         </div>
         <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 12 }}>
-          Cron은 0시, 6시, 12시, 18시에 실행됩니다. 서버 crontab에 등록되어 있는지 확인하세요.
-        </p>
-        <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
-          동일 업체는 6시간에 1건만 리뷰 생성. &quot;6시간 내 리뷰 존재&quot;면 스킵됨. 새 리뷰를 보려면 6시간 후 또는 제휴업체 추가.
+          Cron은 0시, 6시, 12시, 18시에 실행됩니다. 매 실행 시 적용된 소개글이 있는 제휴업체마다 리뷰 1건 생성.
         </p>
       </div>
 

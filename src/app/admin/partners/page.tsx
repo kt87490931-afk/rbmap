@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { buildPartnerHref } from '@/lib/partner-url'
+import { buildPartnerHrefFromParts, parseUrlSuffixFromHref } from '@/lib/partner-url'
+import { SLUG_TO_TYPE } from '@/lib/data/venues'
 
 interface PartnerItem {
   id: string
@@ -24,7 +25,18 @@ interface RegionItem {
   name: string
 }
 
-const TYPE_OPTIONS = ['가라오케', '룸싸롱', '퍼블릭', '노래방', '바', '기타']
+/** 유형선택: 한글(label) → slug 매핑 */
+const TYPE_OPTIONS = [
+  { label: '가라오케', slug: 'karaoke' },
+  { label: '룸싸롱', slug: 'room-salon' },
+  { label: '퍼블릭', slug: 'public' },
+  { label: '노래방', slug: 'karaoke' },
+  { label: '바', slug: 'bar' },
+  { label: '하이퍼블릭', slug: 'highpublic' },
+  { label: '셔츠룸', slug: 'shirtroom' },
+  { label: '쩜오', slug: 'jjomoh' },
+  { label: '기타', slug: 'karaoke' },
+]
 
 export default function AdminPartnersPage() {
   const [items, setItems] = useState<PartnerItem[]>([])
@@ -35,9 +47,9 @@ export default function AdminPartnersPage() {
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({
-    href: '',
-    region: '',
+    regionSlug: '',
     type: '',
+    urlSuffix: '',
     name: '',
     icon: '🎤',
     contact: '',
@@ -70,28 +82,27 @@ export default function AdminPartnersPage() {
   }
 
   function getHref(): string {
-    const regionVal = form.region.trim()
-    const typeVal = form.type.trim()
-    const nameVal = form.name.trim()
-    const manual = form.href?.trim()
-    if (manual && manual.startsWith('/') && manual.split('/').length >= 4) return manual
-    if (regionVal && typeVal && nameVal) return buildPartnerHref(regionVal, typeVal, nameVal)
-    return manual || ''
+    return buildPartnerHrefFromParts(form.regionSlug, form.type, form.urlSuffix)
+  }
+
+  function getRegionName(): string {
+    return regions.find((r) => r.slug === form.regionSlug)?.name ?? form.regionSlug
   }
 
   async function addItem() {
-    const regionVal = form.region.trim()
+    const regionSlug = form.regionSlug.trim()
     const typeVal = form.type.trim()
     const nameVal = form.name.trim()
-    if (!regionVal || !typeVal || !nameVal) {
-      showMsg('지역, 유형, 이름을 입력해 주세요. 링크는 자동 생성됩니다.', 'error')
+    const urlSuffix = form.urlSuffix.trim()
+    if (!regionSlug || !typeVal || !nameVal) {
+      showMsg('지역, 유형, 업체명을 선택/입력해 주세요.', 'error')
+      return
+    }
+    if (!urlSuffix) {
+      showMsg('URL 뒷부분을 입력해 주세요. (예: dongtan-choigga)', 'error')
       return
     }
     const href = getHref()
-    if (!href.startsWith('/')) {
-      showMsg('링크는 /지역/종목/업소명 형식이어야 합니다. (예: /dongtan/karaoke/dongtan-choigga)', 'error')
-      return
-    }
     setAdding(true)
     try {
       const res = await fetch('/api/admin/partners', {
@@ -100,7 +111,7 @@ export default function AdminPartnersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           href,
-          region: regionVal,
+          region: getRegionName(),
           type: typeVal,
           name: nameVal,
           icon: form.icon || '🎤',
@@ -114,7 +125,7 @@ export default function AdminPartnersPage() {
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
         setItems((prev) => [...prev, data])
-        setForm({ href: '', region: '', type: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '' })
+        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '' })
         showMsg('추가 완료!')
       } else {
         const errMsg = data.error || (res.status === 403 ? 'OTP 인증이 필요합니다. OTP 인증 페이지에서 다시 인증해 주세요.' : '추가 실패')
@@ -152,10 +163,15 @@ export default function AdminPartnersPage() {
   }
 
   function startEdit(item: PartnerItem) {
+    const parts = (item.href || '').replace(/\/$/, '').split('/').filter(Boolean)
+    const regionSlug = parts[0] ?? regions.find((r) => r.name === item.region)?.slug ?? ''
+    const categorySlug = parts[1] ?? ''
+    const typeLabel = SLUG_TO_TYPE[categorySlug] || item.type
+    const urlSuffix = parts[2] ?? parseUrlSuffixFromHref(item.href)
     setForm({
-      href: item.href || '',
-      region: item.region || '',
-      type: item.type || '',
+      regionSlug,
+      type: typeLabel,
+      urlSuffix,
       name: item.name || '',
       icon: item.icon || '🎤',
       contact: item.contact || '',
@@ -169,24 +185,25 @@ export default function AdminPartnersPage() {
 
   async function saveEdit() {
     if (!editingId) return
-    const regionVal = form.region.trim()
+    const regionSlug = form.regionSlug.trim()
     const typeVal = form.type.trim()
     const nameVal = form.name.trim()
-    if (!regionVal || !typeVal || !nameVal) {
-      showMsg('지역, 유형, 이름은 필수입니다.', 'error')
+    const urlSuffix = form.urlSuffix.trim()
+    if (!regionSlug || !typeVal || !nameVal) {
+      showMsg('지역, 유형, 업체명은 필수입니다.', 'error')
       return
     }
-    const href = getHref()
-    if (!href.startsWith('/')) {
-      showMsg('링크는 /지역/종목/업소명 형식이어야 합니다.', 'error')
+    if (!urlSuffix) {
+      showMsg('URL 뒷부분을 입력해 주세요.', 'error')
       return
     }
     const item = items.find((p) => p.id === editingId)
     if (!item) return
+    const href = getHref()
     const payload = {
       ...item,
       href,
-      region: regionVal,
+      region: getRegionName(),
       type: typeVal,
       name: nameVal,
       icon: form.icon || '🎤',
@@ -207,7 +224,7 @@ export default function AdminPartnersPage() {
       if (res.ok) {
         setItems((prev) => prev.map((p) => (p.id === editingId ? data : p)))
         setEditingId(null)
-        setForm({ href: '', region: '', type: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '' })
+        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '' })
         showMsg('수정 완료!')
       } else {
         showMsg(data.error || '수정 실패', 'error')
@@ -267,22 +284,22 @@ export default function AdminPartnersPage() {
       <div className="card-box" style={{ marginBottom: 16 }}>
         <div className="card-box-title">{editingId ? '✏️ 제휴업체 수정' : '➕ 제휴업체 추가'}</div>
         <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-          <strong>링크 형식</strong>: rbbmap.com/지역/종목/업소명 (예: <code>/dongtan/karaoke/dongtan-choigga</code>). 지역·유형·이름 입력 시 자동 생성됩니다.
+          <strong>URL 자동생성</strong>: 지역·유형 선택 후 <strong>뒷부분만</strong> 입력하세요. → rbbmap.com/<em>지역</em>/<em>종목</em>/<strong>뒷부분</strong>
         </p>
-        <datalist id="partner-region-list">
-          {regions.map((r) => (
-            <option key={r.id} value={r.name} />
-          ))}
-        </datalist>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
-          <input className="form-input" placeholder="링크 (비워두면 자동생성)" value={form.href} onChange={(e) => setForm((f) => ({ ...f, href: e.target.value }))} title="/지역/종목/업소명 예: /dongtan/karaoke/dongtan-choigga" />
-          <input className="form-input" list="partner-region-list" placeholder="지역 (예: 강남)" value={form.region} onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))} />
+          <select className="form-input" value={form.regionSlug} onChange={(e) => setForm((f) => ({ ...f, regionSlug: e.target.value }))}>
+            <option value="">지역 선택</option>
+            {regions.map((r) => (
+              <option key={r.id} value={r.slug}>{r.name} ({r.slug})</option>
+            ))}
+          </select>
           <select className="form-input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
             <option value="">유형 선택</option>
             {TYPE_OPTIONS.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t.slug + t.label} value={t.label}>{t.label} ({t.slug})</option>
             ))}
           </select>
+          <input className="form-input" placeholder="URL 뒷부분 (예: dongtan-choigga)" value={form.urlSuffix} onChange={(e) => setForm((f) => ({ ...f, urlSuffix: e.target.value }))} title="여기만 입력하세요" />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
           <input className="form-input" placeholder="업체명" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
@@ -299,14 +316,14 @@ export default function AdminPartnersPage() {
           {editingId ? (
             <>
               <button className="btn-save" onClick={saveEdit} disabled={adding}>수정 저장</button>
-              <button className="btn-ghost" style={{ padding: '8px 14px' }} onClick={() => { setEditingId(null); setForm({ href: '', region: '', type: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '' }) }}>취소</button>
+              <button className="btn-ghost" style={{ padding: '8px 14px' }} onClick={() => { setEditingId(null); setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '' }) }}>취소</button>
             </>
           ) : (
             <button className="btn-save" onClick={addItem} disabled={adding}>추가</button>
           )}
         </div>
-        {!form.href && form.region && form.type && form.name && (
-          <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>→ 링크 자동 생성: {buildPartnerHref(form.region, form.type, form.name)}</p>
+        {form.regionSlug && form.type && form.urlSuffix && (
+          <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>→ 생성 링크: {getHref()}</p>
         )}
       </div>
 

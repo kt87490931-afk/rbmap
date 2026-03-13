@@ -32,6 +32,7 @@ export async function PATCH(
   return NextResponse.json(data)
 }
 
+/** review_posts (생성된 리뷰) 삭제 */
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -40,7 +41,7 @@ export async function DELETE(
   if (authErr) return authErr
 
   const { id } = await params
-  const { error } = await supabaseAdmin.from('reviews').delete().eq('id', id)
+  const { error } = await supabaseAdmin.from('review_posts').delete().eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ ok: true })

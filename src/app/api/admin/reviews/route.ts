@@ -4,11 +4,16 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
+/** 리뷰 관리: review_posts (AI 생성 포함) 조회 */
 export async function GET() {
+  const authErr = await requireAdminOrSetup()
+  if (authErr) return authErr
+
   const { data, error } = await supabaseAdmin
-    .from('reviews')
+    .from('review_posts')
     .select('*')
-    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false })
+    .limit(200)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data ?? [])

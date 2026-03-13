@@ -1,18 +1,24 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
+import { REGION_SLUG_TO_NAME } from '@/lib/data/venues'
+import { REVIEW_TYPE_TO_NAME } from '@/lib/data/review-posts'
 
 interface ReviewItem {
   id: string
-  href: string
   region: string
-  date: string
-  is_new: boolean
-  title: string
-  excerpt: string
-  stars: string
+  type: string
   venue: string
-  sort_order: number
+  venue_slug: string
+  slug: string
+  title: string
+  published_at: string | null
+  created_at: string
+  star: number
+  status: string
+  is_ai_written: boolean
+  sec_overview?: string
 }
 
 export default function AdminReviewsPage() {
@@ -22,10 +28,10 @@ export default function AdminReviewsPage() {
 
   const fetchItems = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/reviews')
+      const res = await fetch('/api/admin/reviews', { credentials: 'include' })
       const data = await res.json()
       setItems(Array.isArray(data) ? data : [])
-    } catch { /* ignore */ }
+    } catch { setItems([]) }
     setLoading(false)
   }, [])
 
@@ -51,7 +57,7 @@ export default function AdminReviewsPage() {
     <>
       <div className="admin-header">
         <h1 className="admin-title">리뷰 관리</h1>
-        <p className="admin-subtitle">최신 리뷰 섹션 관리</p>
+        <p className="admin-subtitle">생성된 리뷰 (review_posts) · AI 생성 · 수동 작성</p>
       </div>
 
       {msg && (
@@ -65,24 +71,39 @@ export default function AdminReviewsPage() {
             <thead>
               <tr>
                 <th>지역</th>
-                <th>날짜</th>
-                <th>제목</th>
+                <th>업종</th>
                 <th>업소</th>
-                <th>NEW</th>
+                <th>제목</th>
+                <th>날짜</th>
+                <th>AI</th>
                 <th>작업</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.region}</td>
-                  <td>{r.date}</td>
-                  <td style={{ maxWidth: 220 }}>{r.title}</td>
-                  <td>{r.venue}</td>
-                  <td>{r.is_new ? 'Y' : '-'}</td>
-                  <td><button className="btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => deleteItem(r.id, r.title)}>삭제</button></td>
-                </tr>
-              ))}
+              {items.map((r) => {
+                const reviewUrl = `/${r.region}/${r.type}/${r.venue_slug}/${r.slug}`
+                const dateStr = r.published_at || r.created_at
+                const dateFormatted = dateStr
+                  ? new Date(dateStr).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                  : '-'
+                return (
+                  <tr key={r.id}>
+                    <td>{REGION_SLUG_TO_NAME[r.region] ?? r.region}</td>
+                    <td>{REVIEW_TYPE_TO_NAME[r.type] ?? r.type}</td>
+                    <td>{r.venue}</td>
+                    <td style={{ maxWidth: 220 }}>
+                      <Link href={reviewUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>
+                        {r.title}
+                      </Link>
+                    </td>
+                    <td style={{ fontSize: 12 }}>{dateFormatted}</td>
+                    <td>{r.is_ai_written ? 'Y' : '-'}</td>
+                    <td>
+                      <button className="btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => deleteItem(r.id, r.title)}>삭제</button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

@@ -9,7 +9,7 @@ export default function RegionNavDropdown() {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/regions-active")
+    fetch("/api/regions")
       .then((r) => r.json())
       .then((data) => setRegions(Array.isArray(data) ? data : []))
       .catch(() => setRegions([]));

@@ -60,9 +60,15 @@ export async function getPartners(limit?: number): Promise<Partner[]> {
   return list.filter((p) => !isSamplePartner(p))
 }
 
-export async function getPartnersByRegion(regionName: string): Promise<Partner[]> {
+/** regionName: '동탄' 등, regionSlug: 'dongtan' (href·slug 매칭용) */
+export async function getPartnersByRegion(regionName: string, regionSlug?: string): Promise<Partner[]> {
   const all = await getPartners()
-  return all.filter((p) => p.region?.includes(regionName) || regionName?.includes(p.region ?? ''))
+  return all.filter((p) => {
+    if (p.region?.includes(regionName) || regionName?.includes(p.region ?? '')) return true
+    if (regionSlug && p.region === regionSlug) return true
+    if (regionSlug && p.href?.includes(`/${regionSlug}/`)) return true
+    return false
+  })
 }
 
 /** 제휴업체가 1개 이상 등록된 지역 slug/name 목록 (지역 드롭다운·지역별 페이지용) */
@@ -85,10 +91,25 @@ export async function getRegionsWithPartners(): Promise<{ slug: string; name: st
   const slugSet = new Set<string>()
   for (const p of all) {
     const r = p.region?.trim()
-    if (!r) continue
-    const slug = REGION_NAME_TO_SLUG[r] ?? REGION_NAME_TO_SLUG[r.replace(/\s+인계동$/, "")] ?? r.toLowerCase().replace(/\s+/g, "-")
-    slugSet.add(slug)
+    if (r) {
+      const slug = REGION_NAME_TO_SLUG[r] ?? REGION_NAME_TO_SLUG[r.replace(/\s+인계동$/, "")] ?? r.toLowerCase().replace(/\s+/g, "-")
+      slugSet.add(slug)
+    }
+    const hrefSlug = p.href?.replace(/^\//, "").split("/")[0]
+    if (hrefSlug && (REGION_SLUG_TO_NAME[hrefSlug] || ["gangnam", "suwon", "dongtan", "jeju"].includes(hrefSlug))) slugSet.add(hrefSlug)
   }
   const order = ["gangnam", "suwon", "dongtan", "jeju"]
   return order.filter((s) => slugSet.has(s)).map((s) => ({ slug: s, name: REGION_SLUG_TO_NAME[s] ?? s }))
+}
+
+/** 지역별 제휴업체 수 (인근 지역 바로가기 등용) */
+export async function getPartnerCountsByRegion(): Promise<Record<string, { venues: number }>> {
+  const all = await getPartners()
+  const counts: Record<string, number> = {}
+  for (const p of all) {
+    let slug = REGION_NAME_TO_SLUG[p.region?.trim() ?? ""] ?? REGION_NAME_TO_SLUG[(p.region ?? "").replace(/\s+인계동$/, "")]
+    if (!slug && p.href) slug = p.href.replace(/^\//, "").split("/")[0] ?? ""
+    if (slug) counts[slug] = (counts[slug] ?? 0) + 1
+  }
+  return Object.fromEntries(Object.entries(counts).map(([k, v]) => [k, { venues: v }]))
 }

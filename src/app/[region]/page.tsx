@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
+import { unstable_noStore } from "next/cache";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { getRegionBySlug } from "@/lib/data/regions";
-import { getPartnersByRegion } from "@/lib/data/partners";
+import { getPartnersByRegion, getPartnerCountsByRegion } from "@/lib/data/partners";
 import { buildVenueUrl, TYPE_TO_SLUG } from "@/lib/data/venues";
 import { getRegions } from "@/lib/data/regions";
 import { getFeedItems } from "@/lib/data/feed";
@@ -164,8 +165,8 @@ const SEO_CONTENT: Record<string, { cols: { blocks: { type: "h3" | "p"; content:
 
 export async function generateMetadata({ params }: { params: Promise<{ region: string }> }) {
   const { region } = await params;
-  if (!REGION_SLUGS.includes(region)) return {};
   const regionData = await getRegionBySlug(region);
+  if (!regionData) return {};
   const cfg = REGION_CFG[region];
   const name = regionData?.name ?? region;
   const title = `${name} 가라오케·하이퍼블릭 추천 | 룸빵여지도`;
@@ -180,26 +181,37 @@ export async function generateMetadata({ params }: { params: Promise<{ region: s
 }
 
 export default async function RegionPage({ params }: { params: Promise<{ region: string }> }) {
+  unstable_noStore();
   const { region } = await params;
-  if (!REGION_SLUGS.includes(region)) notFound();
 
-  const regionName = SLUG_TO_REGION_NAME[region] ?? region;
-  const [regionData, partners, regions, feedItems, reviews, header, footer] = await Promise.all([
+  const regionNameFallback = SLUG_TO_REGION_NAME[region] ?? region;
+  const [regionData, partners, regions, partnerCounts, feedItems, reviews, header, footer] = await Promise.all([
     getRegionBySlug(region),
-    getPartnersByRegion(regionName),
+    getPartnersByRegion(regionNameFallback, region),
     getRegions(),
+    getPartnerCountsByRegion(),
     getFeedItems(),
     getReviews(),
     getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>("header"),
     getSiteSection<{ desc?: string; copyright?: string; links?: { label: string; href: string }[] }>("footer"),
   ]);
 
-  const r = regionData ?? ({ name: region === "gangnam" ? "강남" : region === "suwon" ? "수원 인계동" : region === "dongtan" ? "동탄" : "제주", slug: region, venues: REGION_CFG[region]?.filterCounts?.전체 ?? 0, reviews: REGION_CFG[region]?.filterCounts?.리뷰 ?? 0 } as Partial<Region>);
+  if (!regionData) notFound();
+
+  const regionName = regionData.name ?? regionNameFallback;
+  const r = regionData;
   const cfg = REGION_CFG[region] ?? REGION_CFG.gangnam;
-  const regionPartners = partners.length > 0 ? partners : (r.name ? await getPartnersByRegion(r.name) : []);
+  const regionPartners = partners.length > 0 ? partners : (r.name ? await getPartnersByRegion(r.name, region) : []);
   const regionFeed = feedItems.filter((f) => f.pill?.includes(r.name ?? "") || f.href?.includes(`/${region}/`)).slice(0, 5);
   const regionReviews = reviews.filter((rev) => rev.region?.includes(r.name ?? "") || rev.href?.includes(`/${region}/`)).slice(0, 3);
-  const otherRegions = regions.filter((x) => x.slug !== region && !x.coming).slice(0, 4);
+  const otherRegions = regions
+    .filter((x) => x.slug !== region && !x.coming)
+    .slice(0, 4)
+    .map((o) => ({
+      ...o,
+      venues: partnerCounts[o.slug]?.venues ?? o.venues ?? 0,
+      reviews: o.reviews ?? 0,
+    }));
   const seo = SEO_CONTENT[region] ?? SEO_CONTENT.gangnam;
 
   const DISPLAY_PARTNERS_LIMIT = 6;

@@ -118,7 +118,6 @@ function SectionSettingsModal({
         justifyContent: 'center',
         background: 'rgba(0,0,0,0.6)',
       }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         style={{

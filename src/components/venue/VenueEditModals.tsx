@@ -173,10 +173,6 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
     };
     (window as unknown as { openModal: (id: string) => void }).openModal = openModal;
     (window as unknown as { closeModal: (id: string) => void }).closeModal = closeModal;
-    (window as unknown as { handleSaveHero: () => void }).handleSaveHero = handleSaveHero;
-    (window as unknown as { handleSaveIntro: () => void }).handleSaveIntro = handleSaveIntro;
-    (window as unknown as { handleSavePrice: () => void }).handleSavePrice = handleSavePrice;
-    (window as unknown as { handleSaveMap: () => void }).handleSaveMap = handleSaveMap;
     document.querySelectorAll(".modal-backdrop").forEach((bd) => {
       bd.addEventListener("click", (e) => {
         if (e.target === bd) {
@@ -188,12 +184,8 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
     return () => {
       delete (window as unknown as { openModal?: (id: string) => void }).openModal;
       delete (window as unknown as { closeModal?: (id: string) => void }).closeModal;
-      delete (window as unknown as { handleSaveHero?: () => void }).handleSaveHero;
-      delete (window as unknown as { handleSaveIntro?: () => void }).handleSaveIntro;
-      delete (window as unknown as { handleSavePrice?: () => void }).handleSavePrice;
-      delete (window as unknown as { handleSaveMap?: () => void }).handleSaveMap;
     };
-  }, [closeModal, handleSaveHero, handleSaveIntro, handleSavePrice, handleSaveMap]);
+  }, [closeModal]);
 
   const firstPrice = data.infoCards?.find((c) => c.val?.includes("만"))?.val ?? "55만원~";
   const lineup = data.infoCards?.find((c) => c.label?.includes("라인") || c.label?.includes("룸"))?.val ?? "50명+";
@@ -209,7 +201,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
     <>
       {/* 히어로 모달 */}
       <div className="modal-backdrop" id="modal-hero">
-        <div className="modal">
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-head">
             <h3>편집 히어로 배너</h3>
             <button type="button" className="modal-close" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("hero")}>
@@ -250,7 +242,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             <button type="button" className="mf-cancel" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("hero")}>
               취소
             </button>
-            <button type="button" className="mf-save" onClick={() => (window as unknown as { handleSaveHero?: () => void }).handleSaveHero?.()}>
+            <button type="button" className="mf-save" onClick={handleSaveHero}>
               저장
             </button>
           </div>
@@ -259,7 +251,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
 
       {/* 업소 소개 모달 */}
       <div className="modal-backdrop" id="modal-intro">
-        <div className="modal">
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-head">
             <h3>편집 업소 소개</h3>
             <button type="button" className="modal-close" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("intro")}>
@@ -288,7 +280,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             <button type="button" className="mf-cancel" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("intro")}>
               취소
             </button>
-            <button type="button" className="mf-save" onClick={() => (window as unknown as { handleSaveIntro?: () => void }).handleSaveIntro?.()}>
+            <button type="button" className="mf-save" onClick={handleSaveIntro}>
               저장
             </button>
           </div>
@@ -297,7 +289,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
 
       {/* 가격 모달 */}
       <div className="modal-backdrop" id="modal-price">
-        <div className="modal">
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-head">
             <h3>편집 가격 정보</h3>
             <button type="button" className="modal-close" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("price")}>
@@ -318,7 +310,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             <button type="button" className="mf-cancel" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("price")}>
               취소
             </button>
-            <button type="button" className="mf-save" onClick={() => (window as unknown as { handleSavePrice?: () => void }).handleSavePrice?.()}>
+            <button type="button" className="mf-save" onClick={handleSavePrice}>
               저장
             </button>
           </div>
@@ -327,7 +319,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
 
       {/* 지도 모달 */}
       <div className="modal-backdrop" id="modal-map">
-        <div className="modal">
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-head">
             <h3>편집 위치·지도</h3>
             <button type="button" className="modal-close" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("map")}>
@@ -352,7 +344,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             <button type="button" className="mf-cancel" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("map")}>
               취소
             </button>
-            <button type="button" className="mf-save" onClick={() => (window as unknown as { handleSaveMap?: () => void }).handleSaveMap?.()}>
+            <button type="button" className="mf-save" onClick={handleSaveMap}>
               저장
             </button>
           </div>
@@ -361,7 +353,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
 
       {/* 리뷰 모달 */}
       <div className="modal-backdrop" id="modal-reviews">
-        <div className="modal">
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-head">
             <h3>편집 리뷰 섹션</h3>
             <button type="button" className="modal-close" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("reviews")}>
@@ -386,7 +378,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
 
       {/* 유사 업소 모달 */}
       <div className="modal-backdrop" id="modal-similar">
-        <div className="modal">
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-head">
             <h3>편집 유사 업소</h3>
             <button type="button" className="modal-close" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("similar")}>

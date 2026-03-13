@@ -429,16 +429,24 @@ export async function getVenueDetail(
       }
     }
     if (aiIntro) {
+      const paras = descToIntroParagraphs(aiIntro);
       fallbackVenue = {
         ...fallbackVenue,
         introTitle: `${introPartner?.name ?? fallbackVenue.name} 소개`,
-        introParagraphs: [aiIntro],
+        introParagraphs: paras.length > 0 ? paras : [aiIntro],
       };
     }
     return fallbackVenue;
   }
 
   return null;
+}
+
+/** AI 소개 텍스트를 페이지 introParagraphs 형식으로 변환 (빈 줄로 단락 구분) */
+function descToIntroParagraphs(desc: string | undefined): string[] {
+  if (!desc?.trim()) return [];
+  const paras = desc.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  return paras.length > 0 ? paras : [desc.trim()];
 }
 
 function partnerToVenueDetail(
@@ -471,7 +479,7 @@ function partnerToVenueDetail(
     hours: "영업시간 문의",
     infoCards: base.infoCards ?? [],
     introTitle: `${p.name} 소개`,
-    introParagraphs: [p.desc || ""],
+    introParagraphs: descToIntroParagraphs(p.desc),
     priceRows: base.priceRows ?? [],
     priceNote: base.priceNote ?? "",
     opList: base.opList ?? [],

@@ -434,7 +434,37 @@ export async function getVenueDetail(
   });
 
   if (match) {
-    return partnerToVenueDetail(match, regionSlug, categorySlug, venueSlug);
+    let venue = partnerToVenueDetail(match, regionSlug, categorySlug, venueSlug);
+    // 제휴업체도 venue_intros에 v2가 있으면 적용 (정확한 맵핑)
+    try {
+      const { data: introRow } = await supabaseAdmin
+        .from("venue_intros")
+        .select("intro_ai_json")
+        .eq("partner_id", match.id)
+        .not("intro_ai_json", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const introJson = introRow?.intro_ai_json as { v2?: { tagline?: string; intro?: { label?: string; headline?: string; lead?: string; quote?: string; body_paragraphs?: string[] } } } | null;
+      if (introJson?.v2?.intro) {
+        const v2 = introJson.v2;
+        const v2Intro = v2.intro;
+        venue = {
+          ...venue,
+          tagline: v2.tagline ?? venue.tagline,
+          introLabel: v2Intro.label ?? "ABOUT · 업소 소개",
+          introHeadline: v2Intro.headline ?? `${match.name} 소개`,
+          introLead: v2Intro.lead ?? "",
+          introQuote: v2Intro.quote ?? undefined,
+          introBodyParagraphs: v2Intro.body_paragraphs ?? [],
+          introTitle: v2Intro.headline ?? `${match.name} 소개`,
+          introParagraphs: [v2Intro.lead ?? "", ...(v2Intro.body_paragraphs ?? [])].filter(Boolean),
+        };
+      }
+    } catch {
+      /* ignore */
+    }
+    return venue;
   }
 
   // 2) Fallback 데이터로 대체 (partners에 없을 때)

@@ -142,8 +142,33 @@ export type VenueIntroResult =
   | { success: true; text: string; v2?: VenueIntroV2; elapsedMs?: number }
   | { success: false; message: string; httpStatus?: number; diag?: Record<string, unknown> }
 
+/** 생성 글에서 이모지 제거 (프롬프트 지시 외 안전장치) */
+const EMOJI_REGEX = /[\u{1F300}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2300}-\u{23FF}]|[\u{2B50}\u{2705}\u{274C}\u{2728}\u{2764}\u{2763}\u{FE0F}]/gu
+function stripEmoji(s: string): string {
+  return s.replace(EMOJI_REGEX, '').trim()
+}
+
+function stripEmojiFromV2(v: VenueIntroV2): VenueIntroV2 {
+  const out: VenueIntroV2 = {}
+  if (typeof v.tagline === 'string') out.tagline = stripEmoji(v.tagline)
+  if (v.intro && typeof v.intro === 'object') {
+    const i = v.intro
+    out.intro = {
+      ...(typeof i.label === 'string' && { label: stripEmoji(i.label) }),
+      ...(typeof i.headline === 'string' && { headline: stripEmoji(i.headline) }),
+      ...(typeof i.lead === 'string' && { lead: stripEmoji(i.lead) }),
+      ...(typeof i.quote === 'string' && { quote: stripEmoji(i.quote) }),
+      ...(Array.isArray(i.body_paragraphs) && {
+        body_paragraphs: i.body_paragraphs.map((p) => (typeof p === 'string' ? stripEmoji(p) : p)),
+      }),
+    }
+  }
+  return out
+}
+
 const V2_JSON_INSTRUCTION = `
 [출력 형식 - JSON] 반드시 아래 JSON만 출력해라. 다른 설명 없이 JSON만.
+[금지] 이모지(emoji)를 절대 사용하지 마라. 이모지 없이 텍스트만 작성할 것.
 전체 길이: lead+quote+body_paragraphs 합계 2,500자 이상 3,000자 이내.
 {
   "tagline": "지역명 업종명 — 한 줄 캐치프레이즈 (예: 강남 가라오케의 기준 — 20년 업력이 만든 신뢰)",
@@ -210,15 +235,18 @@ export async function generateVenueIntro(
 
     const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text
     if (rawText && typeof rawText === 'string') {
-      const text = rawText.trim()
+      let text = rawText.trim()
       let v2: VenueIntroV2 | undefined
       if (format === 'json') {
         try {
           const cleaned = text.replace(/^```json?\s*/i, '').replace(/\s*```\s*$/, '').trim()
           v2 = JSON.parse(cleaned) as VenueIntroV2
+          v2 = stripEmojiFromV2(v2)
         } catch {
           v2 = undefined
         }
+      } else {
+        text = stripEmoji(text)
       }
       return { success: true, text, v2, elapsedMs }
     }

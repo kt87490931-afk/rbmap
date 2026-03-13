@@ -214,7 +214,7 @@ export default async function VenueDetailPage({
               <div className="hb-phone-sub" id="d-phone-sub">{phoneSub}</div>
             </div>
             <div className="hb-phone-right">
-              <a href={`tel:${data.contact.replace(/\D/g, "")}`} className="btn-call-hero" id="d-phone-link">
+              <a href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} className="btn-call-hero" id="d-phone-link">
                 <span>📞</span> 전화 예약
               </a>
               <Link href="/contact" className="btn-kakao">
@@ -312,7 +312,7 @@ export default async function VenueDetailPage({
               </tbody>
             </table>
             {data.priceNote && (
-              <p className="price-note" id="price-note" dangerouslySetInnerHTML={{ __html: data.priceNote.split("\n").map((l) => l).join("<br />") }} />
+              <p className="price-note" id="price-note" dangerouslySetInnerHTML={{ __html: (data.priceNote ?? "").split("\n").map((l) => l).join("<br />") }} />
             )}
           </div>
         </section>
@@ -398,7 +398,7 @@ export default async function VenueDetailPage({
           <section className="art-section" id="seo-section">
             <span className="sec-label">GUIDE · {regionName} {typeName} 이용 가이드</span>
             <h2 className="art-h2">{regionName} {typeName} <em>완벽 가이드</em></h2>
-            {data.seoCols.map((col, i) => (
+            {(data.seoCols ?? []).map((col, i) => (
               <div key={i}>
                 {col.blocks.map((b, j) =>
                   b.type === "h3" ? (
@@ -411,7 +411,7 @@ export default async function VenueDetailPage({
             ))}
             {(data.seoKwLinks ?? []).length > 0 && (
               <div className="seo-kw" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 16 }}>
-                {data.seoKwLinks.map((k, i) => (
+                {(data.seoKwLinks ?? []).map((k, i) => (
                   <Link key={i} href={k.href} style={{ fontSize: 11, color: "var(--dim)", textDecoration: "none", border: "1px solid var(--border2)", padding: "3px 9px", borderRadius: 3 }}>{k.text}</Link>
                 ))}
               </div>
@@ -440,7 +440,7 @@ export default async function VenueDetailPage({
           introTitle: data.introTitle,
           introParagraphs: data.introParagraphs ?? [],
           priceLead: data.priceLead,
-          priceNote: data.priceNote,
+          priceNote: data.priceNote ?? "",
           mapEmbed: data.mapEmbed,
           infoCards: data.infoCards ?? [],
         }}
@@ -448,7 +448,7 @@ export default async function VenueDetailPage({
 
       {/* Mobile CTA */}
       <div className="mobile-cta">
-        <a href={`tel:${data.contact.replace(/\D/g, "")}`} className="btn-m mcta-call">📞 전화 예약</a>
+        <a href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} className="btn-m mcta-call">📞 전화 예약</a>
         <Link href="/contact" className="btn-m mcta-kakao">💬 카카오</Link>
       </div>
 
@@ -457,7 +457,7 @@ export default async function VenueDetailPage({
         <div className="cta-strip">
           <h2>{data.name} 예약 및 문의</h2>
           <p>전화·카카오톡으로 편하게 예약하세요. 방문 전 가격 확인을 권장합니다.</p>
-          <a href={`tel:${data.contact.replace(/\D/g, "")}`} className="btn-primary">전화 예약하기</a>
+          <a href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} className="btn-primary">전화 예약하기</a>
         </div>
       </div>
 

@@ -21,7 +21,7 @@ type VenueEditModalsProps = {
     introTitle: string;
     introParagraphs: string[];
     priceLead?: string;
-    priceNote: string;
+    priceNote?: string;
     mapEmbed?: string;
     infoCards: { label: string; val: string; sub: string }[];
   };
@@ -187,7 +187,13 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
     };
   }, [closeModal]);
 
-  const firstPrice = data.infoCards?.find((c) => c.val?.includes("만"))?.val ?? "55만원~";
+  if (!data) return null;
+  const safe = {
+    contact: data.contact ?? "",
+    hours: data.hours ?? "",
+    priceNote: data.priceNote ?? "",
+  };
+  const firstPrice = data?.infoCards?.find((c) => c?.val?.includes("만"))?.val ?? "55만원~";
   const lineup = data.infoCards?.find((c) => c.label?.includes("라인") || c.label?.includes("룸"))?.val ?? "50명+";
   const parking = data.infoCards?.find((c) => c.label?.includes("주차"))?.val ?? "발렛";
   const tagline = data.tagline ?? data.introTitle ?? "";
@@ -219,7 +225,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             </div>
             <div className="mf-row">
               <label>전화번호</label>
-              <input type="tel" id="m-phone" defaultValue={data.contact} />
+              <input type="tel" id="m-phone" defaultValue={safe.contact} />
             </div>
             <div className="mf-row">
               <label>1인 주대</label>
@@ -231,7 +237,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             </div>
             <div className="mf-row">
               <label>영업시간</label>
-              <input type="text" id="m-hours" defaultValue={data.hours} />
+              <input type="text" id="m-hours" defaultValue={safe.hours} />
             </div>
             <div className="mf-row">
               <label>주차</label>
@@ -303,7 +309,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             </div>
             <div className="mf-row">
               <label>주의사항 (하단 노트)</label>
-              <textarea id="m-price-note" rows={3} defaultValue={data.priceNote || ""} />
+              <textarea id="m-price-note" rows={3} defaultValue={safe.priceNote} />
             </div>
           </div>
           <div className="modal-foot">

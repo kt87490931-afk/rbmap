@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [counts, setCounts] = useState({ regions: 0, partners: 0, feed: 0, reviews: 0 })
+  const [telegramTest, setTelegramTest] = useState<'idle' | 'sending' | 'ok' | 'fail'>('idle')
 
   const fetchCounts = useCallback(async () => {
     try {
@@ -67,6 +68,25 @@ export default function AdminDashboard() {
           <a href="/admin/partners" className="btn-success" style={{ textDecoration: 'none' }}>🤝 제휴업체 관리</a>
           <a href="/admin/live-feed" className="btn-save" style={{ textDecoration: 'none' }}>📡 Live Feed 관리</a>
           <a href="/admin/reviews" className="btn-success" style={{ textDecoration: 'none' }}>⭐ 리뷰 관리</a>
+          <a href="/admin/seo" className="btn-save" style={{ textDecoration: 'none' }}>🔍 SEO</a>
+          <a href="/admin/visit-logs" className="btn-save" style={{ textDecoration: 'none' }}>📋 접속자 로그</a>
+          <a href="/admin/threats" className="btn-save" style={{ textDecoration: 'none' }}>🚨 위험 감지</a>
+          <button
+            type="button"
+            className="btn-save"
+            disabled={telegramTest === 'sending'}
+            onClick={async () => {
+              setTelegramTest('sending')
+              try {
+                const r = await fetch('/api/admin/telegram-test', { method: 'POST' })
+                const data = await r.json()
+                setTelegramTest(data.ok ? 'ok' : 'fail')
+              } catch { setTelegramTest('fail') }
+              setTimeout(() => setTelegramTest('idle'), 2000)
+            }}
+          >
+            {telegramTest === 'sending' ? '📤 전송 중...' : telegramTest === 'ok' ? '✅ 텔레그램 성공' : telegramTest === 'fail' ? '❌ 실패' : '📱 텔레그램 테스트'}
+          </button>
         </div>
       </div>
     </>

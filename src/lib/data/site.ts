@@ -17,6 +17,7 @@ export type SiteSectionKey =
   | 'feed_config'
   | 'review_config'
   | 'region_sidebar'
+  | 'seo'
 
 const FALLBACKS: Record<SiteSectionKey, unknown> = {
   hero: {
@@ -205,6 +206,13 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
     cols: [],
   },
   region_sidebar: {} as Record<string, { priceRows?: { type: string; val: string; chg: string }[]; priceNote?: string; tips?: { title: string; text: string; color: string }[]; nearbyRegions?: { slug: string; name: string; venues: number; reviews: number }[] }>,
+  seo: {
+    title: '룸빵여지도 | 전국 가라오케·룸싸롱·하이퍼블릭 지역별 정보',
+    description: '강남, 수원, 동탄, 제주 등 전국 지역별 가라오케·룸싸롱·하이퍼블릭 정보',
+    ogImage: 'https://rbbmap.com/og-image.png',
+    siteUrl: 'https://rbbmap.com',
+    googleVerify: '',
+  },
   region_preview: {
     regions: [
       { href: '/gangnam', region: '강남', count: '82개 업소 등록', venues: [{ vname: '달토 가라오케', type: '가라오케', star: '★4.9' }, { vname: '퍼펙트 가라오케', type: '가라오케', star: '★4.8' }] },

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import {
@@ -8,6 +9,7 @@ import {
   checkOtpLockout,
   recordOtpAttempt,
 } from '@/lib/otp'
+import { notifyAdminLogin } from '@/lib/telegram'
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -50,6 +52,13 @@ export async function POST(request: Request) {
   }
 
   await setOtpSessionCookie(session.user.id)
+
+  const headersList = await headers()
+  const forwarded = headersList.get('x-forwarded-for')
+  const realIp = headersList.get('x-real-ip')
+  const ip = forwarded?.split(',')[0]?.trim() || realIp || 'unknown'
+  const email = (session.user as { email?: string }).email ?? session.user.name ?? 'admin'
+  notifyAdminLogin(email, ip).catch(() => {})
 
   return NextResponse.json({ ok: true })
 }

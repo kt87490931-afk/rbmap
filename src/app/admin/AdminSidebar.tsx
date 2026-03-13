@@ -16,6 +16,9 @@ const NAV_ITEMS = [
   { href: '/admin/reviews', icon: '⭐', label: '리뷰 관리' },
   { href: '/admin/reviews/generate', icon: '🤖', label: '리뷰생성' },
   { href: '/admin/reviews/write', icon: '✍️', label: '리뷰 작성' },
+  { href: '/admin/seo', icon: '🔍', label: 'Google SEO' },
+  { href: '/admin/visit-logs', icon: '📋', label: '접속자 로그' },
+  { href: '/admin/threats', icon: '🚨', label: '위험 감지' },
   { href: '/admin/cron-health', icon: '💓', label: '크론헬스' },
 ]
 

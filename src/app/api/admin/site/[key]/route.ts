@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 const VALID_KEYS = [
   'hero', 'ticker', 'header', 'about', 'region_guide', 'category_guide',
   'widgets_a', 'widgets_b', 'stats', 'cta', 'footer', 'region_preview',
-  'partners_config', 'feed_config', 'review_config', 'region_sidebar',
+  'partners_config', 'feed_config', 'review_config', 'region_sidebar', 'seo',
 ] as const
 
 function isEmptyObj(obj: unknown): boolean {

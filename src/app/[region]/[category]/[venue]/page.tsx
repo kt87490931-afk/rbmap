@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+
+export const dynamic = "force-dynamic";
 import {
   getVenueDetail,
   REGION_SLUGS,

@@ -368,8 +368,13 @@ export async function getVenueDetail(
     return null;
   }
 
-  // 1) Partners에서 매칭 시도 (DB 제휴업체가 우선)
-  const partners = await getPartners();
+  // 1) Partners에서 매칭 시도 (DB 제휴업체가 우선) — 실패 시 fallback으로
+  let partners: Awaited<ReturnType<typeof getPartners>> = [];
+  try {
+    partners = await getPartners();
+  } catch {
+    partners = [];
+  }
   const match = partners.find((p) => {
     const pRegionMatch = p.region?.includes(regionName) || regionName?.includes(p.region ?? "");
     const pTypeMatch = p.type === typeName;
@@ -384,8 +389,9 @@ export async function getVenueDetail(
 
   // 2) Fallback 데이터로 대체 (partners에 없을 때)
   const regionFallback = FALLBACK_DETAIL[regionSlug];
-  if (regionFallback?.[venueSlug]) {
-    return regionFallback[venueSlug];
+  const fallbackVenue = regionFallback?.[venueSlug];
+  if (fallbackVenue) {
+    return fallbackVenue;
   }
 
   return null;

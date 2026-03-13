@@ -16,6 +16,7 @@ export type SiteSectionKey =
   | 'partners_config'
   | 'feed_config'
   | 'review_config'
+  | 'region_sidebar'
 
 const FALLBACKS: Record<SiteSectionKey, unknown> = {
   hero: {
@@ -203,6 +204,7 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
     ],
     cols: [],
   },
+  region_sidebar: {} as Record<string, { priceRows?: { type: string; val: string; chg: string }[]; priceNote?: string; tips?: { title: string; text: string; color: string }[]; nearbyRegions?: { slug: string; name: string; venues: number; reviews: number }[] }>,
   region_preview: {
     regions: [
       { href: '/gangnam', region: '강남', count: '82개 업소 등록', venues: [{ vname: '달토 가라오케', type: '가라오케', star: '★4.9' }, { vname: '퍼펙트 가라오케', type: '가라오케', star: '★4.8' }] },

@@ -1,9 +1,14 @@
 import { notFound } from "next/navigation";
 import { unstable_noStore } from "next/cache";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import RegionSidebarEditor from "@/components/region/RegionSidebarEditor";
 import { getRegionBySlug } from "@/lib/data/regions";
+import { authOptions } from "@/lib/auth";
+import { hasDevAdminCookie } from "@/lib/admin-auth";
+import { verifyOtpSession } from "@/lib/otp";
 import { getPartnersByRegion, getPartnerCountsByRegion } from "@/lib/data/partners";
 import { buildVenueUrl, TYPE_TO_SLUG } from "@/lib/data/venues";
 import { getRegions } from "@/lib/data/regions";
@@ -185,7 +190,7 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
   const { region } = await params;
 
   const regionNameFallback = SLUG_TO_REGION_NAME[region] ?? region;
-  const [regionData, partners, regions, partnerCounts, feedItems, reviews, header, footer] = await Promise.all([
+  const [regionData, partners, regions, partnerCounts, feedItems, reviews, header, footer, regionSidebar] = await Promise.all([
     getRegionBySlug(region),
     getPartnersByRegion(regionNameFallback, region),
     getRegions(),
@@ -194,13 +199,34 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
     getReviews(),
     getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>("header"),
     getSiteSection<{ desc?: string; copyright?: string; links?: { label: string; href: string }[] }>("footer"),
+    getSiteSection<Record<string, { priceRows?: { type: string; val: string; chg: string }[]; priceNote?: string; tips?: { title: string; text: string; color: string }[]; nearbyRegions?: { slug: string; name: string; venues: number; reviews: number }[] }>>("region_sidebar"),
   ]);
 
   if (!regionData) notFound();
 
+  let isAdmin = await hasDevAdminCookie();
+  if (!isAdmin) {
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.role === "admin" && session?.user?.id) {
+        isAdmin = await verifyOtpSession(session.user.id);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const sidebarOverride = (regionSidebar ?? {})[region];
+  const cfg = REGION_CFG[region] ?? REGION_CFG.gangnam;
+  const sidebarCfg = {
+    priceRows: sidebarOverride?.priceRows ?? cfg.priceRows,
+    priceNote: sidebarOverride?.priceNote ?? "※ 주 1회 업데이트 · 실제 가격은 업소마다 상이",
+    tips: sidebarOverride?.tips ?? cfg.tips,
+    nearbyRegions: sidebarOverride?.nearbyRegions,
+  };
+
   const regionName = regionData.name ?? regionNameFallback;
   const r = regionData;
-  const cfg = REGION_CFG[region] ?? REGION_CFG.gangnam;
   const regionPartners = partners.length > 0 ? partners : (r.name ? await getPartnersByRegion(r.name, region) : []);
   const regionFeed = feedItems.filter((f) => f.pill?.includes(r.name ?? "") || f.href?.includes(`/${region}/`)).slice(0, 5);
   const regionReviews = reviews.filter((rev) => rev.region?.includes(r.name ?? "") || rev.href?.includes(`/${region}/`)).slice(0, 3);
@@ -208,10 +234,12 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
     .filter((x) => x.slug !== region && !x.coming)
     .slice(0, 4)
     .map((o) => ({
-      ...o,
+      slug: o.slug,
+      name: o.name ?? o.slug,
       venues: partnerCounts[o.slug]?.venues ?? o.venues ?? 0,
       reviews: o.reviews ?? 0,
     }));
+  const displayOtherRegions = sidebarCfg.nearbyRegions?.length ? sidebarCfg.nearbyRegions : otherRegions;
   const seo = SEO_CONTENT[region] ?? SEO_CONTENT.gangnam;
 
   const DISPLAY_PARTNERS_LIMIT = 6;
@@ -429,13 +457,19 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
                 <Link href={`/${region}/venues`} className="btn-ghost btn-sm">{r.name} 전체 업소 {Math.max(r.venues ?? 0, venueCards.length)}개 보기 →</Link>
               </div>
             </div>
-            <div className="sidebar">
+            <div className="sidebar" style={{ position: "relative" }}>
+              <RegionSidebarEditor
+                isAdmin={!!isAdmin}
+                region={region}
+                regionName={r.name ?? region}
+                initialConfig={{ priceRows: sidebarCfg.priceRows, priceNote: sidebarCfg.priceNote, tips: sidebarCfg.tips, nearbyRegions: displayOtherRegions }}
+              />
               <div className="sidebar-widget">
                 <div className="sw-title">💰 {r.name} 평균 가격 (1인)</div>
                 <table className="ptable">
                   <thead><tr><th>업종</th><th style={{ textAlign: "right" }}>평균</th><th style={{ textAlign: "right" }}>변동</th></tr></thead>
                   <tbody>
-                    {cfg.priceRows.map((row, i) => (
+                    {(sidebarCfg.priceRows ?? []).map((row, i) => (
                       <tr key={i}>
                         <td><span className="p-type">{row.type}</span></td>
                         <td className="p-val">{row.val}</td>
@@ -444,14 +478,14 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
                     ))}
                   </tbody>
                 </table>
-                <p style={{ fontSize: 10, color: "var(--dim)", marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)" }}>※ 주 1회 업데이트 · 실제 가격은 업소마다 상이</p>
+                <p style={{ fontSize: 10, color: "var(--dim)", marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)" }}>{sidebarCfg.priceNote}</p>
               </div>
               <div className="sidebar-widget">
                 <div className="sw-title">🗺 인근 지역 바로가기</div>
                 <div className="nearby-list">
-                  {otherRegions.slice(0, 3).map((o, i) => (
+                  {displayOtherRegions.slice(0, 5).map((o, i) => (
                     <Link key={o.slug} href={`/${o.slug}`} className="nearby-item">
-                      <span className="nearby-icon">{["🔵", "🟢", "🟣"][i] || "📍"}</span>
+                      <span className="nearby-icon">{["🔵", "🟢", "🟣", "🟠", "🔴"][i] || "📍"}</span>
                       <div className="nearby-info">
                         <div className="nearby-name">{o.name}</div>
                         <div className="nearby-sub">{o.venues}개 업소 · {o.reviews}개 리뷰</div>
@@ -464,7 +498,7 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
               <div className="sidebar-widget">
                 <div className="sw-title">💡 {r.name} 이용 팁</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                  {cfg.tips.map((tip, i) => (
+                  {(sidebarCfg.tips ?? []).map((tip, i) => (
                     <div key={i} style={{ fontSize: 12, color: "var(--muted)", padding: "9px 10px", background: "var(--deep)", borderRadius: 5, borderLeft: `2px solid ${tip.color}`, lineHeight: 1.7 }}>
                       <strong style={{ color: "var(--text)", display: "block", marginBottom: 3 }}>{tip.title}</strong>
                       {tip.text}

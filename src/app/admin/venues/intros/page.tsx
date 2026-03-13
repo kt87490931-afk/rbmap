@@ -8,9 +8,31 @@ interface IntroItem {
   form_json: { name?: string; region?: string; type?: string }
   ai_tone: string
   period_days: number
-  intro_ai_json?: { content?: string; generated_at?: string; elapsed_ms?: number }
+  intro_ai_json?: { content?: string; v2?: { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }; generated_at?: string; elapsed_ms?: number }
   is_public?: boolean
   created_at: string
+}
+
+/** JSON 형태로 저장된 content를 읽기용 텍스트로 변환 */
+function contentToDisplayText(item: IntroItem): string {
+  const raw = item.intro_ai_json?.content ?? ''
+  const v2 = item.intro_ai_json?.v2
+  if (v2?.intro) {
+    const parts = [v2.intro.lead, v2.intro.quote, ...(v2.intro.body_paragraphs ?? [])].filter(Boolean)
+    return parts.join('\n\n')
+  }
+  const trimmed = raw.trim()
+  if (trimmed.startsWith('{') || trimmed.startsWith('```')) {
+    try {
+      const cleaned = trimmed.replace(/^```json?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+      const parsed = JSON.parse(cleaned) as { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }
+      if (parsed?.intro) {
+        const parts = [parsed.intro.lead, parsed.intro.quote, ...(parsed.intro.body_paragraphs ?? [])].filter(Boolean)
+        return parts.join('\n\n')
+      }
+    } catch { /* fallthrough */ }
+  }
+  return raw
 }
 
 function formatDateTime(s: string) {
@@ -67,6 +89,7 @@ export default function AdminVenueIntrosPage() {
         intro_ai_json: {
           ...editingItem.intro_ai_json,
           content: editContent,
+          v2: undefined,
         },
       }
       const res = await fetch(`/api/admin/venues/intro/${editingItem.id}`, {
@@ -81,7 +104,7 @@ export default function AdminVenueIntrosPage() {
       setItems((prev) =>
         prev.map((r) =>
           r.id === editingItem.id
-            ? { ...r, intro_ai_json: { ...r.intro_ai_json, content: editContent } }
+            ? { ...r, intro_ai_json: { ...r.intro_ai_json, content: editContent, v2: undefined } }
             : r
         )
       )
@@ -97,7 +120,7 @@ export default function AdminVenueIntrosPage() {
 
   function openEditModal(item: IntroItem) {
     setEditingItem(item)
-    setEditContent(item.intro_ai_json?.content || '')
+    setEditContent(contentToDisplayText(item))
   }
 
   const getName = (x: IntroItem) =>
@@ -170,13 +193,13 @@ export default function AdminVenueIntrosPage() {
           <span>
             <strong>성공</strong>{' '}
             <span style={{ color: 'var(--green)' }}>
-              {items.filter((x) => !!(x.intro_ai_json?.content || '').trim()).length}
+              {items.filter((x) => contentToDisplayText(x).trim().length > 0).length}
             </span>
           </span>
           <span>
             <strong>실패</strong>{' '}
             <span style={{ color: 'var(--red, #ff4757)' }}>
-              {items.filter((x) => !(x.intro_ai_json?.content || '').trim()).length}
+              {items.filter((x) => contentToDisplayText(x).trim().length === 0).length}
             </span>
           </span>
           <span>
@@ -193,8 +216,9 @@ export default function AdminVenueIntrosPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {items.map((r) => {
-              const aiContent = r.intro_ai_json?.content || ''
-              const hasAi = !!aiContent.trim()
+              const rawContent = r.intro_ai_json?.content || ''
+              const displayContent = contentToDisplayText(r)
+              const hasAi = !!(rawContent.trim() || displayContent.trim())
               return (
                 <div
                   key={r.id}
@@ -281,14 +305,14 @@ export default function AdminVenueIntrosPage() {
                     }}
                   >
                     {hasAi ? (
-                      aiContent
+                      displayContent
                     ) : (
                       <span>— AI 작성글이 없습니다. 업체소개글 작성에서 AI 생성 버튼을 누른 뒤 임시저장해 주세요. —</span>
                     )}
                   </div>
                   {hasAi && (
                     <div style={{ padding: '6px 14px', fontSize: 11, color: 'var(--muted)', borderTop: '1px solid var(--border)' }}>
-                      {aiContent.length}자
+                      {displayContent.length}자
                     </div>
                   )}
                 </div>
@@ -342,7 +366,7 @@ export default function AdminVenueIntrosPage() {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(viewingItem.intro_ai_json?.content || '')}
+                  onClick={() => copyToClipboard(contentToDisplayText(viewingItem))}
                   style={{ fontSize: 12, padding: '6px 12px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
                 >
                   복사
@@ -367,7 +391,7 @@ export default function AdminVenueIntrosPage() {
                 flex: 1,
               }}
             >
-              {viewingItem.intro_ai_json?.content || '— AI 작성글이 없습니다. —'}
+              {contentToDisplayText(viewingItem) || '— AI 작성글이 없습니다. —'}
             </div>
           </div>
         </div>

@@ -166,18 +166,38 @@ function stripEmojiFromV2(v: VenueIntroV2): VenueIntroV2 {
   return out
 }
 
+/** v2 본문(lead+quote+body_paragraphs) 총 글자 수 */
+function getV2ContentLength(v: VenueIntroV2): number {
+  if (!v?.intro) return 0
+  const i = v.intro
+  const lead = (typeof i.lead === 'string' ? i.lead : '').length
+  const quote = (typeof i.quote === 'string' ? i.quote : '').length
+  const body = Array.isArray(i.body_paragraphs)
+    ? i.body_paragraphs.reduce((sum, p) => sum + (typeof p === 'string' ? p : '').length, 0)
+    : 0
+  return lead + quote + body
+}
+
+const MIN_CONTENT_LENGTH = 2300
+
 const V2_JSON_INSTRUCTION = `
-[출력 형식 - JSON] 반드시 아래 JSON만 출력해라. 다른 설명 없이 JSON만.
-[금지] 이모지(emoji)를 절대 사용하지 마라. 이모지 없이 텍스트만 작성할 것.
-전체 길이: lead+quote+body_paragraphs 합계 2,500자 이상 3,000자 이내.
+[출력 형식 - JSON] 반드시 아래 JSON만 출력해라. 마크다운 코드블록(백틱), 설명, 주석 절대 금지. 순수 JSON만.
+[금지] 이모지(emoji) 절대 사용 금지. 텍스트만.
+
+[필수 분량 - 반드시 준수] lead+quote+body_paragraphs 합계 2,500자 이상 3,000자 이내.
+- lead: 280~350자 (핵심 요약)
+- quote: 180~250자 (인용 강조 문장, 없으면 null)
+- body_paragraphs: 최소 5개 단락, 각 350~500자, 합계 2,000자 이상 (본문의 대부분을 차지)
+- 총합이 2,500자 미만이면 실패로 간주함.
+
 {
-  "tagline": "지역명 업종명 — 한 줄 캐치프레이즈 (예: 강남 가라오케의 기준 — 20년 업력이 만든 신뢰)",
+  "tagline": "지역명 업종명 — 한 줄 캐치프레이즈 (50자 내외)",
   "intro": {
     "label": "ABOUT · 업소 소개",
-    "headline": "업소명 — 지역명 업종명의 새로운 기준 (em dash 기준 앞/뒤)",
-    "lead": "리드 문장 1개 (크게 표시할 핵심 요약, 300자 내외)",
-    "quote": "인용 강조할 문장 1개 (선택, 없으면 null, 200자 내외)",
-    "body_paragraphs": ["본문 단락1", "본문 단락2", "본문 단락3", "..."]
+    "headline": "업소명 — 지역명 업종명의 새로운 기준",
+    "lead": "리드 문장 280~350자로 작성. 업소 핵심 특징을 요약.",
+    "quote": "인용 강조 문장 180~250자. 없으면 null",
+    "body_paragraphs": ["본문 단락1 (350~500자)", "본문 단락2 (350~500자)", "본문 단락3 (350~500자)", "본문 단락4 (350~500자)", "본문 단락5 (350~500자)"]
   }
 }
 `
@@ -242,8 +262,21 @@ export async function generateVenueIntro(
           const cleaned = text.replace(/^```json?\s*/i, '').replace(/\s*```\s*$/, '').trim()
           v2 = JSON.parse(cleaned) as VenueIntroV2
           v2 = stripEmojiFromV2(v2)
+          const len = getV2ContentLength(v2)
+          if (len < MIN_CONTENT_LENGTH) {
+            return {
+              success: false,
+              message: `생성된 글이 ${len}자로 분량 부족입니다. 2,500자 이상이 필요합니다. 다시 생성해 주세요.`,
+              diag: { contentLength: len, required: MIN_CONTENT_LENGTH },
+            }
+          }
+          text = [v2.intro?.lead, v2.intro?.quote, ...(v2.intro?.body_paragraphs ?? [])].filter(Boolean).join('\n\n')
         } catch {
-          v2 = undefined
+          return {
+            success: false,
+            message: 'AI 응답 JSON 파싱에 실패했습니다. 다시 생성해 주세요.',
+            diag: { rawPreview: text.slice(0, 200) },
+          }
         }
       } else {
         text = stripEmoji(text)

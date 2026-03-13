@@ -448,7 +448,7 @@ export async function getVenueDetail(
       const introJson = introRow?.intro_ai_json as { v2?: { tagline?: string; intro?: { label?: string; headline?: string; lead?: string; quote?: string; body_paragraphs?: string[] } } } | null;
       if (introJson?.v2?.intro) {
         const v2 = introJson.v2;
-        const v2Intro = v2.intro;
+        const v2Intro = v2!.intro!;
         venue = {
           ...venue,
           tagline: v2.tagline ?? venue.tagline,

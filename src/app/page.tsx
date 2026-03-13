@@ -17,8 +17,15 @@ import CTAStrip from "@/components/CTAStrip";
 import FullReviewSection from "@/components/FullReviewSection";
 import Footer from "@/components/Footer";
 import { getPartners } from "@/lib/data/partners";
-import { getFeedItems } from "@/lib/data/feed";
+import type { FeedItem } from "@/lib/data/feed";
 import { getReviews } from "@/lib/data/reviews";
+import {
+  getReviewPostsList,
+  buildReviewUrl,
+  getRegionName,
+  getTypeName,
+  formatStars,
+} from "@/lib/data/review-posts";
 import { getSiteSection } from "@/lib/data/site";
 import { authOptions } from "@/lib/auth";
 import { hasDevAdminCookie } from "@/lib/admin-auth";
@@ -64,13 +71,33 @@ export default async function Home() {
   const gridLimit = reviewConfig?.grid_limit ?? 6;
   const fullLimit = reviewConfig?.full_limit ?? 10;
 
-  const [partners, feedItems, reviews] = await Promise.all([
+  const [partners, reviewPosts, reviews] = await Promise.all([
     getPartners(pLimit === 0 ? undefined : pLimit),
-    getFeedItems(feedLimit),
+    getReviewPostsList({ limit: feedLimit }),
     getReviews(),
   ]);
 
   const partnerList = pLimit > 0 ? partners.slice(0, pLimit) : partners;
+
+  const feedItems: FeedItem[] = reviewPosts.map((p, i) => {
+    const dt = p.published_at || p.created_at;
+    const timeStr = dt
+      ? new Date(dt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false })
+      : "";
+    const regionName = getRegionName(p.region);
+    const typeName = getTypeName(p.type);
+    return {
+      id: p.id,
+      href: buildReviewUrl(p.region, p.type, p.venue_slug, p.slug),
+      pill: regionName,
+      pill_class: `p-${p.region}`,
+      title: p.title,
+      sub: `${p.venue} · ${typeName} · 새 리뷰 등록`,
+      stars: formatStars(p.star),
+      time: timeStr,
+      sort_order: i,
+    };
+  });
 
   return (
     <>

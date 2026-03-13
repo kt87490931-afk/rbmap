@@ -223,12 +223,15 @@ export default async function VenueDetailPage({
             </div>
           </div>
           <div className="hb-info-strip">
-            {infoCards.slice(0, 5).map((card, i) => (
-              <div key={i} className="hb-info-item">
-                <span className="hb-info-label">{stripEmoji(card.label)}</span>
-                <span className={`hb-info-val ${card.gold ? "gold" : ""} ${card.green ? "green" : ""}`}>{card.val}</span>
-              </div>
-            ))}
+            {infoCards.slice(0, 5).map((card, i) => {
+              const editId = i === 0 ? "d-price" : i === 1 ? "d-lineup" : i === 2 ? "d-hours" : i === 3 ? "d-parking" : undefined;
+              return (
+                <div key={i} className="hb-info-item">
+                  <span className="hb-info-label">{stripEmoji(card.label)}</span>
+                  <span id={editId} className={`hb-info-val ${card.gold ? "gold" : ""} ${card.green ? "green" : ""}`}>{card.val}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
         <div className="hb-line" aria-hidden />
@@ -281,7 +284,7 @@ export default async function VenueDetailPage({
           <VenueEditButton section="price" />
           <span className="sec-label">PRICE · 가격 안내</span>
           <h2 className="art-h2">가격 <em>안내</em></h2>
-          {data.priceLead && <p className="art-lead" id="price-lead">{data.priceLead}</p>}
+          {data.priceLead ? <p className="art-lead" id="price-lead">{data.priceLead}</p> : <p className="art-lead" id="price-lead" style={{ display: "none" }} />}
           <div id="price-table-wrap">
             <table className="price-table">
               <thead>

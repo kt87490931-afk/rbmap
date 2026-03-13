@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 type VenueEditModalsProps = {
   data: {
@@ -27,7 +27,142 @@ type VenueEditModalsProps = {
   };
 };
 
+function setEl(id: string | null, content: string, useInnerHtml = false) {
+  const el = id ? document.getElementById(id) : null;
+  if (el) {
+    if (useInnerHtml) el.innerHTML = content;
+    else el.textContent = content;
+  }
+}
+
 export function VenueEditModals({ data }: VenueEditModalsProps) {
+  const closeModal = useCallback((id: string) => {
+    const el = document.getElementById("modal-" + id);
+    if (el) {
+      el.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+  }, []);
+
+  const handleSaveHero = useCallback(() => {
+    const name = (document.getElementById("m-name") as HTMLInputElement)?.value ?? "";
+    const tagline = (document.getElementById("m-tagline") as HTMLInputElement)?.value ?? "";
+    const phone = (document.getElementById("m-phone") as HTMLInputElement)?.value ?? "";
+    const hours = (document.getElementById("m-hours") as HTMLInputElement)?.value ?? "";
+    const price = (document.getElementById("m-price") as HTMLInputElement)?.value ?? "";
+    const lineup = (document.getElementById("m-lineup") as HTMLInputElement)?.value ?? "";
+    const parking = (document.getElementById("m-parking") as HTMLInputElement)?.value ?? "";
+    setEl("d-name", name);
+    setEl("d-tagline", tagline);
+    setEl("d-phone", phone);
+    setEl("d-phone-sub", `${hours} · 전화·카카오 예약 가능`);
+    const link = document.getElementById("d-phone-link") as HTMLAnchorElement;
+    if (link) link.href = `tel:${phone.replace(/\D/g, "")}`;
+    setEl("d-price", price);
+    setEl("d-lineup", lineup);
+    setEl("d-hours", hours);
+    setEl("d-parking", parking);
+    closeModal("hero");
+  }, [closeModal]);
+
+  const handleSaveIntro = useCallback(() => {
+    const headlineRaw = (document.getElementById("m-intro-headline") as HTMLInputElement)?.value ?? "";
+    const lead = (document.getElementById("m-intro-lead") as HTMLTextAreaElement)?.value ?? "";
+    const quote = (document.getElementById("m-intro-quote") as HTMLTextAreaElement)?.value?.trim() ?? "";
+    const bodyText = (document.getElementById("m-intro-body") as HTMLTextAreaElement)?.value ?? "";
+    const bodyParagraphs = bodyText.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+    const parts = headlineRaw.split("—");
+    const headlineHtml = parts.length > 1 ? `${parts[0].trim()} — <em>${parts[1].trim()}</em>` : headlineRaw;
+    setEl("intro-headline", headlineHtml, true);
+    const leadEl = document.getElementById("intro-lead");
+    if (leadEl) {
+      leadEl.textContent = lead;
+      (leadEl as HTMLElement).style.display = lead ? "block" : "none";
+    } else if (lead) {
+      const h2 = document.getElementById("intro-headline");
+      if (h2) {
+        const p = document.createElement("p");
+        p.id = "intro-lead";
+        p.className = "art-lead";
+        p.textContent = lead;
+        h2.after(p);
+      }
+    }
+    const introBody = document.getElementById("intro-body");
+    if (introBody) {
+      introBody.querySelector(".art-quote")?.remove();
+      introBody.querySelectorAll(".art-p").forEach((p) => p.remove());
+      if (quote) {
+        const div = document.createElement("div");
+        div.className = "art-quote";
+        const p = document.createElement("p");
+        p.textContent = quote;
+        div.appendChild(p);
+        introBody.appendChild(div);
+      }
+      bodyParagraphs.forEach((txt) => {
+        const p = document.createElement("p");
+        p.className = "art-p";
+        p.innerHTML = txt.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\*(.*?)\*/g, "<em>$1</em>");
+        introBody.appendChild(p);
+      });
+    }
+    closeModal("intro");
+  }, [closeModal]);
+
+  const handleSavePrice = useCallback(() => {
+    const lead = (document.getElementById("m-price-lead") as HTMLTextAreaElement)?.value ?? "";
+    const note = (document.getElementById("m-price-note") as HTMLTextAreaElement)?.value ?? "";
+    const leadEl = document.getElementById("price-lead");
+    if (leadEl) {
+      leadEl.textContent = lead;
+      (leadEl as HTMLElement).style.display = lead ? "block" : "none";
+    }
+    const noteEl = document.getElementById("price-note");
+    if (noteEl) {
+      noteEl.innerHTML = note.split("\n").join("<br />");
+      (noteEl as HTMLElement).style.display = note ? "block" : "none";
+    } else if (note) {
+      const wrap = document.getElementById("price-table-wrap");
+      if (wrap) {
+        const p = document.createElement("p");
+        p.id = "price-note";
+        p.className = "price-note";
+        p.innerHTML = note.split("\n").join("<br />");
+        wrap.appendChild(p);
+      }
+    }
+    closeModal("price");
+  }, [closeModal]);
+
+  const handleSaveMap = useCallback(() => {
+    const url = (document.getElementById("m-map-url") as HTMLTextAreaElement)?.value?.trim() ?? "";
+    const address = (document.getElementById("m-address") as HTMLInputElement)?.value ?? "";
+    const addressSub = (document.getElementById("m-address-sub") as HTMLInputElement)?.value ?? "";
+    setEl("d-address", address);
+    const subEl = document.getElementById("d-address-sub");
+    if (addressSub && subEl) subEl.textContent = addressSub;
+    else if (addressSub && !subEl) {
+      const bar = document.querySelector(".map-address-bar div");
+      if (bar) {
+        const div = document.createElement("div");
+        div.id = "d-address-sub";
+        div.className = "ma-sub";
+        div.textContent = addressSub;
+        bar.appendChild(div);
+      }
+    } else if (subEl) subEl.textContent = "";
+    const wrap = document.querySelector(".map-wrap");
+    if (wrap) {
+      if (url) {
+        wrap.innerHTML = `<iframe src="${url.replace(/"/g, "&quot;")}" title="지도" style="width:100%;height:100%;border:none"></iframe>`;
+      } else {
+        wrap.innerHTML = `<div class="map-placeholder"><span>🗺</span><p style="font-size: 12px; color: var(--muted); text-align: center">구글맵 연동 예정<br /><span style="font-size: 10px; color: var(--dim)">${address || "주소 입력"}</span></p></div>`;
+      }
+    }
+    closeModal("map");
+  }, [closeModal]);
+
   useEffect(() => {
     const openModal = (id: string) => {
       const el = document.getElementById("modal-" + id);
@@ -36,15 +171,12 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
         document.body.style.overflow = "hidden";
       }
     };
-    const closeModal = (id: string) => {
-      const el = document.getElementById("modal-" + id);
-      if (el) {
-        el.classList.remove("open");
-        document.body.style.overflow = "";
-      }
-    };
     (window as unknown as { openModal: (id: string) => void }).openModal = openModal;
     (window as unknown as { closeModal: (id: string) => void }).closeModal = closeModal;
+    (window as unknown as { handleSaveHero: () => void }).handleSaveHero = handleSaveHero;
+    (window as unknown as { handleSaveIntro: () => void }).handleSaveIntro = handleSaveIntro;
+    (window as unknown as { handleSavePrice: () => void }).handleSavePrice = handleSavePrice;
+    (window as unknown as { handleSaveMap: () => void }).handleSaveMap = handleSaveMap;
     document.querySelectorAll(".modal-backdrop").forEach((bd) => {
       bd.addEventListener("click", (e) => {
         if (e.target === bd) {
@@ -56,8 +188,12 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
     return () => {
       delete (window as unknown as { openModal?: (id: string) => void }).openModal;
       delete (window as unknown as { closeModal?: (id: string) => void }).closeModal;
+      delete (window as unknown as { handleSaveHero?: () => void }).handleSaveHero;
+      delete (window as unknown as { handleSaveIntro?: () => void }).handleSaveIntro;
+      delete (window as unknown as { handleSavePrice?: () => void }).handleSavePrice;
+      delete (window as unknown as { handleSaveMap?: () => void }).handleSaveMap;
     };
-  }, []);
+  }, [closeModal, handleSaveHero, handleSaveIntro, handleSavePrice, handleSaveMap]);
 
   const firstPrice = data.infoCards?.find((c) => c.val?.includes("만"))?.val ?? "55만원~";
   const lineup = data.infoCards?.find((c) => c.label?.includes("라인") || c.label?.includes("룸"))?.val ?? "50명+";
@@ -114,7 +250,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             <button type="button" className="mf-cancel" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("hero")}>
               취소
             </button>
-            <button type="button" className="mf-save" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("hero")}>
+            <button type="button" className="mf-save" onClick={() => (window as unknown as { handleSaveHero?: () => void }).handleSaveHero?.()}>
               저장
             </button>
           </div>
@@ -152,7 +288,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             <button type="button" className="mf-cancel" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("intro")}>
               취소
             </button>
-            <button type="button" className="mf-save" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("intro")}>
+            <button type="button" className="mf-save" onClick={() => (window as unknown as { handleSaveIntro?: () => void }).handleSaveIntro?.()}>
               저장
             </button>
           </div>
@@ -182,7 +318,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             <button type="button" className="mf-cancel" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("price")}>
               취소
             </button>
-            <button type="button" className="mf-save" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("price")}>
+            <button type="button" className="mf-save" onClick={() => (window as unknown as { handleSavePrice?: () => void }).handleSavePrice?.()}>
               저장
             </button>
           </div>
@@ -216,7 +352,7 @@ export function VenueEditModals({ data }: VenueEditModalsProps) {
             <button type="button" className="mf-cancel" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("map")}>
               취소
             </button>
-            <button type="button" className="mf-save" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("map")}>
+            <button type="button" className="mf-save" onClick={() => (window as unknown as { handleSaveMap?: () => void }).handleSaveMap?.()}>
               저장
             </button>
           </div>

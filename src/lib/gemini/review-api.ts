@@ -143,8 +143,12 @@ export async function generateReview(params: {
         message: `생성된 리뷰가 ${len}자로 부족합니다. 800자 이상이 필요합니다.`,
       }
     }
-    if (len > 1100) {
-      content = content.slice(0, 1000) + '…'
+    if (len > 2000) {
+      const at = content.slice(0, 1900).replace(/\n+$/, '').length
+      const lastDot = content.lastIndexOf('.', at)
+      const lastEnd = content.lastIndexOf('다.', at)
+      const cut = lastEnd > 0 ? lastEnd + 2 : lastDot > 0 ? lastDot + 1 : at
+      content = content.slice(0, cut).trim() + (cut < content.length ? '…' : '')
     }
 
     return { success: true, content, title, elapsedMs }

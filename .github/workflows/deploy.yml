@@ -67,3 +67,10 @@ jobs:
               (crontab -l 2>/dev/null; echo "0 0 * * * /var/www/rbmap/scripts/cron-daily-report.sh") | crontab -
               echo "Cron 추가됨: 일일 리포트 (00시)"
             fi
+
+            # Cron: 구글 사이트맵 Ping (매일 06시 KST)
+            chmod +x /var/www/rbmap/scripts/cron-sitemap-ping.sh 2>/dev/null || true
+            if ! crontab -l 2>/dev/null | grep -q "cron-sitemap-ping"; then
+              (crontab -l 2>/dev/null; echo "0 21 * * * /var/www/rbmap/scripts/cron-sitemap-ping.sh") | crontab -
+              echo "Cron 추가됨: 사이트맵 Ping (KST 06시)"
+            fi

@@ -15,9 +15,15 @@ interface CronLogItem {
   results: unknown[]
 }
 
-interface CronHealthResponse {
+interface CronJobData {
   items: CronLogItem[]
   summary: { lastSuccess: string | null; lastFailure: string | null; totalRuns: number }
+}
+
+interface CronHealthResponse {
+  jobs?: Record<string, CronJobData>
+  items?: CronLogItem[]
+  summary?: { lastSuccess: string | null; lastFailure: string | null; totalRuns: number }
   error?: string
 }
 
@@ -37,10 +43,10 @@ export default function AdminCronHealthPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/cron-health', { credentials: 'include' })
+      const res = await fetch('/api/admin/cron-health?job=all', { credentials: 'include' })
       const json = await res.json()
       setData(json)
-    } catch { setData({ items: [], summary: { lastSuccess: null, lastFailure: null, totalRuns: 0 } }) }
+    } catch { setData({ jobs: {} }) }
     setLoading(false)
   }, [])
 
@@ -108,28 +114,51 @@ export default function AdminCronHealthPage() {
     return d.toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
   }
 
+  const [sitemapRunning, setSitemapRunning] = useState(false)
+  const [sitemapMsg, setSitemapMsg] = useState('')
+
+  async function runSitemapPing() {
+    setSitemapRunning(true)
+    setSitemapMsg('')
+    try {
+      const res = await fetch('/api/admin/cron-health/run-sitemap-ping', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setSitemapMsg(json.ok ? '구글 Ping 성공!' : (json.msg ?? '실패'))
+        fetchData()
+      } else {
+        setSitemapMsg(json?.error ?? '실행 실패')
+      }
+    } catch {
+      setSitemapMsg('요청 실패')
+    }
+    setSitemapRunning(false)
+    setTimeout(() => setSitemapMsg(''), 5000)
+  }
+
   if (loading) return <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
 
-  const items = data?.items ?? []
-  const summary = data?.summary ?? { lastSuccess: null, lastFailure: null, totalRuns: 0 }
+  const jobs = data?.jobs ?? {}
+  const reviewsJob = jobs['generate-reviews'] ?? { items: [], summary: { lastSuccess: null, lastFailure: null, totalRuns: 0 } }
+  const sitemapJob = jobs['sitemap-ping'] ?? { items: [], summary: { lastSuccess: null, lastFailure: null, totalRuns: 0 } }
   const hasError = !!data?.error
 
-  return (
-    <>
-      <div className="admin-header">
-        <h1 className="admin-title">크론헬스</h1>
-        <p className="admin-subtitle">리뷰 자동 생성 Cron 실행 이력 · 정상 동작 여부 확인</p>
-      </div>
-
-      {hasError && (
-        <div style={{ padding: 12, marginBottom: 14, borderRadius: 8, background: 'rgba(255,71,87,.1)', color: 'var(--red)', fontSize: 13 }}>
-          cron_health 테이블이 없을 수 있습니다. Supabase에서 supabase-cron-health.sql을 실행해 주세요.
-        </div>
-      )}
-
+  function renderJobSection(
+    title: string,
+    subtitle: string,
+    jobData: CronJobData,
+    renderExtra?: () => React.ReactNode,
+    renderHistory: (items: CronLogItem[]) => React.ReactNode
+  ) {
+    const { items, summary } = jobData
+    return (
       <div className="card-box" style={{ marginBottom: 16 }}>
-        <div className="card-box-title">📊 요약</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        <div className="card-box-title">{title}</div>
+        <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>{subtitle}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 12 }}>
           <div style={{ padding: 16, background: 'var(--card2)', borderRadius: 8, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>마지막 성공</div>
             <div style={{ fontSize: 15, fontWeight: 600 }}>{formatDate(summary.lastSuccess)}</div>
@@ -145,63 +174,18 @@ export default function AdminCronHealthPage() {
             <div style={{ fontSize: 15, fontWeight: 600 }}>{summary.totalRuns}회</div>
           </div>
         </div>
-        <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 12 }}>
-          Cron은 KST 0시, 6시, 12시, 18시에 실행됩니다. 매 실행 시 적용된 소개글이 있는 제휴업체마다 리뷰 1건씩 생성되므로, 제휴업체가 2개면 2건이 동시에 생성됩니다.
-        </p>
+        {renderExtra?.()}
+        <div style={{ marginTop: 12 }}>
+          <div className="card-box-title" style={{ marginBottom: 8 }}>📋 실행 이력</div>
+          {renderHistory(items)}
+        </div>
       </div>
+    )
+  }
 
-      <div className="card-box" style={{ marginBottom: 16 }}>
-        <div className="card-box-title">▶ 수동 실행 (스케줄 무관)</div>
-        <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-          제휴업체를 선택한 뒤 수동 실행하면 즉시 리뷰가 생성되며, 실행 이력에 기록됩니다.
-        </p>
-        {partners.length > 0 ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-              <button
-                type="button"
-                onClick={selectAll}
-                className="btn-secondary"
-                style={{ padding: '6px 12px', fontSize: 12 }}
-              >
-                {selectedIds.size === partners.length ? '전체 해제' : '전체 선택'}
-              </button>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-                {selectedIds.size}개 선택
-              </span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-              {partners.map((p) => (
-                <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(p.id)}
-                    onChange={() => togglePartner(p.id)}
-                  />
-                  {p.name}
-                </label>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={runManual}
-              disabled={running || selectedIds.size === 0}
-              className="btn-save"
-              style={{ padding: '8px 20px', fontSize: 13 }}
-            >
-              {running ? '실행 중...' : '수동 실행'}
-            </button>
-            {runMsg && (
-              <span style={{ marginLeft: 12, fontSize: 13, color: runOk ? 'var(--green)' : 'var(--red)' }}>{runMsg}</span>
-            )}
-          </>
-        ) : (
-          <p style={{ fontSize: 12, color: 'var(--muted)' }}>적용된 소개글이 있는 제휴업체가 없습니다.</p>
-        )}
-      </div>
-
-      <div className="card-box">
-        <div className="card-box-title">📋 실행 이력</div>
+  function renderHistoryTable(items: CronLogItem[], showDetail: (r: CronLogItem) => boolean) {
+    return (
+      <>
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table">
             <thead>
@@ -242,8 +226,8 @@ export default function AdminCronHealthPage() {
                       <td>{r.successCount}</td>
                       <td>{r.durationMs != null ? `${r.durationMs}ms` : '-'}</td>
                     </tr>
-                    {resList.length > 0 && (
-                      <tr key={`${r.id}-detail`} style={{ background: 'var(--card2)' }}>
+                    {showDetail(r) && resList.length > 0 && (
+                      <tr style={{ background: 'var(--card2)' }}>
                         <td colSpan={6} style={{ padding: '8px 16px', fontSize: 11, color: 'var(--muted)', borderTop: 'none' }}>
                           {resList.map((x, i) => (
                             <div key={i} style={{ marginBottom: 4 }}>
@@ -264,7 +248,85 @@ export default function AdminCronHealthPage() {
             아직 실행 이력이 없습니다. Cron이 한 번이라도 실행되면 여기에 표시됩니다.
           </p>
         )}
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div className="admin-header">
+        <h1 className="admin-title">크론헬스</h1>
+        <p className="admin-subtitle">Cron 실행 이력 · 정상 동작 여부 확인</p>
       </div>
+
+      {hasError && (
+        <div style={{ padding: 12, marginBottom: 14, borderRadius: 8, background: 'rgba(255,71,87,.1)', color: 'var(--red)', fontSize: 13 }}>
+          cron_health 테이블이 없을 수 있습니다. Supabase에서 supabase-cron-health.sql을 실행해 주세요.
+        </div>
+      )}
+
+      {renderJobSection(
+        '📌 리뷰 자동 생성',
+        'Cron은 KST 0시, 6시, 12시, 18시에 실행됩니다. 적용된 소개글이 있는 제휴업체마다 리뷰 1건씩 생성됩니다.',
+        reviewsJob,
+        () => (
+          <div style={{ marginBottom: 12 }}>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>제휴업체를 선택한 뒤 수동 실행하면 즉시 리뷰가 생성됩니다.</p>
+            {partners.length > 0 ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <button type="button" onClick={selectAll} className="btn-secondary" style={{ padding: '6px 12px', fontSize: 12 }}>
+                    {selectedIds.size === partners.length ? '전체 해제' : '전체 선택'}
+                  </button>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>{selectedIds.size}개 선택</span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                  {partners.map((p) => (
+                    <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
+                      <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => togglePartner(p.id)} />
+                      {p.name}
+                    </label>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={runManual}
+                  disabled={running || selectedIds.size === 0}
+                  className="btn-save"
+                  style={{ padding: '8px 20px', fontSize: 13 }}
+                >
+                  {running ? '실행 중...' : '수동 실행'}
+                </button>
+                {runMsg && <span style={{ marginLeft: 12, fontSize: 13, color: runOk ? 'var(--green)' : 'var(--red)' }}>{runMsg}</span>}
+              </>
+            ) : (
+              <p style={{ fontSize: 12, color: 'var(--muted)' }}>적용된 소개글이 있는 제휴업체가 없습니다.</p>
+            )}
+          </div>
+        ),
+        (items) => renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as { name?: string }[]).some((x) => x.name))
+      )}
+
+      {renderJobSection(
+        '🗺️ 사이트맵 Ping',
+        '매일 KST 06시 실행. 구글에 sitemap.xml 크롤을 요청하여 새 콘텐츠 색인을 촉진합니다.',
+        sitemapJob,
+        () => (
+          <div style={{ marginBottom: 12 }}>
+            <button
+              type="button"
+              onClick={runSitemapPing}
+              disabled={sitemapRunning}
+              className="btn-save"
+              style={{ padding: '8px 20px', fontSize: 13 }}
+            >
+              {sitemapRunning ? '실행 중...' : '수동 실행'}
+            </button>
+            {sitemapMsg && <span style={{ marginLeft: 12, fontSize: 13, color: sitemapMsg.includes('성공') ? 'var(--green)' : 'var(--red)' }}>{sitemapMsg}</span>}
+          </div>
+        ),
+        (items) => renderHistoryTable(items, () => false)
+      )}
     </>
   )
 }

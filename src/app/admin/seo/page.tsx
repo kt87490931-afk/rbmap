@@ -172,6 +172,35 @@ export default function AdminSeoPage() {
           <div style={{ fontSize: 13, color: "var(--muted)" }}>{seo.description || "설명 미입력"}</div>
         </div>
       </div>
+
+      <div className="card-box">
+        <div className="card-box-title">🗺️ 사이트맵</div>
+        <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>
+          동적 사이트맵에 메인·지역·업체·리뷰 URL이 포함됩니다. 구글이 매일 크롤하도록 Ping이 KST 06시에 자동 실행됩니다.
+        </p>
+        <div
+          style={{
+            padding: 14,
+            background: "var(--card2)",
+            borderRadius: 8,
+            border: "1px solid var(--border)",
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>사이트맵 URL</div>
+          <a
+            href={`${seo.siteUrl || "https://rbbmap.com"}/sitemap.xml`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: 14, color: "var(--blue)", wordBreak: "break-all" }}
+          >
+            {seo.siteUrl || "https://rbbmap.com"}/sitemap.xml
+          </a>
+        </div>
+        <div style={{ fontSize: 11, color: "var(--muted)" }}>
+          <strong>포함 URL:</strong> 메인, /reviews, /regions, 지역별 페이지, 카테고리, 업체 소개글, 리뷰 페이지
+        </div>
+      </div>
     </>
   );
 }

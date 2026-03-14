@@ -25,8 +25,8 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
     eyebrow: '6시간 자동 업데이트',
     h1_line1: '전국 룸빵 정보,',
     h1_line2: '여기서 다 찾자',
-    desc_1: '강남부터 제주까지 — 가라오케·룸싸롱·하이퍼블릭·셔츠룸',
-    desc_2: '지역별 검증 정보와 실제 이용 후기를 한눈에',
+    desc_1: '검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다.',
+    desc_2: '최신 정보로 실패 없는 밤을 약속합니다.',
     kpis: [
       { num: '14', label: '등록 지역' },
       { num: '380+', label: '등록 업소' },

@@ -22,7 +22,7 @@ export async function PATCH(
   if (body.tags !== undefined) update.tags = body.tags
   if (body.venues !== undefined) update.venues = body.venues
   if (body.reviews !== undefined) update.reviews = body.reviews
-  if (body.badge !== undefined) update.badge = body.badge
+  if (body.badge !== undefined) update.badge = body.badge && body.badge !== '' ? body.badge : null
   if (body.coming !== undefined) update.coming = body.coming
   if (body.sort_order !== undefined) update.sort_order = body.sort_order
   update.updated_at = new Date().toISOString()

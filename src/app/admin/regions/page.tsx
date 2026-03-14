@@ -58,6 +58,7 @@ export default function AdminRegionsPage() {
       showMsg('slug, 이름, short를 모두 입력해 주세요.', 'error')
       return
     }
+    const slug = form.slug.trim().toLowerCase().replace(/\s+/g, '-')
     setAdding(true)
     try {
       const res = await fetch('/api/admin/regions', {
@@ -66,9 +67,10 @@ export default function AdminRegionsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          slug: form.slug.trim(),
+          slug,
           name: form.name.trim(),
           short: form.short.trim(),
+          badge: form.badge && form.badge !== '' ? form.badge : null,
           tags: form.tags ? form.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
         }),
       })

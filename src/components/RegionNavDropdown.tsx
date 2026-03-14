@@ -1,19 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 export default function RegionNavDropdown() {
   const [open, setOpen] = useState(false);
   const [regions, setRegions] = useState<{ slug: string; name: string }[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetch("/api/regions")
+  const fetchRegions = useCallback(() => {
+    fetch("/api/regions", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => setRegions(Array.isArray(data) ? data : []))
       .catch(() => setRegions([]));
   }, []);
+
+  useEffect(() => {
+    fetchRegions();
+  }, [fetchRegions]);
+
+  const handleOpen = () => {
+    if (!open) fetchRegions();
+    setOpen(!open);
+  };
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -30,7 +39,7 @@ export default function RegionNavDropdown() {
       <button
         type="button"
         className="nav-dropdown-trigger"
-        onClick={() => setOpen(!open)}
+        onClick={handleOpen}
         aria-expanded={open}
         aria-haspopup="true"
       >

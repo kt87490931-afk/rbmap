@@ -146,7 +146,7 @@ export default function AdminCronHealthPage() {
           </div>
         </div>
         <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 12 }}>
-          Cron은 0시, 6시, 12시, 18시에 실행됩니다. 매 실행 시 적용된 소개글이 있는 제휴업체마다 리뷰 1건 생성.
+          Cron은 KST 0시, 6시, 12시, 18시에 실행됩니다. 매 실행 시 적용된 소개글이 있는 제휴업체마다 리뷰 1건씩 생성되므로, 제휴업체가 2개면 2건이 동시에 생성됩니다.
         </p>
       </div>
 

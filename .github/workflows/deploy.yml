@@ -50,11 +50,15 @@ jobs:
             fi
             pm2 status rbmap
 
-            # Cron: 리뷰 6시간 자동생성
+            # Cron: 리뷰 6시간 자동생성 (KST 0,6,12,18시 = UTC 15,21,3,9시)
             chmod +x /var/www/rbmap/scripts/cron-generate-reviews.sh 2>/dev/null || true
             if ! crontab -l 2>/dev/null | grep -q "cron-generate-reviews"; then
-              (crontab -l 2>/dev/null; echo "0 0,6,12,18 * * * /var/www/rbmap/scripts/cron-generate-reviews.sh") | crontab -
-              echo "Cron 추가됨: 리뷰 생성 (0,6,12,18시)"
+              (crontab -l 2>/dev/null; echo "0 3,9,15,21 * * * /var/www/rbmap/scripts/cron-generate-reviews.sh") | crontab -
+              echo "Cron 추가됨: 리뷰 생성 (KST 0,6,12,18시)"
+            else
+              # 기존 크론 업데이트 (UTC서버→KST 0,6,12,18 맞춤)
+              crontab -l 2>/dev/null | sed '/cron-generate-reviews/s|0 0,6,12,18|0 3,9,15,21|' | crontab -
+              echo "Cron 스케줄 업데이트: KST 0,6,12,18시"
             fi
 
             # Cron: 일일 리포트 (매일 00시 KST)

@@ -51,15 +51,18 @@ else
   echo "PM2 최초 시작 완료"
 fi
 
-# 6. Cron 설정 (리뷰 6시간 자동생성)
+# 6. Cron 설정 (리뷰 6시간 자동생성, KST 0,6,12,18시 = UTC 3,9,15,21시)
 echo "[5/6] Cron 확인..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CRON_SCRIPT="${SCRIPT_DIR}/scripts/cron-generate-reviews.sh"
 if [ -f "$CRON_SCRIPT" ]; then
   chmod +x "$CRON_SCRIPT"
   if ! crontab -l 2>/dev/null | grep -q "cron-generate-reviews"; then
-    (crontab -l 2>/dev/null; echo "0 0,6,12,18 * * * $CRON_SCRIPT") | crontab -
-    echo "Cron 추가됨: 0,6,12,18시 리뷰 생성"
+    (crontab -l 2>/dev/null; echo "0 3,9,15,21 * * * $CRON_SCRIPT") | crontab -
+    echo "Cron 추가됨: KST 0,6,12,18시 리뷰 생성"
+  else
+    crontab -l 2>/dev/null | sed 's|0 0,6,12,18|0 3,9,15,21|' | crontab -
+    echo "Cron 스케줄 업데이트: KST 기준"
   fi
 fi
 

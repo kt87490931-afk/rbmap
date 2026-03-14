@@ -58,6 +58,50 @@ export function buildReviewUrl(region: string, type: string, venueSlug: string, 
   return `/${region}/${type}/${venueSlug}/${slug}`
 }
 
+/** path 정규화 (앞뒤 슬래시 제거) */
+function normalizePath(p: string): string {
+  return (p || "").replace(/^\/+|\/+$/g, "") || "";
+}
+
+/**
+ * /reviews 페이지와 동일한 review_posts를 클릭순(방문수)으로 정렬하여 반환
+ * visit_logs의 path와 리뷰 URL을 매칭하여 방문 수로 정렬
+ */
+export async function getReviewPostsListByClickCount(limit = 5): Promise<ReviewPost[]> {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const startISO = thirtyDaysAgo.toISOString();
+
+  const [postsRes, visitsRes] = await Promise.all([
+    supabaseAdmin
+      .from("review_posts")
+      .select("*")
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(200),
+    supabaseAdmin
+      .from("visit_logs")
+      .select("path")
+      .gte("created_at", startISO),
+  ]);
+
+  const posts = (postsRes.data ?? []).map(mapRow);
+  const visits = visitsRes.data ?? [];
+
+  const pathCount: Record<string, number> = {};
+  for (const v of visits) {
+    const key = normalizePath((v as { path?: string }).path ?? "");
+    if (key) pathCount[key] = (pathCount[key] ?? 0) + 1;
+  }
+
+  const withCount = posts.map((p) => {
+    const path = normalizePath(buildReviewUrl(p.region, p.type, p.venue_slug, p.slug));
+    return { post: p, count: pathCount[path] ?? 0 };
+  });
+  withCount.sort((a, b) => b.count - a.count || (b.post.published_at || "").localeCompare(a.post.published_at || ""));
+  return withCount.slice(0, limit).map((w) => w.post);
+}
+
 export async function getReviewPostsList(filters?: {
   region?: string
   type?: string

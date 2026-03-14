@@ -1154,6 +1154,22 @@ body::after {
   color: var(--gold);
   margin-top: 4px;
 }
+/* index-sample: venue-grid 4열 (지역별 주요 업소) */
+.venue-grid-featured {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 500px) {
+  .venue-grid-featured {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 768px) {
+  .venue-grid-featured {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
 /* index-sample: venue-card (FeaturedVenues) */
 .venue-card {
   display: block;

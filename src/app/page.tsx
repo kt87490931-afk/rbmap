@@ -16,9 +16,9 @@ import CTAStrip from "@/components/CTAStrip";
 import Footer from "@/components/Footer";
 import { getPartners } from "@/lib/data/partners";
 import type { FeedItem } from "@/lib/data/feed";
-import { getReviews } from "@/lib/data/reviews";
 import {
   getReviewPostsList,
+  getReviewPostsListByClickCount,
   buildReviewUrl,
   getRegionName,
   getTypeName,
@@ -65,16 +65,18 @@ export default async function Home() {
 
   const feedLimit = feedConfig?.display_limit ?? 10;
 
-  const [partnersForWidgets, reviewPosts, reviews] = await Promise.all([
+  const [partnersForWidgets, reviewPosts, reviewPostsByClick] = await Promise.all([
     getPartners(50),
     getReviewPostsList({ limit: feedLimit }),
-    getReviews(),
+    getReviewPostsListByClickCount(5),
   ]);
 
   const REGION_NAME_TO_SLUG: Record<string, string> = { 강남: "gangnam", 수원: "suwon", "수원 인계동": "suwon", 동탄: "dongtan", 제주: "jeju" };
   const venueCards = partnersForWidgets.slice(0, 4).map((p) => {
     const href = p.href?.startsWith("/") ? p.href : `/${(p.href ?? "").split("/")[1] ?? "gangnam"}/${TYPE_TO_SLUG[p.type] || "karaoke"}/${p.id}`;
     const regionName = REGION_SLUG_TO_NAME[(href?.split("/")[1] ?? "")] ?? p.region ?? "";
+    const rawDesc = p.desc || "";
+    const desc = rawDesc.length > 300 ? rawDesc.slice(0, 300) + "…" : rawDesc || undefined;
     return {
       href,
       region: regionName,
@@ -82,7 +84,27 @@ export default async function Home() {
       star: p.stars || "★—",
       type: p.type,
       price: undefined as string | undefined,
-      desc: p.desc ? (p.desc.length > 60 ? p.desc.slice(0, 60) + "…" : p.desc) : undefined,
+      desc: desc || undefined,
+    };
+  });
+
+  const reviewMagazineItems = reviewPostsByClick.map((p, i) => {
+    const dt = p.published_at || p.created_at;
+    const dateStr = dt ? new Date(dt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" }).replace(/\. /g, ".").replace(/\.$/, "") : "";
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const isNew = dt ? new Date(dt) > weekAgo : false;
+    return {
+      id: p.id,
+      href: buildReviewUrl(p.region, p.type, p.venue_slug, p.slug),
+      region: getRegionName(p.region),
+      date: dateStr,
+      title: p.title,
+      excerpt: (p.sec_overview || p.sec_summary || "").slice(0, 120) + ((p.sec_overview || p.sec_summary || "").length > 120 ? "…" : ""),
+      stars: formatStars(p.star),
+      venue: p.venue,
+      is_new: isNew,
+      sort_order: i,
     };
   });
 
@@ -157,7 +179,7 @@ export default async function Home() {
       </SectionWithSettings>
       <div className="gold-divider" />
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="review_config" sectionLabel="6시간마다 최신리뷰" adminLink="/admin/reviews">
-        <ReviewMagazineSection reviews={reviews} displayLimit={5} />
+        <ReviewMagazineSection reviews={reviewMagazineItems} displayLimit={5} />
       </SectionWithSettings>
       <div className="gold-divider" />
       <KeywordHubSection />

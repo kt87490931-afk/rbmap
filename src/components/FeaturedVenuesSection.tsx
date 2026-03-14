@@ -33,7 +33,7 @@ export default function FeaturedVenuesSection({ venues }: FeaturedVenuesSectionP
           </div>
           <Link href="/regions" className="see-all">전체 업소 보기 →</Link>
         </div>
-        <div className="venue-grid">
+        <div className="venue-grid venue-grid-featured">
           {list.map((v, i) => (
             <Link key={v.href ?? i} href={v.href} className="venue-card">
               <div className="vc-region-line">{v.region}</div>

@@ -23,7 +23,6 @@ const DEFAULT: HeaderData = {
   nav: [
     { label: "업소별리뷰", href: "/reviews" },
     { label: "랭킹", href: "/ranking" },
-    { label: "가이드", href: "/guide" },
     { label: "문의", href: "https://t.me/rbbmap", cta: true },
   ],
 };

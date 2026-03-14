@@ -9,7 +9,7 @@ export default function RegionNavDropdown() {
   const ref = useRef<HTMLDivElement>(null);
 
   const fetchRegions = useCallback(() => {
-    fetch("/api/regions", { cache: "no-store" })
+    fetch(`/api/regions?_=${Date.now()}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => setRegions(Array.isArray(data) ? data : []))
       .catch(() => setRegions([]));

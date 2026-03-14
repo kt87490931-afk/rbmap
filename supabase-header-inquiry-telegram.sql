@@ -1,5 +1,6 @@
--- 문의 버튼을 텔레그램 링크로 변경 (Supabase SQL Editor에서 실행)
--- header 섹션의 nav에서 문의/광고문의 항목 href를 https://t.me/rbbmap 로 업데이트
+-- header 네비게이션 업데이트 (Supabase SQL Editor에서 실행)
+-- 1. 문의 href → https://t.me/rbbmap
+-- 2. 가이드 메뉴 제거
 
 UPDATE site_sections
 SET content = jsonb_set(
@@ -14,6 +15,7 @@ SET content = jsonb_set(
       END
     )
     FROM jsonb_array_elements(content->'nav') AS elem
+    WHERE elem->>'label' != '가이드'
   )
 )
 WHERE section_key = 'header'

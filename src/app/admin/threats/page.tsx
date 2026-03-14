@@ -55,8 +55,8 @@ export default function AdminThreatsPage() {
     setLoading(true);
     try {
       const [threatsRes, blockedRes] = await Promise.all([
-        fetch("/api/admin/threats"),
-        fetch("/api/admin/blocked-ips"),
+        fetch("/api/admin/threats", { credentials: "include" }),
+        fetch("/api/admin/blocked-ips", { credentials: "include" }),
       ]);
       const threatsData = await threatsRes.json();
       const blockedData = await blockedRes.json().catch(() => []);
@@ -102,6 +102,37 @@ export default function AdminThreatsPage() {
     [blockingIp]
   );
 
+  const handleUnblock = useCallback(
+    async (ip: string) => {
+      if (!ip || ip === "-" || blockingIp) return;
+      setBlockingIp(ip);
+      setMsg(null);
+      try {
+        const res = await fetch(`/api/admin/blocked-ips?ip=${encodeURIComponent(ip)}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          setBlockedIps((prev) => {
+            const next = new Set(prev);
+            next.delete(ip);
+            return next;
+          });
+          setMsg({ text: `${ip} 차단 해제되었습니다.`, type: "ok" });
+          setTimeout(() => setMsg(null), 4000);
+        } else {
+          setMsg({ text: data.error || "해제 실패", type: "err" });
+        }
+      } catch {
+        setMsg({ text: "네트워크 오류", type: "err" });
+      } finally {
+        setBlockingIp(null);
+      }
+    },
+    [blockingIp]
+  );
+
   const filtered = filter === "all" ? threats : threats.filter((t) => t.level === filter);
 
   return (
@@ -110,7 +141,7 @@ export default function AdminThreatsPage() {
         <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>THREAT DETECTION</h1>
         <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>위험 감지 · 최근 24시간 모니터링</p>
         <p style={{ fontSize: 11, color: "var(--muted)", padding: "8px 12px", background: "rgba(0,0,0,.2)", borderRadius: 6 }}>
-          💡 <strong>차단:</strong> 아래 "차단" 버튼 클릭 시 즉시 적용. 또는 .env.production에 <code style={{ fontFamily: "monospace", fontSize: 10 }}>BLOCKED_IPS=IP</code> 추가.
+          💡 <strong>차단/해제:</strong> 각 위험 항목 오른쪽에 "차단" 또는 "차단 해제" 버튼이 있습니다. 클릭 시 즉시 적용.
         </p>
         {msg && (
           <p
@@ -267,8 +298,10 @@ export default function AdminThreatsPage() {
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      alignItems: "flex-start",
+                      alignItems: "center",
                       marginBottom: 8,
+                      flexWrap: "wrap",
+                      gap: 8,
                     }}
                   >
                     <div>
@@ -288,21 +321,48 @@ export default function AdminThreatsPage() {
                       </span>
                       <span style={{ fontWeight: 700, fontSize: 13 }}>{threat.type}</span>
                     </div>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: "var(--muted)",
-                        fontFamily: "monospace",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {new Date(threat.created_at).toLocaleString("ko-KR", {
-                        month: "2-digit",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {threat.ip && threat.ip !== "-" && (
+                        <>
+                          {blockedIps.has(threat.ip) ? (
+                            <button
+                              type="button"
+                              className="btn-save"
+                              style={{ padding: "5px 12px", fontSize: 11, background: "var(--green)", borderColor: "var(--green)" }}
+                              onClick={() => handleUnblock(threat.ip)}
+                              disabled={!!blockingIp}
+                            >
+                              {blockingIp === threat.ip ? "처리 중..." : "✓ 차단 해제"}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn-danger"
+                              style={{ padding: "5px 12px", fontSize: 11 }}
+                              onClick={() => handleBlock(threat.ip)}
+                              disabled={!!blockingIp}
+                            >
+                              {blockingIp === threat.ip ? "처리 중..." : "🚫 차단"}
+                            </button>
+                          )}
+                        </>
+                      )}
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: "var(--muted)",
+                          fontFamily: "monospace",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {new Date(threat.created_at).toLocaleString("ko-KR", {
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
                   </div>
                   <p style={{ fontSize: 12, color: "var(--text)", marginBottom: 8 }}>{threat.description}</p>
                   <div
@@ -318,22 +378,10 @@ export default function AdminThreatsPage() {
                     <span>
                       🌐 IP:{" "}
                       <strong style={{ color: "var(--text)", fontFamily: "monospace" }}>{threat.ip}</strong>
+                      {threat.ip && threat.ip !== "-" && blockedIps.has(threat.ip) && (
+                        <span style={{ marginLeft: 6, color: "var(--green)", fontWeight: 600 }}>(차단됨)</span>
+                      )}
                     </span>
-                    {threat.ip &&
-                      threat.ip !== "-" &&
-                      (blockedIps.has(threat.ip) ? (
-                        <span style={{ color: "var(--green)", fontWeight: 600 }}>✓ 차단됨</span>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn-danger"
-                          style={{ padding: "4px 10px", fontSize: 10 }}
-                          onClick={() => handleBlock(threat.ip)}
-                          disabled={!!blockingIp}
-                        >
-                          {blockingIp === threat.ip ? "처리 중..." : "🚫 차단"}
-                        </button>
-                      ))}
                     {threat.path && threat.path !== "-" && (
                       <span>
                         📂 경로: <strong style={{ color: "var(--text)" }}>{threat.path}</strong>

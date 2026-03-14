@@ -207,8 +207,8 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
   },
   region_sidebar: {} as Record<string, { priceRows?: { type: string; val: string; chg: string }[]; priceNote?: string; tips?: { title: string; text: string; color: string }[]; nearbyRegions?: { slug: string; name: string; venues: number; reviews: number }[] }>,
   seo: {
-    title: '룸빵여지도 | 전국 가라오케·룸싸롱·하이퍼블릭 지역별 정보',
-    description: '강남, 수원, 동탄, 제주 등 전국 지역별 가라오케·룸싸롱·하이퍼블릭 정보',
+    title: '룸빵여지도 | 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 정보',
+    description: '강남, 수원 인계동, 동탄, 제주 등 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 정보. 지역별 업소 평점, 가격, 리뷰를 한눈에 비교하세요.',
     ogImage: 'https://rbbmap.com/og-image.png',
     siteUrl: 'https://rbbmap.com',
     googleVerify: '-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY',

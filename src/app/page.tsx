@@ -67,6 +67,7 @@ export default async function Home() {
     getSiteSection<Parameters<typeof CTAStrip>[0]["data"]>("cta"),
     getSiteSection<Parameters<typeof Footer>[0]["data"]>("footer"),
     getSiteSection<Parameters<typeof RegionPreview>[0]["data"]>("region_preview"),
+    getDisplayVisitorCount().then((r) => r.display).catch(() => 0),
   ]);
 
   const pLimit = partnersConfig?.display_limit ?? 0;

@@ -50,6 +50,13 @@ async function sendToChatOnly(text: string, parseMode: "HTML" | "Markdown" = "HT
   return sendToTarget(token, chatId, text, parseMode);
 }
 
+/** 채널로만 전송 — 일일 리포트 등 채널 전용 포맷용 */
+async function sendToChannelOnly(text: string, parseMode: "HTML" | "Markdown" = "HTML"): Promise<boolean> {
+  const { token, channelId } = getConfig();
+  if (!token || !channelId) return false;
+  return sendToTarget(token, channelId, text, parseMode);
+}
+
 export async function notifyThreat(
   level: "high" | "medium",
   type: string,
@@ -107,9 +114,31 @@ export interface DailyReportData {
   newPartners: number;
 }
 
+function buildReportSections(data: DailyReportData) {
+  const topPartners: string[] = [];
+  if (data.topPartners.length > 0) {
+    topPartners.push(``, `🏆 <b>상위 노출 업소 TOP 5</b>`);
+    data.topPartners.slice(0, 5).forEach((p, i) => {
+      topPartners.push(`  ${i + 1}. ${p.name} (조회 ${p.views}, 전화 ${p.calls})`);
+    });
+  }
+  const region = Object.entries(data.regionDistribution)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([r, c]) => `  • ${r}: ${c}건`);
+  const type = Object.entries(data.typeDistribution)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([t, c]) => `  • ${t}: ${c}건`);
+  return { topPartners, region, type };
+}
+
 export async function notifyDailyReport(date: string, data: DailyReportData): Promise<boolean> {
   const totalCalls = Object.values(data.partnerCalls).reduce((a, b) => a + b, 0);
-  const lines: string[] = [
+  const { topPartners, region, type } = buildReportSections(data);
+
+  /** 개인 알림: 방문자/봇 구분 표기 */
+  const chatLines = [
     `📊 <b>[룸빵여지도 일일 리포트] ${date}</b>\n`,
     `👥 <b>접속</b>`,
     `  • 방문자: ${data.visitors}명`,
@@ -117,33 +146,51 @@ export async function notifyDailyReport(date: string, data: DailyReportData): Pr
     ``,
     `📞 <b>전화 클릭</b>`,
     `  • 총 ${totalCalls}건`,
-  ];
-
-  if (data.topPartners.length > 0) {
-    lines.push(``, `🏆 <b>상위 노출 업소 TOP 5</b>`);
-    data.topPartners.slice(0, 5).forEach((p, i) => {
-      lines.push(`  ${i + 1}. ${p.name} (조회 ${p.views}, 전화 ${p.calls})`);
-    });
-  }
-
-  lines.push(
+    ...topPartners,
     ``,
     `📍 <b>지역별 방문</b>`,
-    ...Object.entries(data.regionDistribution)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([r, c]) => `  • ${r}: ${c}건`),
+    ...region,
     ``,
     `🏷️ <b>업종별 방문</b>`,
-    ...Object.entries(data.typeDistribution)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([t, c]) => `  • ${t}: ${c}건`),
+    ...type,
     ``,
     `🆕 <b>신규</b>`,
     `  • 리뷰: ${data.newReviews}건`,
-    `  • 업소: ${data.newPartners}건`
-  );
+    `  • 업소: ${data.newPartners}건`,
+  ];
 
-  return sendMessage(lines.join("\n"));
+  /** 채널 알림: 방문자에 봇/스캐너 포함 (구분 없이 총합만 표기) */
+  const totalVisitors = data.visitors + data.bots;
+  const channelLines = [
+    `📊 <b>[룸빵여지도 일일 리포트] ${date}</b>\n`,
+    `👥 <b>접속</b>`,
+    `  • 방문자: ${totalVisitors}명`,
+    ``,
+    `📞 <b>전화 클릭</b>`,
+    `  • 총 ${totalCalls}건`,
+    ...topPartners,
+    ``,
+    `📍 <b>지역별 방문</b>`,
+    ...region,
+    ``,
+    `🏷️ <b>업종별 방문</b>`,
+    ...type,
+    ``,
+    `🆕 <b>신규</b>`,
+    `  • 리뷰: ${data.newReviews}건`,
+    `  • 업소: ${data.newPartners}건`,
+  ];
+
+  const chatMsg = chatLines.join("\n");
+  const channelMsg = channelLines.join("\n");
+  const { token, chatId, channelId } = getConfig();
+  if (!token) return false;
+
+  const results: Promise<boolean>[] = [];
+  if (chatId) results.push(sendToTarget(token, chatId, chatMsg, "HTML"));
+  if (channelId) results.push(sendToTarget(token, channelId, channelMsg, "HTML"));
+  if (results.length === 0) return false;
+
+  const ok = await Promise.all(results);
+  return ok.some(Boolean);
 }

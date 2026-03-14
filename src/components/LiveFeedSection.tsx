@@ -16,30 +16,39 @@ interface LiveFeedSectionProps {
 export default function LiveFeedSection({ items }: LiveFeedSectionProps) {
   const list = (items?.length ? items : FALLBACK_ITEMS);
 
+  const regionToTag = (pill: string) => {
+    if (pill.includes("강남")) return "tag-gangnam";
+    if (pill.includes("수원")) return "tag-suwon";
+    if (pill.includes("동탄")) return "tag-dongtan";
+    if (pill.includes("제주")) return "tag-jeju";
+    return "tag-gangnam";
+  };
+
   return (
-    <section className="live-section section-sm">
-      <div className="page-wrap">
-        <div className="live-header">
-          <div className="live-badge">
-            <div className="live-dot" />LIVE
+    <section className="section">
+      <div className="section-inner">
+        <div className="section-head-row">
+          <div>
+            <div className="live-header">
+              <span className="live-badge">
+                <span className="live-dot" />LIVE
+              </span>
+              <h2 className="section-h2" style={{ marginBottom: 0 }}>실시간 최신 업데이트</h2>
+            </div>
           </div>
-          <h2 className="sec-title" style={{ marginBottom: 0, fontSize: 17 }}>실시간 <span>최신 업데이트</span></h2>
+          <Link href="/reviews" className="view-all">전체 피드 보기 →</Link>
         </div>
-        <div className="feed-list">
+        <div className="feed-list" role="feed" aria-label="최신 리뷰 피드">
           {list.map((item) => (
             <Link key={item.id} href={item.href} className="feed-item">
-              <span className={`feed-pill ${item.pill_class}`}>{item.pill}</span>
-              <div className="feed-content">
-                <div className="feed-title">{item.title}</div>
-                <div className="feed-sub">{item.sub}</div>
-              </div>
-              <div className="feed-stars">{item.stars}</div>
-              <div className="feed-time">{item.time}</div>
+              <span className={`feed-region ${regionToTag(item.pill)}`}>{item.pill}</span>
+              <span className="feed-title">{item.title}</span>
+              <span className="feed-meta">
+                <span className="feed-stars">{item.stars}</span>
+                <span className="feed-time">{item.time}</span>
+              </span>
             </Link>
           ))}
-        </div>
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <Link href="/reviews" className="btn-ghost btn-sm">전체 피드 보기 →</Link>
         </div>
       </div>
     </section>

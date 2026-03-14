@@ -32,7 +32,7 @@ const DEFAULT: HeroData = {
     { num: "6H", label: "업데이트" },
   ],
   btns: [
-    { text: "🗺 지역 선택하기", href: "#regions" },
+    { text: "🗺️ 지역 선택하기", href: "/regions" },
     { text: "최신 리뷰 →", href: "/reviews" },
   ],
 };
@@ -49,41 +49,64 @@ export default function Hero({ data, visitorCount, regions = [], partnerCounts }
 
   return (
     <section className={`hero ${showMap ? "hero-with-map" : ""}`}>
-      <div className="hero-glow" aria-hidden="true" />
-      <div className="hero-grid" aria-hidden="true" />
+      <div className="hero-bg" aria-hidden="true" />
+      <div className="hero-wave" aria-hidden="true">
+        <svg viewBox="0 0 1440 600" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="wg1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#c8a84b" stopOpacity={0.14} />
+              <stop offset="55%" stopColor="#c8a84b" stopOpacity={0.03} />
+              <stop offset="100%" stopColor="#c8a84b" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="wg2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#e6c96e" stopOpacity={0.08} />
+              <stop offset="40%" stopColor="#e6c96e" stopOpacity={0.02} />
+              <stop offset="100%" stopColor="#e6c96e" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <polygon points="0,0 600,0 820,600 0,600" fill="url(#wg1)" />
+          <polygon points="60,0 520,0 650,600 30,600" fill="url(#wg2)" />
+          <line x1="0" y1="0" x2="1100" y2="600" stroke="#e6c96e" strokeWidth={1} strokeOpacity={0.08} />
+          <line x1="50" y1="0" x2="1000" y2="600" stroke="#c8a84b" strokeWidth={0.5} strokeOpacity={0.05} />
+        </svg>
+      </div>
       <div className="hero-inner">
         <div className="hero-content">
-          <div className="hero-eyebrow">
-            <div className="live-dot" /> {eyebrowText}
+          <div className="hero-badge fade-up">
+            <span className="hero-badge-dot" />
+            {eyebrowText}
           </div>
-          <h1>
+          <h1 className="hero-h1 fade-up delay-1">
             {d.h1_line1}
-            <br />
-            <em>{d.h1_line2}</em>
+            <span className="gold-line">{d.h1_line2}</span>
           </h1>
-          <p className="hero-desc">
+          <p className="hero-sub fade-up delay-2">
             {d.desc_1}
             <br />
             {d.desc_2}
           </p>
-          <div className="hero-kpi">
+          <div className="hero-stats fade-up delay-2">
             {kpis.map((k, i) => (
-              <div key={i} className="hero-kpi-item">
-                <strong>{k.num}</strong>
-                <span>{k.label}</span>
+              <div key={i} className="stat-item">
+                <div className="stat-num">{k.num}</div>
+                <div className="stat-label">{k.label}</div>
               </div>
             ))}
           </div>
-          <div className="hero-btns">
+          <div className="hero-cta fade-up delay-3">
             {btns.map((b, i) => (
-              <Link key={i} href={b.href ?? "#"} className={i === 0 ? "btn-primary" : "btn-ghost"}>
+              <Link
+                key={i}
+                href={b.href ?? (i === 0 ? "/regions" : "/reviews")}
+                className={i === 0 ? "btn-primary" : "btn-secondary"}
+              >
                 {b.text}
               </Link>
             ))}
           </div>
         </div>
         {showMap && (
-          <div className="hero-right">
+          <div className="hero-right fade-up delay-2">
             <KoreaNetworkMap regions={regions} partnerCounts={partnerCounts} />
           </div>
         )}

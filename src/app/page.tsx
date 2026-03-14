@@ -194,7 +194,13 @@ export default async function Home() {
         <Header data={header} />
       </SectionWithSettings>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="ticker">
-        <Ticker data={ticker} />
+        <Ticker
+          data={ticker}
+          items={reviewPosts.slice(0, 6).map((p) => ({
+            region: getRegionName(p.region),
+            text: `${p.venue} 리뷰 등록`,
+          }))}
+        />
       </SectionWithSettings>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="hero">
         <Hero
@@ -204,13 +210,14 @@ export default async function Home() {
           partnerCounts={partnerCounts}
         />
       </SectionWithSettings>
-      <div className="divider" />
+      <div className="gold-divider" />
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="about">
         <AboutSection data={about} />
       </SectionWithSettings>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="region_guide">
         <RegionGuideSection data={regionGuide} />
       </SectionWithSettings>
+      <div className="gold-divider" />
       <div className="page-wrap">
         <SectionWithSettings isAdmin={!!isAdmin} sectionKey="regions">
           <RegionsSection
@@ -221,15 +228,18 @@ export default async function Home() {
           />
         </SectionWithSettings>
       </div>
+      <div className="gold-divider" />
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="category_guide">
         <CategoryGuideSection data={categoryGuide} />
       </SectionWithSettings>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="partners_config" sectionLabel="4. 제휴업체 (노출개수)" adminLink="/admin/partners">
         <PartnerSection partners={partnerList} />
       </SectionWithSettings>
+      <div className="gold-divider" />
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="feed_config" sectionLabel="5. 실시간 최신 업데이트" adminLink="/admin/live-feed">
         <LiveFeedSection items={feedItems} />
       </SectionWithSettings>
+      <div className="gold-divider" />
       <div className="page-wrap">
         <SectionWithSettings isAdmin={!!isAdmin} sectionKey="widgets_a">
           <WidgetRowA data={{ venue_ranks: venueRanks, categories }} />

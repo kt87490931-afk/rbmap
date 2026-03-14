@@ -19,52 +19,48 @@ export default function RegionsSection({ regions }: RegionsSectionProps) {
 
   return (
     <section className="section" id="regions">
-      <div className="sec-header">
-        <div>
-          <p className="sec-label">REGIONS</p>
-          <h2 className="sec-title">
-            지역별 <span>정보</span>
-          </h2>
+      <div className="section-inner">
+        <div className="section-head-row">
+          <div>
+            <span className="section-label">REGIONS</span>
+            <h2 className="section-h2">
+              지역별 <em>정보</em>
+            </h2>
+          </div>
+          <Link href="/regions" className="view-all">전체 지역 →</Link>
         </div>
-        <Link href="/regions" className="see-all">
-          전체 지역 →
-        </Link>
-      </div>
-      <div className="region-grid">
-        {list.map((r) => (
-          <Link
-            key={r.slug}
-            href={`/${r.slug}`}
-            className={`region-card ${r.coming ? "coming" : ""}`}
-          >
-            <div className={`rc-thumb ${r.thumb_class}`}>
-              <div className="rc-bg-text">{r.short}</div>
-              <div className="rc-glow" />
-              {r.badge === "HOT" && <span className="rc-badge-hot">HOT</span>}
-              {r.badge === "NEW" && <span className="rc-badge-new">NEW</span>}
-              <span className="rc-name">{r.name}</span>
-            </div>
-            <div className="rc-body">
-              <div className="rc-tags">
-                {r.tags.map((tag) => (
-                  <span key={tag} className="rc-tag">
-                    {tag}
-                  </span>
-                ))}
+        <nav className="regions-grid" aria-label="지역 선택">
+          {list.map((r) => (
+            <Link
+              key={r.slug}
+              href={`/${r.slug}`}
+              className={`region-card rc-${r.thumb_class}`}
+              style={r.coming ? { background: "var(--card)" } : undefined}
+            >
+              {!r.coming && <div className="rc-bg" />}
+              <div className="rc-top">
+                <span className="rc-code">{r.short}</span>
+                {r.badge === "HOT" && <span className="rc-badge badge-hot">HOT</span>}
+                {r.badge === "NEW" && <span className="rc-badge badge-new">NEW</span>}
+                {r.coming && <span className="rc-badge badge-soon">준비중</span>}
               </div>
-              <div className="rc-meta">
-                <span>
-                  <strong>{r.venues || "—"}</strong> 업소
-                </span>
-                {!r.coming && (
-                  <span>
-                    <strong>{r.reviews}</strong> 리뷰
-                  </span>
-                )}
-              </div>
-            </div>
-          </Link>
-        ))}
+              <div className="rc-name">{r.name}</div>
+              {!r.coming ? (
+                <>
+                  <div className="rc-tags">
+                    {r.tags.slice(0, 3).join(" · ")}
+                  </div>
+                  <div className="rc-stat">
+                    <strong>{r.venues || "—"}</strong> 업소{" "}
+                    <strong style={{ marginLeft: 8 }}>{r.reviews}</strong> 리뷰
+                  </div>
+                </>
+              ) : (
+                <div className="rc-coming">서비스 준비 중</div>
+              )}
+            </Link>
+          ))}
+        </nav>
       </div>
     </section>
   );

@@ -150,8 +150,8 @@ export default function AdminCronHealthPage() {
     title: string,
     subtitle: string,
     jobData: CronJobData,
-    renderExtra?: () => React.ReactNode,
-    renderHistory: (items: CronLogItem[]) => React.ReactNode
+    renderHistory: (items: CronLogItem[]) => React.ReactNode,
+    renderExtra?: () => React.ReactNode
   ) {
     const { items, summary } = jobData
     return (
@@ -269,6 +269,7 @@ export default function AdminCronHealthPage() {
         '📌 리뷰 자동 생성',
         'Cron은 KST 0시, 6시, 12시, 18시에 실행됩니다. 적용된 소개글이 있는 제휴업체마다 리뷰 1건씩 생성됩니다.',
         reviewsJob,
+        (items) => renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as { name?: string }[]).some((x) => x.name)),
         () => (
           <div style={{ marginBottom: 12 }}>
             <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>제휴업체를 선택한 뒤 수동 실행하면 즉시 리뷰가 생성됩니다.</p>
@@ -303,14 +304,14 @@ export default function AdminCronHealthPage() {
               <p style={{ fontSize: 12, color: 'var(--muted)' }}>적용된 소개글이 있는 제휴업체가 없습니다.</p>
             )}
           </div>
-        ),
-        (items) => renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as { name?: string }[]).some((x) => x.name))
+        )
       )}
 
       {renderJobSection(
         '🗺️ 사이트맵 Ping',
         '매일 KST 06시 실행. 구글에 sitemap.xml 크롤을 요청하여 새 콘텐츠 색인을 촉진합니다.',
         sitemapJob,
+        (items) => renderHistoryTable(items, () => false),
         () => (
           <div style={{ marginBottom: 12 }}>
             <button
@@ -324,8 +325,7 @@ export default function AdminCronHealthPage() {
             </button>
             {sitemapMsg && <span style={{ marginLeft: 12, fontSize: 13, color: sitemapMsg.includes('성공') ? 'var(--green)' : 'var(--red)' }}>{sitemapMsg}</span>}
           </div>
-        ),
-        (items) => renderHistoryTable(items, () => false)
+        )
       )}
     </>
   )

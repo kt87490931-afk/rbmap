@@ -211,7 +211,7 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
   seo: {
     title: '룸빵여지도 | 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 정보',
     description: '믿을 수 있는 업소를 한눈에! 룸빵여지도에서 전국 유흥 정보를 확인하세요. 검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다. 6시간마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.',
-    ogImage: 'https://rbbmap.com/og-image.png',
+    ogImage: 'https://rbbmap.com/og/og-home.png',
     siteUrl: 'https://rbbmap.com',
     googleVerify: '-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY',
   },

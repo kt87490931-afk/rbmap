@@ -126,14 +126,16 @@ export default async function Home() {
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="region_guide">
         <RegionGuideSection data={regionGuide} />
       </SectionWithSettings>
-      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="regions">
-        <RegionsSection
-          regions={regions.map((r) => ({
-            ...r,
-            venues: partnerCounts[r.slug]?.venues ?? r.venues ?? 0,
-          }))}
-        />
-      </SectionWithSettings>
+      <div className="page-wrap">
+        <SectionWithSettings isAdmin={!!isAdmin} sectionKey="regions">
+          <RegionsSection
+            regions={regions.map((r) => ({
+              ...r,
+              venues: partnerCounts[r.slug]?.venues ?? r.venues ?? 0,
+            }))}
+          />
+        </SectionWithSettings>
+      </div>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="category_guide">
         <CategoryGuideSection data={categoryGuide} />
       </SectionWithSettings>

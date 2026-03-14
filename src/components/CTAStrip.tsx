@@ -17,10 +17,14 @@ const DEFAULT: CTAData = {
 export default function CTAStrip({ data }: { data?: CTAData | null }) {
   const d = { ...DEFAULT, ...data };
   return (
-    <div className="cta-strip">
-      <h2>{d.title}</h2>
-      <p>{d.desc}</p>
-      <Link href={d.btn_href ?? "/contact"} className="btn-primary">{d.btn_text}</Link>
+    <div className="cta-banner">
+      <div className="cta-inner">
+        <div className="cta-text">
+          <h2>{d.title}</h2>
+          <p>{d.desc}</p>
+        </div>
+        <Link href={d.btn_href ?? "/contact"} className="cta-btn btn-primary">{d.btn_text}</Link>
+      </div>
     </div>
   );
 }

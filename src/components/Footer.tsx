@@ -33,14 +33,15 @@ export default function Footer({ data }: { data?: FooterData | null }) {
   return (
     <footer>
       <div className="footer-inner">
-        <div>
-          <Link href="/" className="footer-logo">
-            <div className="logo-icon" style={{ width: 24, height: 24, fontSize: 11 }}>빵</div>
-            룸빵여지도
-          </Link>
-          <p className="footer-desc">{d.desc}</p>
-        </div>
-        {cols.map((col, i) => (
+        <div className="footer-top">
+          <div>
+            <Link href="/" className="footer-logo">
+              <div className="logo-icon" style={{ width: 24, height: 24, fontSize: 11 }}>빵</div>
+              룸빵여지도
+            </Link>
+            <p className="footer-desc">{d.desc}</p>
+          </div>
+          {cols.map((col, i) => (
           <div key={col.title ?? i} className="footer-col">
             <h4>{col.title}</h4>
             <ul>
@@ -50,6 +51,7 @@ export default function Footer({ data }: { data?: FooterData | null }) {
             </ul>
           </div>
         ))}
+        </div>
       </div>
       <div className="footer-bottom">
         <p>{d.copyright}</p>

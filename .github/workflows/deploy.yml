@@ -56,3 +56,10 @@ jobs:
               (crontab -l 2>/dev/null; echo "0 0,6,12,18 * * * /var/www/rbmap/scripts/cron-generate-reviews.sh") | crontab -
               echo "Cron 추가됨: 리뷰 생성 (0,6,12,18시)"
             fi
+
+            # Cron: 일일 리포트 (매일 00시 KST)
+            chmod +x /var/www/rbmap/scripts/cron-daily-report.sh 2>/dev/null || true
+            if ! crontab -l 2>/dev/null | grep -q "cron-daily-report"; then
+              (crontab -l 2>/dev/null; echo "0 0 * * * /var/www/rbmap/scripts/cron-daily-report.sh") | crontab -
+              echo "Cron 추가됨: 일일 리포트 (00시)"
+            fi

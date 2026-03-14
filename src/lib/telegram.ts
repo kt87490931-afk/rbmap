@@ -71,4 +71,56 @@ export async function notifyTest(): Promise<boolean> {
   );
 }
 
-export { sendMessage };
+/** 일일 리포트 전송 인자 타입 */
+export interface DailyReportData {
+  visitors: number;
+  bots: number;
+  partnerViews: Record<string, number>;
+  partnerCalls: Record<string, number>;
+  topPartners: { name: string; path: string; views: number; calls: number }[];
+  regionDistribution: Record<string, number>;
+  typeDistribution: Record<string, number>;
+  newReviews: number;
+  newPartners: number;
+}
+
+export async function notifyDailyReport(date: string, data: DailyReportData): Promise<boolean> {
+  const totalCalls = Object.values(data.partnerCalls).reduce((a, b) => a + b, 0);
+  const lines: string[] = [
+    `📊 <b>[룸빵여지도 일일 리포트] ${date}</b>\n`,
+    `👥 <b>접속</b>`,
+    `  • 방문자: ${data.visitors}명`,
+    `  • 봇/스캐너: ${data.bots}명`,
+    ``,
+    `📞 <b>전화 클릭</b>`,
+    `  • 총 ${totalCalls}건`,
+  ];
+
+  if (data.topPartners.length > 0) {
+    lines.push(``, `🏆 <b>상위 노출 업소 TOP 5</b>`);
+    data.topPartners.slice(0, 5).forEach((p, i) => {
+      lines.push(`  ${i + 1}. ${p.name} (조회 ${p.views}, 전화 ${p.calls})`);
+    });
+  }
+
+  lines.push(
+    ``,
+    `📍 <b>지역별 방문</b>`,
+    ...Object.entries(data.regionDistribution)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([r, c]) => `  • ${r}: ${c}건`),
+    ``,
+    `🏷️ <b>업종별 방문</b>`,
+    ...Object.entries(data.typeDistribution)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([t, c]) => `  • ${t}: ${c}건`),
+    ``,
+    `🆕 <b>신규</b>`,
+    `  • 리뷰: ${data.newReviews}건`,
+    `  • 업소: ${data.newPartners}건`
+  );
+
+  return sendMessage(lines.join("\n"));
+}

@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { VenueEditModals } from "@/components/venue/VenueEditModals";
 import { VenueEditButton } from "@/components/venue/VenueEditButton";
+import { CallTrackLink } from "@/components/venue/CallTrackLink";
 import { authOptions } from "@/lib/auth";
 import { hasDevAdminCookie } from "@/lib/admin-auth";
 import { verifyOtpSession } from "@/lib/otp";
@@ -232,9 +233,9 @@ export default async function VenueDetailPage({
               <div className="hb-phone-sub" id="d-phone-sub">{phoneSub}</div>
             </div>
             <div className="hb-phone-right">
-              <a href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} className="btn-call-hero" id="d-phone-link">
+              <CallTrackLink href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} path={`/${region}/${category}/${venue}`} className="btn-call-hero" id="d-phone-link">
                 <span>📞</span> 전화 예약
-              </a>
+              </CallTrackLink>
             </div>
           </div>
           <div className="hb-info-strip">
@@ -473,7 +474,7 @@ export default async function VenueDetailPage({
 
       {/* Mobile CTA */}
       <div className="mobile-cta">
-        <a href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} className="btn-m mcta-call">📞 전화 예약</a>
+        <CallTrackLink href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} path={`/${region}/${category}/${venue}`} className="btn-m mcta-call">📞 전화 예약</CallTrackLink>
       </div>
 
       {/* CTA Strip */}
@@ -481,7 +482,7 @@ export default async function VenueDetailPage({
         <div className="cta-strip">
           <h2>{data.name} 예약 및 문의</h2>
           <p>전화·문자로 편하게 예약하세요. 방문 전 가격 확인을 권장합니다.</p>
-          <a href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} className="btn-primary">전화 예약하기</a>
+          <CallTrackLink href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} path={`/${region}/${category}/${venue}`} className="btn-primary">전화 예약하기</CallTrackLink>
         </div>
       </div>
 

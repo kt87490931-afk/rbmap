@@ -14,7 +14,6 @@ import RegionsSection from "@/components/RegionsSection";
 import RegionPreview from "@/components/RegionPreview";
 import ReviewGrid from "@/components/ReviewGrid";
 import WidgetRowB from "@/components/WidgetRowB";
-import StatsBar from "@/components/StatsBar";
 import CTAStrip from "@/components/CTAStrip";
 import FullReviewSection from "@/components/FullReviewSection";
 import Footer from "@/components/Footer";
@@ -31,6 +30,7 @@ import {
 import { getRegions } from "@/lib/data/regions";
 import { getPartnerCountsByRegion } from "@/lib/data/partners";
 import { getSiteSection } from "@/lib/data/site";
+import { TYPE_TO_SLUG, REGION_SLUG_TO_NAME } from "@/lib/data/venues";
 import { getDisplayVisitorCount } from "@/lib/visit-count";
 import { authOptions } from "@/lib/auth";
 import { hasDevAdminCookie } from "@/lib/admin-auth";
@@ -54,7 +54,7 @@ export default async function Home() {
     }
   }
 
-  const [partnersConfig, feedConfig, reviewConfig, hero, ticker, header, about, regionGuide, categoryGuide, widgetsA, widgetsB, stats, cta, footer, regionPreview, visitorDisplay, regions, partnerCounts] = await Promise.all([
+  const [partnersConfig, feedConfig, reviewConfig, hero, ticker, header, about, regionGuide, categoryGuide, widgetsA, widgetsB, cta, footer, regionPreview, visitorDisplay, regions, partnerCounts] = await Promise.all([
     getSiteSection<PartnersConfig>("partners_config"),
     getSiteSection<FeedConfig>("feed_config"),
     getSiteSection<ReviewConfig>("review_config"),
@@ -65,8 +65,7 @@ export default async function Home() {
     getSiteSection<Parameters<typeof RegionGuideSection>[0]["data"]>("region_guide"),
     getSiteSection<Parameters<typeof CategoryGuideSection>[0]["data"]>("category_guide"),
     getSiteSection<Parameters<typeof WidgetRowA>[0]["data"]>("widgets_a"),
-    getSiteSection<Parameters<typeof WidgetRowB>[0]["data"]>("widgets_b"),
-    getSiteSection<Parameters<typeof StatsBar>[0]["data"]>("stats"),
+    getSiteSection<Record<string, unknown>>("widgets_b"),
     getSiteSection<Parameters<typeof CTAStrip>[0]["data"]>("cta"),
     getSiteSection<Parameters<typeof Footer>[0]["data"]>("footer"),
     getSiteSection<Parameters<typeof RegionPreview>[0]["data"]>("region_preview"),
@@ -80,13 +79,94 @@ export default async function Home() {
   const gridLimit = reviewConfig?.grid_limit ?? 6;
   const fullLimit = reviewConfig?.full_limit ?? 10;
 
-  const [partners, reviewPosts, reviews] = await Promise.all([
+  const [partners, partnersForWidgets, reviewPosts, reviews] = await Promise.all([
     getPartners(pLimit === 0 ? undefined : pLimit),
+    getPartners(50),
     getReviewPostsList({ limit: feedLimit }),
     getReviews(),
   ]);
 
   const partnerList = pLimit > 0 ? partners.slice(0, pLimit) : partners;
+
+  const venueRanks = partnersForWidgets.slice(0, 7).map((p, i) => {
+    const href = p.href?.startsWith("/") ? p.href : `/${(p.href ?? "").split("/")[1] ?? "gangnam"}/${TYPE_TO_SLUG[p.type] || "karaoke"}/${p.id}`;
+    const regionName = REGION_SLUG_TO_NAME[(href?.split("/")[1] ?? "")] ?? p.region ?? "";
+    return {
+      href,
+      rank: i + 1,
+      top: i < 3,
+      name: p.name,
+      sub: `${regionName} · ${p.type}`,
+      score: p.stars?.replace(/[^0-9.]/g, "") || "—",
+    };
+  });
+
+  const typeCounts: Record<string, number> = {};
+  for (const p of partnersForWidgets) {
+    const slug = TYPE_TO_SLUG[p.type] || "karaoke";
+    typeCounts[slug] = (typeCounts[slug] ?? 0) + 1;
+  }
+  const categoryConfig = [
+    { slug: "karaoke", icon: "🎤", label: "가라오케" },
+    { slug: "highpublic", icon: "💎", label: "하이퍼블릭" },
+    { slug: "shirtroom", icon: "👔", label: "셔츠룸" },
+    { slug: "public", icon: "🥂", label: "퍼블릭" },
+    { slug: "jjomoh", icon: "⭐", label: "쩜오" },
+    { slug: "room-salon", icon: "🎭", label: "룸싸롱" },
+    { slug: "bar", icon: "🍸", label: "바" },
+  ];
+  const categories = categoryConfig.map((c) => ({
+    href: `/category/${c.slug}`,
+    icon: c.icon,
+    label: c.label,
+    count: `${typeCounts[c.slug] ?? 0}개`,
+  }));
+
+  const REGION_NAME_TO_SLUG: Record<string, string> = { 강남: "gangnam", 수원: "suwon", "수원 인계동": "suwon", 동탄: "dongtan", 제주: "jeju" };
+  const partnersByRegion: Record<string, typeof partnersForWidgets> = {};
+  for (const p of partnersForWidgets) {
+    let slug = p.href?.replace(/^\//, "").split("/")[0] ?? "";
+    if (!slug && p.region) slug = REGION_NAME_TO_SLUG[p.region] ?? REGION_NAME_TO_SLUG[p.region.replace(/\s+인계동$/, "")] ?? "";
+    if (!slug) continue;
+    if (!partnersByRegion[slug]) partnersByRegion[slug] = [];
+    partnersByRegion[slug].push(p);
+  }
+  const regionPreviewRegions = regions.slice(0, 6).map((r) => {
+    const regionPartners = (partnersByRegion[r.slug] ?? []).slice(0, 2);
+    const venues = regionPartners.map((p) => ({
+      vname: p.name,
+      type: p.type,
+      star: p.stars || "★—",
+    }));
+    return {
+      href: `/${r.slug}`,
+      region: r.name,
+      count: `${partnerCounts[r.slug]?.venues ?? r.venues ?? 0}개 업소 등록`,
+      venues,
+    };
+  });
+
+  const timelineItems = reviewPosts.slice(0, 5).map((p, i) => {
+    const dt = p.published_at || p.created_at;
+    const timeStr = dt ? new Date(dt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }) : "—";
+    return {
+      time: timeStr,
+      dot: i === 0 ? "on" : "",
+      title: `${p.venue} 리뷰 등록`,
+      desc: `Gemini AI 자동 생성 · ${getTypeName(p.type)}`,
+    };
+  });
+
+  const mapCells = [
+    ...regions.slice(0, 5).map((r, i) => ({
+      href: `/${r.slug}`,
+      name: r.name,
+      sub: r.coming ? "준비중" : r.short ?? "",
+      on: i === 0,
+      coming: r.coming ?? false,
+    })),
+    { href: "/regions", name: "전체", sub: "모든지역", on: false, coming: false },
+  ];
 
   const feedItems: FeedItem[] = reviewPosts.map((p, i) => {
     const dt = p.published_at || p.created_at;
@@ -147,19 +227,16 @@ export default async function Home() {
       </SectionWithSettings>
       <div className="page-wrap">
         <SectionWithSettings isAdmin={!!isAdmin} sectionKey="widgets_a">
-          <WidgetRowA data={widgetsA} />
+          <WidgetRowA data={{ venue_ranks: venueRanks, categories }} />
         </SectionWithSettings>
         <SectionWithSettings isAdmin={!!isAdmin} sectionKey="region_preview">
-          <RegionPreview data={regionPreview} />
+          <RegionPreview data={{ regions: regionPreviewRegions }} />
         </SectionWithSettings>
         <SectionWithSettings isAdmin={!!isAdmin} sectionKey="review_config" sectionLabel="8. 6시간마다 최신리뷰" adminLink="/admin/reviews">
           <ReviewGrid reviews={reviews} displayLimit={gridLimit} />
         </SectionWithSettings>
         <SectionWithSettings isAdmin={!!isAdmin} sectionKey="widgets_b">
-          <WidgetRowB data={widgetsB} />
-        </SectionWithSettings>
-        <SectionWithSettings isAdmin={!!isAdmin} sectionKey="stats">
-          <StatsBar data={stats} />
+          <WidgetRowB data={{ timeline: timelineItems, map_cells: mapCells, faq: (widgetsB as { faq?: { q?: string; a?: string }[] })?.faq }} />
         </SectionWithSettings>
         <SectionWithSettings isAdmin={!!isAdmin} sectionKey="cta">
           <CTAStrip data={cta} />

@@ -2,15 +2,42 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
-/**
- * 랭킹마켓과 동일: /admin/* 접근 시 OTP 세션 쿠키 검사
- * - setup-otp, verify-otp는 통과 (OTP 설정/인증 페이지)
- * - 프로덕션(rbbmap.com)이 아닐 때 설정 모드(Google 미설정)면 통과
- * - 그 외: admin_otp_session 쿠키 없으면 verify-otp로 리다이렉트
- */
+/** env + DB blocked_ips 병합 */
+async function getBlockedIps(request: NextRequest): Promise<string[]> {
+  const fromEnv = (process.env.BLOCKED_IPS || '').split(',').map((s) => s.trim()).filter(Boolean)
+  const secret = process.env.CRON_SECRET || process.env.NEXTAUTH_SECRET
+  if (!secret) return fromEnv
+  try {
+    const url = new URL('/api/internal/blocked-ips', request.url)
+    const res = await fetch(url.toString(), { headers: { 'x-blocked-check': secret } } as RequestInit)
+    if (res.ok) {
+      const fromDb: string[] = await res.json()
+      return [...new Set([...fromEnv, ...fromDb])]
+    }
+  } catch {
+    /* fallback to env only */
+  }
+  return fromEnv
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // 1. IP 차단 검사 (env + DB blocked_ips)
+  const blocked = await getBlockedIps(request)
+  if (blocked.length > 0) {
+    const forwarded = request.headers.get('x-forwarded-for')
+    const realIp = request.headers.get('x-real-ip')
+    const ip = forwarded?.split(',')[0]?.trim() || realIp || request.ip || ''
+    if (ip && blocked.includes(ip)) {
+      return new NextResponse('Forbidden', { status: 403 })
+    }
+  }
+
+  // 2. /admin/* 접근 시 OTP 세션 쿠키 검사
+  if (!pathname.startsWith('/admin')) {
+    return NextResponse.next()
+  }
   if (pathname.includes('/setup-otp') || pathname.includes('/verify-otp')) {
     return NextResponse.next()
   }
@@ -45,5 +72,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: [
+    /*
+     * IP 차단: 전체 경로. /api/internal 제외 (자기 자신 fetch 시 루프 방지)
+     * /admin 은 OTP 검사 추가 적용
+     */
+    '/((?!_next/static|_next/image|favicon.ico|api/internal|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+  ],
 }

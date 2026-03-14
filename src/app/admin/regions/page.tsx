@@ -16,7 +16,15 @@ interface RegionItem {
   sort_order: number
 }
 
-const THUMB_CLASSES = ['gangnam', 'suwon', 'dongtan', 'jeju', 'incheon', 'busan', 'default']
+const THUMB_CLASS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'default', label: '기본 (신규 지역용)' },
+  { value: 'gangnam', label: '강남 스타일' },
+  { value: 'suwon', label: '수원 스타일' },
+  { value: 'dongtan', label: '동탄 스타일' },
+  { value: 'jeju', label: '제주 스타일' },
+  { value: 'incheon', label: '인천 스타일' },
+  { value: 'busan', label: '부산 스타일' },
+]
 
 export default function AdminRegionsPage() {
   const [items, setItems] = useState<RegionItem[]>([])
@@ -24,7 +32,7 @@ export default function AdminRegionsPage() {
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState<'success' | 'error'>('success')
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ slug: '', name: '', short: '', thumb_class: 'gangnam', tags: '', venues: 0, reviews: 0, badge: '', coming: false })
+  const [form, setForm] = useState({ slug: '', name: '', short: '', thumb_class: 'default', tags: '', venues: 0, reviews: 0, badge: '', coming: false })
   const [editingTags, setEditingTags] = useState<Record<string, string>>({})
   const [editing, setEditing] = useState<Record<string, Partial<RegionItem>>>({})
 
@@ -67,7 +75,7 @@ export default function AdminRegionsPage() {
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
         setItems((prev) => [...prev, data])
-        setForm({ slug: '', name: '', short: '', thumb_class: 'gangnam', tags: '', venues: 0, reviews: 0, badge: '', coming: false })
+        setForm({ slug: '', name: '', short: '', thumb_class: 'default', tags: '', venues: 0, reviews: 0, badge: '', coming: false })
         showMsg('추가 완료!')
       } else {
         const errMsg = data.error || (res.status === 403 ? 'OTP 인증이 필요합니다. OTP 인증 페이지에서 다시 인증해 주세요.' : '추가 실패')
@@ -158,11 +166,14 @@ export default function AdminRegionsPage() {
           <input className="form-input" placeholder="short (예: GN)" value={form.short} onChange={(e) => setForm((f) => ({ ...f, short: e.target.value }))} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
-          <select className="form-input" value={form.thumb_class} onChange={(e) => setForm((f) => ({ ...f, thumb_class: e.target.value }))}>
-            {THUMB_CLASSES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>카드 스타일</label>
+            <select className="form-input" value={form.thumb_class} onChange={(e) => setForm((f) => ({ ...f, thumb_class: e.target.value }))}>
+              {THUMB_CLASS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
           <input className="form-input" type="number" placeholder="업소 수" value={form.venues || ''} onChange={(e) => setForm((f) => ({ ...f, venues: parseInt(e.target.value, 10) || 0 }))} />
           <input className="form-input" type="number" placeholder="리뷰 수" value={form.reviews || ''} onChange={(e) => setForm((f) => ({ ...f, reviews: parseInt(e.target.value, 10) || 0 }))} />
           <select className="form-input" value={form.badge} onChange={(e) => setForm((f) => ({ ...f, badge: e.target.value || '' }))}>

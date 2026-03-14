@@ -28,6 +28,7 @@ import {
   formatStars,
 } from "@/lib/data/review-posts";
 import { getSiteSection } from "@/lib/data/site";
+import { getDisplayVisitorCount } from "@/lib/visit-count";
 import { authOptions } from "@/lib/auth";
 import { hasDevAdminCookie } from "@/lib/admin-auth";
 import { verifyOtpSession } from "@/lib/otp";
@@ -50,7 +51,7 @@ export default async function Home() {
     }
   }
 
-  const [partnersConfig, feedConfig, reviewConfig, hero, ticker, header, about, regionGuide, categoryGuide, widgetsA, widgetsB, stats, cta, footer, regionPreview] = await Promise.all([
+  const [partnersConfig, feedConfig, reviewConfig, hero, ticker, header, about, regionGuide, categoryGuide, widgetsA, widgetsB, stats, cta, footer, regionPreview, visitorDisplay] = await Promise.all([
     getSiteSection<PartnersConfig>("partners_config"),
     getSiteSection<FeedConfig>("feed_config"),
     getSiteSection<ReviewConfig>("review_config"),
@@ -110,7 +111,7 @@ export default async function Home() {
         <Ticker data={ticker} />
       </SectionWithSettings>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="hero">
-        <Hero data={hero} />
+        <Hero data={hero} visitorCount={visitorDisplay} />
       </SectionWithSettings>
       <div className="divider" />
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="about">

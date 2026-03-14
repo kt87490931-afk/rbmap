@@ -6,25 +6,35 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [counts, setCounts] = useState({ regions: 0, partners: 0, feed: 0, reviews: 0 })
   const [telegramTest, setTelegramTest] = useState<'idle' | 'sending' | 'ok' | 'fail'>('idle')
+  const [visitorOffset, setVisitorOffset] = useState(0)
+  const [todayVisitors, setTodayVisitors] = useState(0)
+  const [visitorSaving, setVisitorSaving] = useState(false)
+  const [visitorSaved, setVisitorSaved] = useState(false)
 
   const fetchCounts = useCallback(async () => {
     try {
-      const [r, p, f, rev] = await Promise.all([
+      const [r, p, f, rev, logs, config] = await Promise.all([
         fetch('/api/admin/regions'),
         fetch('/api/admin/partners'),
         fetch('/api/admin/feed'),
         fetch('/api/admin/reviews'),
+        fetch('/api/admin/visit-logs'),
+        fetch('/api/admin/site/visitor_config'),
       ])
       const regions = await r.json()
       const partners = await p.json()
       const feed = await f.json()
       const reviews = await rev.json()
+      const logsData = await logs.json()
+      const configData = await config.json()
       setCounts({
         regions: Array.isArray(regions) ? regions.length : 0,
         partners: Array.isArray(partners) ? partners.length : 0,
         feed: Array.isArray(feed) ? feed.length : 0,
         reviews: Array.isArray(reviews) ? reviews.length : 0,
       })
+      setTodayVisitors(Number(logsData?.todayVisitors ?? 0))
+      setVisitorOffset(Number(configData?.visitor_offset ?? 0))
     } catch { /* ignore */ }
     setLoading(false)
   }, [])
@@ -58,6 +68,50 @@ export default function AdminDashboard() {
         <div className="stat-card">
           <div className="stat-card-num" style={{ color: 'var(--purple)' }}>{counts.reviews}</div>
           <div className="stat-card-label">리뷰 수</div>
+        </div>
+      </div>
+
+      <div className="card-box">
+        <div className="card-box-title">오늘 접속자 설정</div>
+        <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 12 }}>
+          메인 페이지에 &quot;오늘의접속자: (실제 방문자 + 추가 인원)&quot;으로 표시됩니다.
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span>실제 방문자: {todayVisitors.toLocaleString()}</span>
+          <span>+</span>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>추가 인원</span>
+            <input
+              type="number"
+              min={0}
+              value={visitorOffset}
+              onChange={(e) => setVisitorOffset(Number(e.target.value) || 0)}
+              style={{ width: 80, padding: '6px 8px' }}
+            />
+          </label>
+          <span>=</span>
+          <strong>메인 표시: {(todayVisitors + visitorOffset).toLocaleString()}</strong>
+          <button
+            type="button"
+            className="btn-save"
+            disabled={visitorSaving}
+            onClick={async () => {
+              setVisitorSaving(true)
+              setVisitorSaved(false)
+              try {
+                const r = await fetch('/api/admin/site/visitor_config', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ visitor_offset: visitorOffset }),
+                })
+                if (r.ok) setVisitorSaved(true)
+              } catch { /* ignore */ }
+              setVisitorSaving(false)
+              setTimeout(() => setVisitorSaved(false), 2000)
+            }}
+          >
+            {visitorSaving ? '저장 중...' : visitorSaved ? '저장됨' : '저장'}
+          </button>
         </div>
       </div>
 

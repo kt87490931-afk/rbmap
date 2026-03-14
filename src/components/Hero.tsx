@@ -10,6 +10,11 @@ interface HeroData {
   btns?: { text?: string; href?: string }[];
 }
 
+export interface HeroProps {
+  data?: HeroData | null;
+  visitorCount?: number | null;
+}
+
 const DEFAULT: HeroData = {
   eyebrow: "Gemini AI · 6시간 자동 업데이트",
   h1_line1: "전국 룸빵 정보,",
@@ -28,16 +33,20 @@ const DEFAULT: HeroData = {
   ],
 };
 
-export default function Hero({ data }: { data?: HeroData | null }) {
+export default function Hero({ data, visitorCount }: HeroProps) {
   const d = { ...DEFAULT, ...data };
   const kpis = d.kpis ?? DEFAULT.kpis ?? [];
   const btns = d.btns ?? DEFAULT.btns ?? [];
+  const eyebrowText =
+    visitorCount != null
+      ? `오늘의접속자 : ${visitorCount.toLocaleString()}`
+      : (d.eyebrow ?? DEFAULT.eyebrow);
   return (
     <section className="hero">
       <div className="hero-glow" aria-hidden="true" />
       <div className="hero-grid" aria-hidden="true" />
       <div className="hero-eyebrow">
-        <div className="live-dot" /> {d.eyebrow}
+        <div className="live-dot" /> {eyebrowText}
       </div>
       <h1>
         {d.h1_line1}

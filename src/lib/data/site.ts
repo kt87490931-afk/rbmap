@@ -18,6 +18,7 @@ export type SiteSectionKey =
   | 'review_config'
   | 'region_sidebar'
   | 'seo'
+  | 'visitor_config'
 
 const FALLBACKS: Record<SiteSectionKey, unknown> = {
   hero: {
@@ -120,6 +121,7 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
   partners_config: { display_limit: 0 },
   feed_config: { display_limit: 10 },
   review_config: { grid_limit: 6, full_limit: 10 },
+  visitor_config: { visitor_offset: 0 },
   widgets_a: {
     price_rows: [
       { region: '강남', type: '가라오케', val: '55만', chg: 'fl' },

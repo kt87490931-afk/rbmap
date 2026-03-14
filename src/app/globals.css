@@ -686,7 +686,7 @@ body::after {
 }
 
 .section {
-  padding: 52px 0;
+  padding: 64px 24px;
 }
 
 .sec-label {
@@ -1019,7 +1019,6 @@ body::after {
 .section-inner {
   max-width: var(--max);
   margin: 0 auto;
-  padding: 0 16px;
 }
 .bg-deep {
   background: var(--deep);

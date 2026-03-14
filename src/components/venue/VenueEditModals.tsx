@@ -38,6 +38,8 @@ type VenueEditModalsProps = {
     priceRows?: PriceRow[];
     mapEmbed?: string;
     infoCards: { label: string; val: string; sub: string }[];
+    seoCols?: { blocks: { type: "h3" | "p"; content: string }[] }[];
+    seoKwLinks?: { href: string; text: string }[];
   };
 };
 
@@ -53,7 +55,7 @@ async function saveEdit(
   regionSlug: string,
   categorySlug: string,
   venueSlug: string,
-  section: "hero" | "price" | "intro" | "map",
+  section: "hero" | "price" | "intro" | "map" | "seo",
   payload: Record<string, unknown>
 ): Promise<boolean> {
   const res = await fetch("/api/admin/venues/edit", {
@@ -215,6 +217,38 @@ export function VenueEditModals({ regionSlug, categorySlug, venueSlug, data }: V
       }).join("");
     }
     closeModal("price");
+    router.refresh();
+  }, [closeModal, regionSlug, categorySlug, venueSlug, router]);
+
+  const handleSaveSeo = useCallback(async () => {
+    const guideRaw = (document.getElementById("m-seo-guide") as HTMLTextAreaElement)?.value ?? "";
+    const kwRaw = (document.getElementById("m-seo-keywords") as HTMLTextAreaElement)?.value ?? "";
+    const seoCols: { blocks: { type: "h3" | "p"; content: string }[] }[] = [];
+    const colParts = guideRaw.split(/\n---+\n/).map((s) => s.trim()).filter(Boolean);
+    for (const part of colParts) {
+      const blocks: { type: "h3" | "p"; content: string }[] = [];
+      const paras = part.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+      for (const para of paras) {
+        if (para.startsWith("### ")) {
+          blocks.push({ type: "h3", content: para.slice(4).trim() });
+        } else if (para) {
+          blocks.push({ type: "p", content: para });
+        }
+      }
+      if (blocks.length > 0) seoCols.push({ blocks });
+    }
+    const seoKwLinks: { href: string; text: string }[] = [];
+    for (const line of kwRaw.split("\n").map((l) => l.trim()).filter(Boolean)) {
+      const pipe = line.indexOf("|");
+      if (pipe >= 0) {
+        seoKwLinks.push({ href: line.slice(0, pipe).trim() || "#", text: line.slice(pipe + 1).trim() || line });
+      } else {
+        seoKwLinks.push({ href: "#", text: line });
+      }
+    }
+    const ok = await saveEdit(regionSlug, categorySlug, venueSlug, "seo", { seoCols, seoKwLinks });
+    if (!ok) return;
+    closeModal("seo");
     router.refresh();
   }, [closeModal, regionSlug, categorySlug, venueSlug, router]);
 
@@ -501,6 +535,48 @@ export function VenueEditModals({ regionSlug, categorySlug, venueSlug, data }: V
         </div>
       </div>
 
+      {/* 가이드·키워드 모달 */}
+      <div className="modal-backdrop" id="modal-seo">
+        <div className="modal modal-wide" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 640 }}>
+          <div className="modal-head">
+            <h3>편집 완벽 가이드 · 키워드</h3>
+            <button type="button" className="modal-close" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("seo")}>
+              ×
+            </button>
+          </div>
+          <div className="modal-body">
+            <div className="mf-row">
+              <label>가이드 내용 (형식: ### 제목 다음 줄에 본문, 빈 줄로 단락 구분, --- 로 섹션 구분)</label>
+              <textarea
+                id="m-seo-guide"
+                rows={12}
+                defaultValue={((data.seoCols ?? []) as { blocks: { type: string; content: string }[] }[]).map((col) =>
+                  col.blocks.map((b) => (b.type === "h3" ? `### ${b.content}` : b.content)).join("\n\n")
+                ).join("\n---\n")}
+                placeholder="### 달토 가라오케란? — 강남 가라오케 1위&#10;&#10;본문 내용...&#10;&#10;---&#10;&#10;### 이용 방법&#10;&#10;다음 섹션 본문..."
+              />
+            </div>
+            <div className="mf-row" style={{ marginTop: 16 }}>
+              <label>키워드 링크 (한 줄에 하나, 형식: href|표시텍스트 또는 텍스트만)</label>
+              <textarea
+                id="m-seo-keywords"
+                rows={6}
+                defaultValue={((data.seoKwLinks ?? []) as { href: string; text: string }[]).map((k) => (k.href && k.href !== "#" ? `${k.href}|${k.text}` : k.text)).join("\n")}
+                placeholder="/gangnam/karaoke/dalto|달토 가라오케&#10;달토 가라오케 후기&#10;/gangnam|강남 유흥 정보"
+              />
+            </div>
+          </div>
+          <div className="modal-foot">
+            <button type="button" className="mf-cancel" onClick={() => (window as unknown as { closeModal: (id: string) => void }).closeModal?.("seo")}>
+              취소
+            </button>
+            <button type="button" className="mf-save" onClick={handleSaveSeo}>
+              저장
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* 유사 업소 모달 */}
       <div className="modal-backdrop" id="modal-similar">
         <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -512,7 +588,7 @@ export function VenueEditModals({ regionSlug, categorySlug, venueSlug, data }: V
           </div>
           <div className="modal-body">
             <p style={{ fontSize: 12, color: "var(--dim)", marginTop: 8, lineHeight: 1.7 }}>
-              유사 업소 카드는 같은 지역·업종의 업소 중 자동으로 추천됩니다.
+              유사 업소는 같은 지역의 제휴 업소를 랜덤으로 표시합니다.
             </p>
           </div>
           <div className="modal-foot">

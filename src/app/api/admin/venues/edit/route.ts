@@ -16,10 +16,10 @@ export async function PATCH(request: Request) {
     !category_slug ||
     !venue_slug ||
     !section ||
-    !["hero", "price", "intro", "map"].includes(section)
+    !["hero", "price", "intro", "map", "seo"].includes(section)
   ) {
     return NextResponse.json(
-      { error: "region_slug, category_slug, venue_slug, section(hero|price|intro|map) 필수" },
+      { error: "region_slug, category_slug, venue_slug, section(hero|price|intro|map|seo) 필수" },
       { status: 400 }
     );
   }

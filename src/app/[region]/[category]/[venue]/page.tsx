@@ -391,7 +391,7 @@ export default async function VenueDetailPage({
         {/* 섹션 5: 유사 업소 */}
         <section className="art-section" id="similar">
           {isAdmin && <VenueEditButton section="similar" />}
-          <span className="sec-label">SIMILAR · {regionName} 유사 업소</span>
+          <span className="sec-label">SIMILAR · 유사 업소</span>
           <h2 className="art-h2">함께 보면 좋은 <em>{regionName} {typeName}</em></h2>
           {(data.similarVenues ?? []).length > 0 ? (
             <div className="similar-grid">
@@ -412,11 +412,15 @@ export default async function VenueDetailPage({
           )}
         </section>
 
-        {/* SEO 섹션 */}
-        {(data.seoCols ?? []).length > 0 && (
+        {/* SEO 섹션 — 가이드 + 키워드 */}
+        {((data.seoCols ?? []).length > 0 || (data.seoKwLinks ?? []).length > 0 || isAdmin) && (
           <section className="art-section" id="seo-section">
+            {isAdmin && <VenueEditButton section="seo" icon="cog" />}
             <span className="sec-label">GUIDE · {regionName} {typeName} 이용 가이드</span>
             <h2 className="art-h2">{regionName} {typeName} <em>완벽 가이드</em></h2>
+            {(data.seoCols ?? []).length === 0 && isAdmin && (
+              <p className="art-p" style={{ color: "var(--dim)" }}>가이드 내용이 없습니다. 설정 버튼에서 추가해 주세요.</p>
+            )}
             {(data.seoCols ?? []).map((col, i) => (
               <div key={i}>
                 {col.blocks.map((b, j) =>
@@ -468,6 +472,8 @@ export default async function VenueDetailPage({
           priceRows: data.priceRows ?? [],
           mapEmbed: data.mapEmbed,
           infoCards: data.infoCards ?? [],
+          seoCols: data.seoCols ?? [],
+          seoKwLinks: data.seoKwLinks ?? [],
         }}
       />
       )}

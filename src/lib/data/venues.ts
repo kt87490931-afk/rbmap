@@ -6,6 +6,57 @@
 
 import { getPartners } from "./partners";
 import type { Partner } from "./partners";
+
+/** Fisher-Yates 셔플 */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** 같은 지역의 제휴 업소 중 현재 업소 제외, 랜덤 3개를 similarVenues 형식으로 반환 */
+function buildSimilarVenuesFromPartners(
+  partners: Partner[],
+  regionSlug: string,
+  regionName: string,
+  excludeVenueSlug: string,
+  limit = 3
+): VenueDetail["similarVenues"] {
+  const typeColors: Record<string, { background?: string; border?: string; color?: string }> = {
+    가라오케: { background: "rgba(192,57,43,.15)", border: "1px solid rgba(192,57,43,.25)", color: "#e05c50" },
+    하이퍼블릭: { background: "rgba(155,89,182,.12)", border: "1px solid rgba(155,89,182,.25)", color: "#9b59b6" },
+    셔츠룸: { background: "rgba(52,152,219,.12)", border: "1px solid rgba(52,152,219,.25)", color: "#3498db" },
+    퍼블릭: { background: "rgba(46,204,113,.12)", border: "1px solid rgba(46,204,113,.25)", color: "#2ecc71" },
+    쩜오: { background: "rgba(241,196,15,.15)", border: "1px solid rgba(241,196,15,.3)", color: "#f1c40f" },
+  };
+  const filtered = partners.filter((p) => {
+    const pSlug = extractVenueSlugFromHref(p.href) || nameToSlug(p.name);
+    if (pSlug === excludeVenueSlug) return false;
+    const regionMatch = p.region?.includes(regionName) || regionName?.includes(p.region ?? "") || p.href?.includes(`/${regionSlug}/`);
+    return regionMatch;
+  });
+  const picked = shuffle(filtered).slice(0, limit);
+  return picked.map((p) => {
+    const href = p.href?.startsWith("/") ? p.href : `/${regionSlug}/${TYPE_TO_SLUG[p.type] || "karaoke"}/${extractVenueSlugFromHref(p.href) || nameToSlug(p.name)}`;
+    const desc = (p.desc ?? "").trim();
+    const preview = desc.length > 120 ? desc.slice(0, 120) + "…" : desc || `${regionName} ${p.type} — ${p.name}`;
+    const infoCards = (p as unknown as { info_cards?: { label?: string; val?: string }[] }).info_cards;
+    const priceVal = infoCards?.[0]?.val ?? "문의";
+    return {
+      name: p.name,
+      href,
+      type: p.type,
+      typeStyle: typeColors[p.type] ?? { background: "rgba(149,165,166,.12)", border: "1px solid rgba(149,165,166,.25)", color: "#95a5a6" },
+      score: (() => { const s = (p.stars ?? "★★★★☆"); const n = (s.match(/★/g) ?? []).length; return n >= 4 ? "4.5" : n >= 3 ? "4.0" : "3.5"; })(),
+      price: typeof priceVal === "string" && priceVal !== "문의" ? `1인 ${priceVal}` : `1인 ${priceVal}~`,
+      preview,
+      stars: p.stars ?? "★★★★☆",
+    };
+  });
+}
 import { supabaseAdmin } from "../supabase-server";
 import { getReviewPostsByVenue, buildReviewUrl, formatStars } from "./review-posts";
 
@@ -469,6 +520,8 @@ export async function getVenueDetail(
       /* ignore */
     }
     venue = await enrichVenueWithReviewPosts(venue, regionSlug, categorySlug, venueSlug);
+    const similarFromPartners = buildSimilarVenuesFromPartners(partners, regionSlug, regionName, venueSlug, 3);
+    venue = { ...venue, similarVenues: similarFromPartners.length > 0 ? similarFromPartners : venue.similarVenues };
     return await applyVenueEdits(venue, regionSlug, categorySlug, venueSlug);
   }
 
@@ -545,6 +598,8 @@ export async function getVenueDetail(
       };
     }
     fallbackVenue = await enrichVenueWithReviewPosts(fallbackVenue, regionSlug, categorySlug, venueSlug);
+    const similarFromPartners = buildSimilarVenuesFromPartners(partners, regionSlug, regionName, venueSlug, 3);
+    fallbackVenue = { ...fallbackVenue, similarVenues: similarFromPartners.length > 0 ? similarFromPartners : fallbackVenue.similarVenues };
     return await applyVenueEdits(fallbackVenue, regionSlug, categorySlug, venueSlug);
   }
 
@@ -648,6 +703,12 @@ async function applyVenueEdits(
       if (typeof map.embed === "string") out.mapEmbed = map.embed;
       if (typeof map.address === "string") out.locationDetail = map.address;
       if (typeof map.addressSub === "string") out.locationSub = map.addressSub;
+    }
+
+    const seo = edits.seo;
+    if (seo && typeof seo === "object") {
+      if (Array.isArray(seo.seoCols)) out.seoCols = seo.seoCols as VenueDetail["seoCols"];
+      if (Array.isArray(seo.seoKwLinks)) out.seoKwLinks = seo.seoKwLinks as VenueDetail["seoKwLinks"];
     }
 
     return out;

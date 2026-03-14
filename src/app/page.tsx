@@ -10,6 +10,7 @@ import PartnerSection from "@/components/PartnerSection";
 import SectionWithSettings from "@/components/SectionWithSettings";
 import LiveFeedSection from "@/components/LiveFeedSection";
 import WidgetRowA from "@/components/WidgetRowA";
+import RegionsSection from "@/components/RegionsSection";
 import RegionPreview from "@/components/RegionPreview";
 import ReviewGrid from "@/components/ReviewGrid";
 import WidgetRowB from "@/components/WidgetRowB";
@@ -27,6 +28,8 @@ import {
   getTypeName,
   formatStars,
 } from "@/lib/data/review-posts";
+import { getRegions } from "@/lib/data/regions";
+import { getPartnerCountsByRegion } from "@/lib/data/partners";
 import { getSiteSection } from "@/lib/data/site";
 import { getDisplayVisitorCount } from "@/lib/visit-count";
 import { authOptions } from "@/lib/auth";
@@ -51,7 +54,7 @@ export default async function Home() {
     }
   }
 
-  const [partnersConfig, feedConfig, reviewConfig, hero, ticker, header, about, regionGuide, categoryGuide, widgetsA, widgetsB, stats, cta, footer, regionPreview, visitorDisplay] = await Promise.all([
+  const [partnersConfig, feedConfig, reviewConfig, hero, ticker, header, about, regionGuide, categoryGuide, widgetsA, widgetsB, stats, cta, footer, regionPreview, visitorDisplay, regions, partnerCounts] = await Promise.all([
     getSiteSection<PartnersConfig>("partners_config"),
     getSiteSection<FeedConfig>("feed_config"),
     getSiteSection<ReviewConfig>("review_config"),
@@ -68,6 +71,8 @@ export default async function Home() {
     getSiteSection<Parameters<typeof Footer>[0]["data"]>("footer"),
     getSiteSection<Parameters<typeof RegionPreview>[0]["data"]>("region_preview"),
     getDisplayVisitorCount().then((r) => r.display).catch(() => 0),
+    getRegions(),
+    getPartnerCountsByRegion(),
   ]);
 
   const pLimit = partnersConfig?.display_limit ?? 0;
@@ -120,6 +125,14 @@ export default async function Home() {
       </SectionWithSettings>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="region_guide">
         <RegionGuideSection data={regionGuide} />
+      </SectionWithSettings>
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="regions">
+        <RegionsSection
+          regions={regions.map((r) => ({
+            ...r,
+            venues: partnerCounts[r.slug]?.venues ?? r.venues ?? 0,
+          }))}
+        />
       </SectionWithSettings>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="category_guide">
         <CategoryGuideSection data={categoryGuide} />

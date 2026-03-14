@@ -3,6 +3,7 @@ import { unstable_noStore } from 'next/cache'
 import type { Metadata } from 'next'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import { getRegions } from '@/lib/data/regions'
 import { getReviewPostsList, buildReviewUrl, getRegionName, getTypeName, formatStars, REGION_PILL_STYLE } from '@/lib/data/review-posts'
 import { getSiteSection } from '@/lib/data/site'
 
@@ -24,10 +25,11 @@ export default async function ReviewsListPage({
   const type = params.type ?? 'all'
   const star = params.star ?? 'all'
 
-  const [posts, header, footer] = await Promise.all([
+  const [posts, header, footer, regions] = await Promise.all([
     getReviewPostsList({ region: region !== 'all' ? region : undefined, type: type !== 'all' ? type : undefined, star: star !== 'all' ? star : undefined }),
     getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>('header'),
     getSiteSection<{ desc?: string; copyright?: string; links?: { label: string; href: string }[] }>('footer'),
+    getRegions(),
   ])
 
   const pillStyle = (r: string) => REGION_PILL_STYLE[r] ?? { bg: 'rgba(255,255,255,.05)', color: 'var(--muted)', border: 'var(--border)' }
@@ -68,10 +70,15 @@ export default async function ReviewsListPage({
           <div className="fp-grp">
             <span className="fp-lbl">지역</span>
             <Link href="/reviews" className={`fp-btn ${region === 'all' ? 'active' : ''}`}>전체</Link>
-            <Link href="/reviews?region=gangnam" className={`fp-btn ${region === 'gangnam' ? 'active' : ''}`}>강남</Link>
-            <Link href="/reviews?region=suwon" className={`fp-btn ${region === 'suwon' ? 'active' : ''}`}>수원</Link>
-            <Link href="/reviews?region=dongtan" className={`fp-btn ${region === 'dongtan' ? 'active' : ''}`}>동탄</Link>
-            <Link href="/reviews?region=jeju" className={`fp-btn ${region === 'jeju' ? 'active' : ''}`}>제주</Link>
+            {regions.filter((r) => !r.coming).map((r) => (
+              <Link
+                key={r.slug}
+                href={`/reviews?region=${r.slug}`}
+                className={`fp-btn ${region === r.slug ? 'active' : ''}`}
+              >
+                {r.name}
+              </Link>
+            ))}
           </div>
           <div className="fp-div" />
           <div className="fp-grp">

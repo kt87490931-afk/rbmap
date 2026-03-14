@@ -12,6 +12,8 @@ export interface Region {
   badge: 'HOT' | 'NEW' | null
   coming: boolean
   sort_order: number
+  map_x?: number | null
+  map_y?: number | null
 }
 
 export async function getRegions(): Promise<Region[]> {
@@ -25,6 +27,8 @@ export async function getRegions(): Promise<Region[]> {
     ...r,
     tags: Array.isArray(r.tags) ? r.tags : [],
     coming: !!r.coming,
+    map_x: r.map_x != null ? Number(r.map_x) : null,
+    map_y: r.map_y != null ? Number(r.map_y) : null,
   }))
 }
 
@@ -40,5 +44,7 @@ export async function getRegionBySlug(slug: string): Promise<Region | null> {
     ...data,
     tags: Array.isArray(data.tags) ? data.tags : [],
     coming: !!data.coming,
+    map_x: data.map_x != null ? Number(data.map_x) : null,
+    map_y: data.map_y != null ? Number(data.map_y) : null,
   }
 }

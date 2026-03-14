@@ -197,7 +197,12 @@ export default async function Home() {
         <Ticker data={ticker} />
       </SectionWithSettings>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="hero">
-        <Hero data={hero} visitorCount={visitorDisplay} />
+        <Hero
+          data={hero}
+          visitorCount={visitorDisplay}
+          regions={regions}
+          partnerCounts={partnerCounts}
+        />
       </SectionWithSettings>
       <div className="divider" />
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="about">

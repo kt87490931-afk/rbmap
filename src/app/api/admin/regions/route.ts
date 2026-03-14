@@ -28,20 +28,24 @@ export async function POST(request: Request) {
   const { data: maxRow } = await supabaseAdmin.from('regions').select('sort_order').order('sort_order', { ascending: false }).limit(1).maybeSingle()
   const maxOrder = maxRow?.sort_order ?? 0
 
+  const insert: Record<string, unknown> = {
+    slug,
+    name: String(body.name).trim(),
+    short: String(body.short).trim(),
+    thumb_class: body.thumb_class ?? 'default',
+    tags: Array.isArray(body.tags) ? body.tags : [],
+    venues: Number(body.venues) || 0,
+    reviews: Number(body.reviews) || 0,
+    badge,
+    coming: !!body.coming,
+    sort_order: body.sort_order ?? maxOrder + 1,
+  }
+  if (body.map_x != null) insert.map_x = Number(body.map_x) || null
+  if (body.map_y != null) insert.map_y = Number(body.map_y) || null
+
   const { data, error } = await supabaseAdmin
     .from('regions')
-    .insert({
-      slug,
-      name: String(body.name).trim(),
-      short: String(body.short).trim(),
-      thumb_class: body.thumb_class ?? 'default',
-      tags: Array.isArray(body.tags) ? body.tags : [],
-      venues: Number(body.venues) || 0,
-      reviews: Number(body.reviews) || 0,
-      badge,
-      coming: !!body.coming,
-      sort_order: body.sort_order ?? maxOrder + 1,
-    })
+    .insert(insert)
     .select()
     .single()
 

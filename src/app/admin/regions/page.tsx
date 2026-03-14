@@ -14,6 +14,8 @@ interface RegionItem {
   badge: string | null
   coming: boolean
   sort_order: number
+  map_x?: number | null
+  map_y?: number | null
 }
 
 const THUMB_CLASS_OPTIONS: { value: string; label: string }[] = [
@@ -32,7 +34,7 @@ export default function AdminRegionsPage() {
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState<'success' | 'error'>('success')
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ slug: '', name: '', short: '', thumb_class: 'default', tags: '', venues: 0, reviews: 0, badge: '', coming: false })
+  const [form, setForm] = useState({ slug: '', name: '', short: '', thumb_class: 'default', tags: '', venues: 0, reviews: 0, badge: '', coming: false, map_x: '', map_y: '' })
   const [editingTags, setEditingTags] = useState<Record<string, string>>({})
   const [editing, setEditing] = useState<Record<string, Partial<RegionItem>>>({})
 
@@ -72,12 +74,14 @@ export default function AdminRegionsPage() {
           short: form.short.trim(),
           badge: form.badge && form.badge !== '' ? form.badge : null,
           tags: form.tags ? form.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
+          map_x: form.map_x ? Number(form.map_x) : null,
+          map_y: form.map_y ? Number(form.map_y) : null,
         }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
         setItems((prev) => [...prev, data])
-        setForm({ slug: '', name: '', short: '', thumb_class: 'default', tags: '', venues: 0, reviews: 0, badge: '', coming: false })
+        setForm({ slug: '', name: '', short: '', thumb_class: 'default', tags: '', venues: 0, reviews: 0, badge: '', coming: false, map_x: '', map_y: '' })
         showMsg('추가 완료!')
       } else {
         const errMsg = data.error || (res.status === 403 ? 'OTP 인증이 필요합니다. OTP 인증 페이지에서 다시 인증해 주세요.' : '추가 실패')
@@ -184,6 +188,16 @@ export default function AdminRegionsPage() {
             <option value="NEW">NEW</option>
           </select>
         </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>지도 X좌표 (SVG 340 기준)</label>
+            <input className="form-input" type="number" placeholder="map_x (예: 192)" value={form.map_x || ''} onChange={(e) => setForm((f) => ({ ...f, map_x: e.target.value }))} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>지도 Y좌표 (SVG 460 기준)</label>
+            <input className="form-input" type="number" placeholder="map_y (예: 118)" value={form.map_y || ''} onChange={(e) => setForm((f) => ({ ...f, map_y: e.target.value }))} />
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <input className="form-input" style={{ flex: 1, minWidth: 200 }} placeholder="태그 (쉼표 구분)" value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} />
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
@@ -203,6 +217,8 @@ export default function AdminRegionsPage() {
                 <th>slug</th>
                 <th>이름</th>
                 <th>short</th>
+                <th>map_x</th>
+                <th>map_y</th>
                 <th>태그</th>
                 <th>업소</th>
                 <th>리뷰</th>
@@ -217,6 +233,8 @@ export default function AdminRegionsPage() {
                   <td><input className="form-input" style={{ width: 90, padding: 6 }} value={editing[r.id]?.slug ?? r.slug} onChange={(e) => setEditing((p) => ({ ...p, [r.id]: { ...p[r.id], slug: e.target.value } }))} onBlur={(e) => { updateItem(r.id, 'slug', e.target.value); setEditing((p) => { const n = { ...p }; delete n[r.id]; return n }) }} /></td>
                   <td><input className="form-input" style={{ width: 70, padding: 6 }} value={editing[r.id]?.name ?? r.name} onChange={(e) => setEditing((p) => ({ ...p, [r.id]: { ...p[r.id], name: e.target.value } }))} onBlur={(e) => { updateItem(r.id, 'name', e.target.value); setEditing((p) => { const n = { ...p }; delete n[r.id]; return n }) }} /></td>
                   <td><input className="form-input" style={{ width: 50, padding: 6 }} value={editing[r.id]?.short ?? r.short} onChange={(e) => setEditing((p) => ({ ...p, [r.id]: { ...p[r.id], short: e.target.value } }))} onBlur={(e) => { updateItem(r.id, 'short', e.target.value); setEditing((p) => { const n = { ...p }; delete n[r.id]; return n }) }} /></td>
+                  <td><input className="form-input" type="number" style={{ width: 56, padding: 6 }} value={editing[r.id]?.map_x ?? r.map_x ?? ''} onChange={(e) => setEditing((p) => ({ ...p, [r.id]: { ...p[r.id], map_x: e.target.value === '' ? null : parseInt(e.target.value, 10) } }))} onBlur={(e) => { const v = e.target.value; updateItem(r.id, 'map_x', v === '' ? null : parseInt(v, 10)); setEditing((p) => { const n = { ...p }; delete n[r.id]; return n }) }} placeholder="x" /></td>
+                  <td><input className="form-input" type="number" style={{ width: 56, padding: 6 }} value={editing[r.id]?.map_y ?? r.map_y ?? ''} onChange={(e) => setEditing((p) => ({ ...p, [r.id]: { ...p[r.id], map_y: e.target.value === '' ? null : parseInt(e.target.value, 10) } }))} onBlur={(e) => { const v = e.target.value; updateItem(r.id, 'map_y', v === '' ? null : parseInt(v, 10)); setEditing((p) => { const n = { ...p }; delete n[r.id]; return n }) }} placeholder="y" /></td>
                   <td>
                     <input
                       className="form-input"

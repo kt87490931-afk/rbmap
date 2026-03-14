@@ -25,6 +25,8 @@ export async function PATCH(
   if (body.badge !== undefined) update.badge = body.badge && body.badge !== '' ? body.badge : null
   if (body.coming !== undefined) update.coming = body.coming
   if (body.sort_order !== undefined) update.sort_order = body.sort_order
+  if (body.map_x !== undefined) update.map_x = body.map_x != null && body.map_x !== '' ? Number(body.map_x) : null
+  if (body.map_y !== undefined) update.map_y = body.map_y != null && body.map_y !== '' ? Number(body.map_y) : null
   update.updated_at = new Date().toISOString()
 
   const { data, error } = await supabaseAdmin

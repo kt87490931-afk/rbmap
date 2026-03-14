@@ -1,4 +1,6 @@
 import Link from "next/link";
+import KoreaNetworkMap from "./KoreaNetworkMap";
+import type { Region } from "@/lib/data/regions";
 
 interface HeroData {
   eyebrow?: string;
@@ -13,6 +15,8 @@ interface HeroData {
 export interface HeroProps {
   data?: HeroData | null;
   visitorCount?: number | null;
+  regions?: Region[];
+  partnerCounts?: Record<string, { venues?: number; reviews?: number }>;
 }
 
 const DEFAULT: HeroData = {
@@ -33,7 +37,7 @@ const DEFAULT: HeroData = {
   ],
 };
 
-export default function Hero({ data, visitorCount }: HeroProps) {
+export default function Hero({ data, visitorCount, regions = [], partnerCounts }: HeroProps) {
   const d = { ...DEFAULT, ...data };
   const kpis = d.kpis ?? DEFAULT.kpis ?? [];
   const btns = d.btns ?? DEFAULT.btns ?? [];
@@ -41,37 +45,48 @@ export default function Hero({ data, visitorCount }: HeroProps) {
     visitorCount != null
       ? `오늘의접속자 : ${visitorCount.toLocaleString()}`
       : (d.eyebrow ?? DEFAULT.eyebrow);
+  const showMap = regions.length > 0;
+
   return (
-    <section className="hero">
+    <section className={`hero ${showMap ? "hero-with-map" : ""}`}>
       <div className="hero-glow" aria-hidden="true" />
       <div className="hero-grid" aria-hidden="true" />
-      <div className="hero-eyebrow">
-        <div className="live-dot" /> {eyebrowText}
-      </div>
-      <h1>
-        {d.h1_line1}
-        <br />
-        <em>{d.h1_line2}</em>
-      </h1>
-      <p className="hero-desc">
-        {d.desc_1}
-        <br />
-        {d.desc_2}
-      </p>
-      <div className="hero-kpi">
-        {kpis.map((k, i) => (
-          <div key={i} className="hero-kpi-item">
-            <strong>{k.num}</strong>
-            <span>{k.label}</span>
+      <div className="hero-inner">
+        <div className="hero-content">
+          <div className="hero-eyebrow">
+            <div className="live-dot" /> {eyebrowText}
           </div>
-        ))}
-      </div>
-      <div className="hero-btns">
-        {btns.map((b, i) => (
-          <Link key={i} href={b.href ?? "#"} className={i === 0 ? "btn-primary" : "btn-ghost"}>
-            {b.text}
-          </Link>
-        ))}
+          <h1>
+            {d.h1_line1}
+            <br />
+            <em>{d.h1_line2}</em>
+          </h1>
+          <p className="hero-desc">
+            {d.desc_1}
+            <br />
+            {d.desc_2}
+          </p>
+          <div className="hero-kpi">
+            {kpis.map((k, i) => (
+              <div key={i} className="hero-kpi-item">
+                <strong>{k.num}</strong>
+                <span>{k.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="hero-btns">
+            {btns.map((b, i) => (
+              <Link key={i} href={b.href ?? "#"} className={i === 0 ? "btn-primary" : "btn-ghost"}>
+                {b.text}
+              </Link>
+            ))}
+          </div>
+        </div>
+        {showMap && (
+          <div className="hero-right">
+            <KoreaNetworkMap regions={regions} partnerCounts={partnerCounts} />
+          </div>
+        )}
       </div>
     </section>
   );

@@ -211,7 +211,7 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
     description: '강남, 수원, 동탄, 제주 등 전국 지역별 가라오케·룸싸롱·하이퍼블릭 정보',
     ogImage: 'https://rbbmap.com/og-image.png',
     siteUrl: 'https://rbbmap.com',
-    googleVerify: '',
+    googleVerify: '-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY',
   },
   region_preview: {
     regions: [

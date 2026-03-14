@@ -365,7 +365,7 @@ export default async function VenueDetailPage({
           {isAdmin && <VenueEditButton section="reviews" />}
           <span className="sec-label">REVIEWS · 이용 후기</span>
           <h2 className="art-h2">{data.name} <em>이용 후기</em></h2>
-          <p className="art-lead">Gemini AI가 6시간마다 최신 후기를 수집·정리합니다.</p>
+          <p className="art-lead">AI가 6시간마다 최신 후기를 수집·정리합니다.</p>
           <div className="fr-grid">
             {(data.reviews ?? []).map((r) => (
               <Link key={r.id} href={r.href} className="fr-card">

@@ -258,7 +258,7 @@ export default function AdminReviewWritePage() {
             <div className="review-write-panel-body">
               <button type="button" className="review-write-ai-btn" onClick={triggerAI} disabled={aiLoading}>
                 <span>🤖</span>
-                <span>Gemini AI로 본문 자동 생성</span>
+                <span>AI로 본문 자동 생성</span>
                 {aiLoading && <div className="review-write-ai-loader" />}
               </button>
               <div className="review-write-form-row">

@@ -9,7 +9,7 @@ import { getSiteSection } from '@/lib/data/site'
 
 export const metadata: Metadata = {
   title: '전체 리뷰 | 강남·수원·동탄·제주 가라오케·하이퍼블릭 이용 후기 | 룸빵여지도',
-  description: '강남·수원·동탄·제주 가라오케·하이퍼블릭·쩜오 이용 후기 모음. Gemini AI가 6시간마다 최신 리뷰를 업데이트합니다.',
+  description: '강남·수원·동탄·제주 가라오케·하이퍼블릭·쩜오 이용 후기 모음. AI가 6시간마다 최신 리뷰를 업데이트합니다.',
 }
 
 export const dynamic = 'force-dynamic'
@@ -50,7 +50,7 @@ export default async function ReviewsListPage({
         <div className="ph-grid" aria-hidden />
         <div className="ph-inner">
           <div>
-            <div className="ph-label">ALL REVIEWS · Gemini AI 자동 업데이트</div>
+            <div className="ph-label">ALL REVIEWS · AI 자동 업데이트</div>
             <h1 className="ph-title">전체 <em>이용 후기</em></h1>
             <p className="ph-desc">
               검증된 전국 1종 및 2종 업소와 실제 이용 후기가 당신의 선택을 돕습니다.<br />

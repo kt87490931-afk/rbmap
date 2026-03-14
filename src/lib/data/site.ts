@@ -22,7 +22,7 @@ export type SiteSectionKey =
 
 const FALLBACKS: Record<SiteSectionKey, unknown> = {
   hero: {
-    eyebrow: 'Gemini AI · 6시간 자동 업데이트',
+    eyebrow: '6시간 자동 업데이트',
     h1_line1: '전국 룸빵 정보,',
     h1_line2: '여기서 다 찾자',
     desc_1: '강남부터 제주까지 — 가라오케·룸싸롱·하이퍼블릭·셔츠룸',
@@ -58,9 +58,9 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
   },
   about: {
     intro_label: 'ABOUT 룸빵여지도',
-    intro_text: '<strong>룸빵여지도</strong>는 강남·수원·동탄·제주 등 전국 주요 지역의 <strong>가라오케·룸싸롱·하이퍼블릭·셔츠룸·퍼블릭</strong> 정보를 한눈에 비교할 수 있는 국내 최대 유흥 정보 허브입니다. Gemini AI가 Google Places 데이터를 기반으로 <strong>6시간마다 자동 업데이트</strong>하여 항상 가장 최신의 정보를 제공합니다.',
+    intro_text: '<strong>룸빵여지도</strong>는 강남·수원·동탄·제주 등 전국 주요 지역의 <strong>가라오케·룸싸롱·하이퍼블릭·셔츠룸·퍼블릭</strong> 정보를 한눈에 비교할 수 있는 국내 최대 유흥 정보 허브입니다. AI가 Google Places 데이터를 기반으로 <strong>6시간마다 자동 업데이트</strong>하여 항상 가장 최신의 정보를 제공합니다.',
     cards: [
-      { icon: '🤖', title: 'AI 기반 자동 업데이트', desc: 'Gemini AI가 구글 플레이스 데이터를 분석해 6시간마다 리뷰와 업소 정보를 자동 생성합니다.' },
+      { icon: '🤖', title: 'AI 기반 자동 업데이트', desc: 'AI가 구글 플레이스 데이터를 분석해 6시간마다 리뷰와 업소 정보를 자동 생성합니다.' },
       { icon: '📍', title: '전국 지역별 맞춤 정보', desc: '강남·수원 인계동·동탄·제주를 시작으로 전국 14개 지역으로 확장 중입니다.' },
       { icon: '💰', title: '투명한 가격 정보 공개', desc: '지역별·업종별 1인 평균 주대를 주 1회 업데이트합니다.' },
     ],
@@ -158,10 +158,10 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
   },
   widgets_b: {
     timeline: [
-      { time: '06:00', dot: 'on', title: '강남 달토 리뷰 업데이트', desc: 'Gemini AI 자동 생성 · 가라오케' },
-      { time: '00:00', dot: 'on', title: '수원 아우라 심야 후기 게재', desc: 'Gemini AI 자동 생성 · 하이퍼블릭' },
+      { time: '06:00', dot: 'on', title: '강남 달토 리뷰 업데이트', desc: 'AI 자동 생성 · 가라오케' },
+      { time: '00:00', dot: 'on', title: '수원 아우라 심야 후기 게재', desc: 'AI 자동 생성 · 하이퍼블릭' },
       { time: '18:00', dot: '', title: '동탄 신규 업소 3곳 등록', desc: '관리자 직접 등록' },
-      { time: '12:00', dot: '', title: '제주 TOP5 리뷰 게재', desc: 'Gemini AI 자동 생성' },
+      { time: '12:00', dot: '', title: '제주 TOP5 리뷰 게재', desc: 'AI 자동 생성' },
       { time: '06:00', dot: 'rd', title: '가격 정보 일괄 업데이트', desc: '전국 4개 지역 평균가 갱신' },
     ],
     map_cells: [
@@ -178,7 +178,7 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
       { badge: 'nb-n', text: '<strong>인천·부산</strong> 4월 오픈 예정', date: '03.07' },
     ],
     faq: [
-      { q: '리뷰는 어떻게 작성되나요?', a: 'Gemini AI가 구글 플레이스 데이터를 기반으로 6시간마다 자동 생성합니다.' },
+      { q: '리뷰는 어떻게 작성되나요?', a: 'AI가 구글 플레이스 데이터를 기반으로 6시간마다 자동 생성합니다.' },
       { q: '업소 등록은 어떻게 하나요?', a: '광고 문의 페이지를 통해 등록 신청이 가능합니다. 심사 후 등록됩니다.' },
       { q: '가격 정보는 최신인가요?', a: '가격은 주 1회 업데이트되며, 실제 방문 시 변동이 있을 수 있습니다.' },
     ],

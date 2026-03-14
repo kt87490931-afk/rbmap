@@ -141,7 +141,7 @@ export default async function ReviewReadPage({
                   })
                 : post.visit_date || ''}
             </span>
-            {post.is_ai_written && <span className="ah-ai">Gemini AI 작성</span>}
+            {post.is_ai_written && <span className="ah-ai">AI 작성</span>}
             <span className="ah-char">약 {totalChars}자</span>
           </div>
         </div>

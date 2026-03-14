@@ -20,7 +20,7 @@ export interface HeroProps {
 }
 
 const DEFAULT: HeroData = {
-  eyebrow: "Gemini AI · 6시간 자동 업데이트",
+  eyebrow: "6시간 자동 업데이트",
   h1_line1: "전국 룸빵 정보,",
   h1_line2: "여기서 다 찾자",
   desc_1: "강남부터 제주까지 — 가라오케·룸싸롱·하이퍼블릭·셔츠룸",

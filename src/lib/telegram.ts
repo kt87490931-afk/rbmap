@@ -35,7 +35,7 @@ async function sendToTarget(
 /** 채팅 + 채널 모두로 메시지 전송 (둘 다 설정 시) */
 async function sendMessage(text: string, parseMode: "HTML" | "Markdown" = "HTML"): Promise<boolean> {
   const { token, targetIds, enabled } = getConfig();
-  if (!enabled) return false;
+  if (!enabled || !token) return false;
 
   const results = await Promise.all(
     targetIds.map((id) => sendToTarget(token, id, text, parseMode))

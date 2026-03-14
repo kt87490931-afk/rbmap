@@ -53,8 +53,8 @@ export default async function ReviewsListPage({
             <div className="ph-label">ALL REVIEWS · Gemini AI 자동 업데이트</div>
             <h1 className="ph-title">전체 <em>이용 후기</em></h1>
             <p className="ph-desc">
-              강남·수원·동탄·제주 · 가라오케·하이퍼블릭·쩜오·퍼블릭 전 업종<br />
-              6시간마다 최신 리뷰가 자동 업데이트됩니다
+              검증된 전국 1종 및 2종 업소와 실제 이용 후기가 당신의 선택을 돕습니다.<br />
+              6시간마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.
             </p>
           </div>
           <div className="ph-kpi">

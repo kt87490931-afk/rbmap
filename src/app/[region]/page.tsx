@@ -305,28 +305,10 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
                 완전 정복
               </h1>
               <p className="rh-desc">
-                {cfg.desc.split("\n").map((line, i) => (
-                  <span key={i}>{line}{i < cfg.desc.split("\n").length - 1 && <br />}</span>
-                ))}
+                검증된 전국 1종 및 2종 업소와 실제 이용 후기가 당신의 선택을 돕습니다.
+                <br />
+                6시간마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.
               </p>
-              <div className="rh-kpi">
-                <div className="rh-kpi-item">
-                  <strong>{regionPartners.length > 0 ? regionPartners.length : (r.venues ?? cfg.filterCounts?.전체 ?? 0)}</strong>
-                  <span>등록 업소</span>
-                </div>
-                <div className="rh-kpi-item">
-                  <strong>{r.reviews ?? cfg.filterCounts?.리뷰 ?? 0}</strong>
-                  <span>누적 리뷰</span>
-                </div>
-                <div className="rh-kpi-item">
-                  <strong>{cfg.avgPrice}</strong>
-                  <span>평균 주대</span>
-                </div>
-                <div className="rh-kpi-item">
-                  <strong>6H</strong>
-                  <span>업데이트</span>
-                </div>
-              </div>
             </div>
             <div className="rh-right">
               <p style={{ fontSize: 10, color: "var(--dim)", letterSpacing: ".08em", textAlign: "right" }}>다른 지역 바로가기</p>

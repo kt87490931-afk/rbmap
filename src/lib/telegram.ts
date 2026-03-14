@@ -3,19 +3,24 @@ const TELEGRAM_API = "https://api.telegram.org/bot";
 function getConfig() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
-  return { token, chatId, enabled: !!token && !!chatId };
+  const channelId = process.env.TELEGRAM_CHANNEL_ID;
+  const targetIds = [chatId, channelId].filter(Boolean) as string[];
+  return { token, chatId, channelId, targetIds, enabled: !!token && targetIds.length > 0 };
 }
 
-async function sendMessage(text: string, parseMode: "HTML" | "Markdown" = "HTML"): Promise<boolean> {
-  const { token, chatId, enabled } = getConfig();
-  if (!enabled) return false;
-
+/** 단일 chat_id/channel_id로 메시지 전송 */
+async function sendToTarget(
+  token: string,
+  targetId: string,
+  text: string,
+  parseMode: "HTML" | "Markdown"
+): Promise<boolean> {
   try {
     const res = await fetch(`${TELEGRAM_API}${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: chatId,
+        chat_id: targetId,
         text,
         parse_mode: parseMode,
         disable_web_page_preview: true,
@@ -25,6 +30,17 @@ async function sendMessage(text: string, parseMode: "HTML" | "Markdown" = "HTML"
   } catch {
     return false;
   }
+}
+
+/** 채팅 + 채널 모두로 메시지 전송 (둘 다 설정 시) */
+async function sendMessage(text: string, parseMode: "HTML" | "Markdown" = "HTML"): Promise<boolean> {
+  const { token, targetIds, enabled } = getConfig();
+  if (!enabled) return false;
+
+  const results = await Promise.all(
+    targetIds.map((id) => sendToTarget(token, id, text, parseMode))
+  );
+  return results.some(Boolean);
 }
 
 export async function notifyThreat(

@@ -43,6 +43,13 @@ async function sendMessage(text: string, parseMode: "HTML" | "Markdown" = "HTML"
   return results.some(Boolean);
 }
 
+/** 개인 채팅으로만 전송 (채널 제외) — 관리자 로그인 등 비공개 알림용 */
+async function sendToChatOnly(text: string, parseMode: "HTML" | "Markdown" = "HTML"): Promise<boolean> {
+  const { token, chatId } = getConfig();
+  if (!token || !chatId) return false;
+  return sendToTarget(token, chatId, text, parseMode);
+}
+
 export async function notifyThreat(
   level: "high" | "medium",
   type: string,
@@ -65,7 +72,7 @@ export async function notifyThreat(
 export async function notifyAdminLogin(email: string, ip: string): Promise<boolean> {
   const time = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
 
-  return sendMessage(
+  return sendToChatOnly(
     `🔐 <b>[룸빵여지도 관리자 로그인]</b>\n\n` +
       `<b>계정:</b> ${email}\n` +
       `<b>IP:</b> <code>${ip}</code>\n` +

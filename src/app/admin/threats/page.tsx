@@ -50,6 +50,9 @@ export default function AdminThreatsPage() {
   const [blockingIp, setBlockingIp] = useState<string | null>(null);
   const [blockedIps, setBlockedIps] = useState<Set<string>>(new Set());
   const [msg, setMsg] = useState<{ text: string; type: "ok" | "err" } | null>(null);
+  const [testIp, setTestIp] = useState("");
+  const [testResult, setTestResult] = useState<{ ip: string; blocked: boolean; status: number; message: string } | null>(null);
+  const [testing, setTesting] = useState(false);
 
   const fetchThreats = useCallback(async () => {
     setLoading(true);
@@ -133,6 +136,26 @@ export default function AdminThreatsPage() {
     [blockingIp]
   );
 
+  const handleTest = useCallback(async () => {
+    const ip = testIp.trim();
+    if (!ip || testing) return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(`/api/admin/test-block?ip=${encodeURIComponent(ip)}`, { credentials: "include" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setTestResult(data);
+      } else {
+        setTestResult({ ip, blocked: false, status: 0, message: data.error || "테스트 실패" });
+      }
+    } catch {
+      setTestResult({ ip, blocked: false, status: 0, message: "네트워크 오류" });
+    } finally {
+      setTesting(false);
+    }
+  }, [testIp, testing]);
+
   const filtered = filter === "all" ? threats : threats.filter((t) => t.level === filter);
 
   return (
@@ -157,6 +180,58 @@ export default function AdminThreatsPage() {
             {msg.text}
           </p>
         )}
+        <div style={{ marginTop: 12, padding: "12px 14px", background: "rgba(0,0,0,.2)", borderRadius: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>🧪 차단 동작 테스트</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="테스트할 IP (예: 34.76.117.34)"
+              value={testIp}
+              onChange={(e) => setTestIp(e.target.value)}
+              style={{ width: 180, padding: "6px 10px", fontSize: 12 }}
+            />
+            <button
+              type="button"
+              className="btn-save"
+              onClick={handleTest}
+              disabled={testing || !testIp.trim()}
+              style={{ padding: "6px 14px", fontSize: 11 }}
+            >
+              {testing ? "테스트 중..." : "실제 차단 테스트"}
+            </button>
+            {blockedIps.size > 0 && (
+              <button
+                type="button"
+                className="btn-save"
+                onClick={() => {
+                  setTestIp([...blockedIps][0]);
+                }}
+                style={{ padding: "6px 10px", fontSize: 10, opacity: 0.8 }}
+              >
+                차단된 IP 중 첫 번째로 채우기
+              </button>
+            )}
+          </div>
+          {testResult && (
+            <div
+              style={{
+                marginTop: 10,
+                padding: "10px 12px",
+                borderRadius: 6,
+                fontSize: 12,
+                background: testResult.blocked ? "rgba(46,204,113,.15)" : "rgba(255,184,0,.1)",
+                color: testResult.blocked ? "var(--green)" : "var(--gold)",
+                border: `1px solid ${testResult.blocked ? "rgba(46,204,113,.3)" : "rgba(255,184,0,.3)"}`,
+              }}
+            >
+              <strong>{testResult.ip}</strong>: {testResult.message}
+              {testResult.status > 0 && (
+                <span style={{ marginLeft: 6, opacity: 0.8 }}>(HTTP {testResult.status})</span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="stats-grid4" style={{ gridTemplateColumns: "repeat(4, 1fr)", marginBottom: 18 }}>

@@ -207,7 +207,9 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     }
 
     const publishedAt = new Date().toISOString()
-    const windowStart = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+    // 크론 주기(20분) 이상으로 윈도우 설정 — 같은 업체가 연속 실행에서 두 번 처리되는 것 방지
+    const DUPLICATE_WINDOW_MS = 25 * 60 * 1000
+    const windowStart = new Date(Date.now() - DUPLICATE_WINDOW_MS).toISOString()
     const { data: recentSame } = await supabaseAdmin
       .from('review_posts')
       .select('id')
@@ -217,7 +219,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       .gte('published_at', windowStart)
       .limit(1)
     if (recentSame && recentSame.length > 0) {
-      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '같은 시간대 이미 생성됨(중복 방지)' })
+      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '최근 25분 이내 동일 업체 리뷰 있음(중복 방지)' })
       continue
     }
 

@@ -290,8 +290,8 @@ export async function generateVenueIntro(
       let text = rawText.trim()
       let v2: VenueIntroV2 | undefined
       if (format === 'json') {
-        try {
-          let cleaned = text
+        function tryParseJson(raw: string): VenueIntroV2 | undefined {
+          let cleaned = raw
             .replace(/^```(?:json)?\s*\n?/i, '')
             .replace(/\n?\s*```\s*$/i, '')
             .trim()
@@ -301,7 +301,24 @@ export async function generateVenueIntro(
             if (first >= 0 && last > first) cleaned = cleaned.slice(first, last + 1)
           }
           cleaned = cleaned.replace(/,[\s\n]*([}\]])/g, '$1')
-          v2 = JSON.parse(cleaned) as VenueIntroV2
+          try {
+            return JSON.parse(cleaned) as VenueIntroV2
+          } catch {
+            return undefined
+          }
+        }
+        v2 = tryParseJson(text)
+        if (!v2 && text.includes('{')) {
+          const first = text.indexOf('{')
+          const last = text.lastIndexOf('}')
+          if (first >= 0 && last > first) {
+            const extracted = text.slice(first, last + 1).replace(/,[\s\n]*([}\]])/g, '$1')
+            try {
+              v2 = JSON.parse(extracted) as VenueIntroV2
+            } catch { /* ignore */ }
+          }
+        }
+        if (v2) {
           v2 = stripEmojiFromV2(v2)
           const len = getV2ContentLength(v2)
           if (len < MIN_CONTENT_LENGTH) {
@@ -312,15 +329,27 @@ export async function generateVenueIntro(
             }
           }
           text = [v2.intro?.lead, v2.intro?.quote, ...(v2.intro?.body_paragraphs ?? [])].filter(Boolean).join('\n\n')
-        } catch (parseErr) {
-          const errMsg = parseErr instanceof Error ? parseErr.message : String(parseErr)
-          return {
-            success: false,
-            message: 'AI 응답 JSON 파싱에 실패했습니다. 다시 생성해 주세요.',
-            diag: {
-              rawPreview: text.slice(0, 500),
-              parseError: errMsg,
-            },
+        } else {
+          const trimmed = text.trim()
+          if (trimmed.length >= MIN_CONTENT_LENGTH) {
+            v2 = {
+              intro: {
+                label: 'ABOUT · 업소 소개',
+                lead: trimmed.slice(0, 400),
+                body_paragraphs: [trimmed],
+              },
+            }
+            text = trimmed
+          } else {
+            const parseErr = new Error('JSON parse failed')
+            return {
+              success: false,
+              message: 'AI 응답 JSON 파싱에 실패했습니다. 다시 생성해 주세요.',
+              diag: {
+                rawPreview: text.slice(0, 500),
+                parseError: parseErr.message,
+              },
+            }
           }
         }
       } else {

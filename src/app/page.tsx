@@ -19,6 +19,7 @@ import type { FeedItem } from "@/lib/data/feed";
 import {
   getReviewPostsList,
   getReviewPostsListByClickCount,
+  getReviewCountsByRegion,
   buildReviewUrl,
   getRegionName,
   getTypeName,
@@ -49,7 +50,7 @@ export default async function Home() {
     }
   }
 
-  const [feedConfig, hero, ticker, header, about, categoryGuide, cta, footer, visitorDisplay, regions, partnerCounts] = await Promise.all([
+  const [feedConfig, hero, ticker, header, about, categoryGuide, cta, footer, visitorDisplay, regions, partnerCounts, reviewCountsByRegion] = await Promise.all([
     getSiteSection<FeedConfig>("feed_config"),
     getSiteSection<Parameters<typeof Hero>[0]["data"]>("hero"),
     getSiteSection<Parameters<typeof Ticker>[0]["data"]>("ticker"),
@@ -61,10 +62,18 @@ export default async function Home() {
     getDisplayVisitorCount().then((r) => r.display).catch(() => 0),
     getRegions(),
     getPartnerCountsByRegion(),
+    getReviewCountsByRegion(),
   ]);
 
   const feedLimit = feedConfig?.display_limit ?? 10;
   const totalVenueCount = Object.values(partnerCounts).reduce((sum, c) => sum + (c?.venues ?? 0), 0);
+  const partnerCountsWithReviews: Record<string, { venues: number; reviews: number }> = {};
+  for (const [slug, c] of Object.entries(partnerCounts)) {
+    partnerCountsWithReviews[slug] = {
+      venues: c?.venues ?? 0,
+      reviews: reviewCountsByRegion[slug] ?? 0,
+    };
+  }
 
   const [partnersForWidgets, reviewPosts, reviewPostsByClick] = await Promise.all([
     getPartners(50),
@@ -148,7 +157,7 @@ export default async function Home() {
           data={hero}
           visitorCount={visitorDisplay}
           regions={regions}
-          partnerCounts={partnerCounts}
+          partnerCounts={partnerCountsWithReviews}
           totalVenueCount={totalVenueCount}
         />
       </SectionWithSettings>
@@ -161,7 +170,8 @@ export default async function Home() {
         <RegionsSection
           regions={regions.map((r) => ({
             ...r,
-            venues: partnerCounts[r.slug]?.venues ?? r.venues ?? 0,
+            venues: partnerCountsWithReviews[r.slug]?.venues ?? r.venues ?? 0,
+            reviews: partnerCountsWithReviews[r.slug]?.reviews ?? r.reviews ?? 0,
           }))}
         />
       </SectionWithSettings>

@@ -70,7 +70,7 @@ function toMapRegion(
 
   const status: "hot" | "active" | "soon" = r.coming ? "soon" : r.badge === "HOT" ? "hot" : "active";
   const c = counts?.[r.slug];
-  const venues = c?.venues ?? r.venues ?? 0;
+  const venues = c?.venues ?? 0;
   const reviews = c?.reviews ?? r.reviews ?? 0;
 
   return {

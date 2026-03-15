@@ -778,7 +778,7 @@ export default function AdminVenueIntroPage() {
             제출 전 확인 · AI 소개글 생성에 활용됩니다
           </p>
           <p style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, marginBottom: 12 }}>
-            ⚠ AI 소개글은 2,500자 이상 3,000자 이내로 생성됩니다 (선택 항목을 충분히 체크하면 더 디테일해집니다)
+            ⚠ AI 소개글은 3,000자 이상 4,000자 미만으로 생성됩니다 (선택 항목을 충분히 체크하면 더 디테일해집니다)
           </p>
 
           <div style={{ fontSize: 12, lineHeight: 1.8, maxHeight: '70vh', overflowY: 'auto' }}>

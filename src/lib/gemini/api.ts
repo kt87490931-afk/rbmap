@@ -114,7 +114,7 @@ function buildDataBlock(data: FormDataForGemini, essentialKeywords?: string[]): 
   block += `연락처: ${data.contact || ''}\n`
   block += `주소: ${data.location || ''}\n\n`
 
-  block += '[작성할 데이터] (이 데이터를 바탕으로 2,500자 이상 3,000자 이내 업체소개글 작성)\n'
+  block += '[작성할 데이터] (이 데이터를 바탕으로 3,000자 이상 4,000자 미만 업체소개글 작성)\n'
   if (arr(data.interior).length) block += `인테리어: ${idsToLabels(data.interior, INTERIOR_LABELS)}\n`
   if (arr(data.room_condition).length) block += `룸 구성: ${idsToLabels(data.room_condition, ROOM_CONDITION_LABELS)}\n`
   if (arr(data.sound_facility).length) block += `음향/시설: ${idsToLabels(data.sound_facility, SOUND_FACILITY_LABELS)}\n`
@@ -150,7 +150,7 @@ export interface VenueIntroV2 {
 }
 
 /**
- * 업체소개글 텍스트 생성 (2,500자 이상 3,000자 이내)
+ * 업체소개글 텍스트 생성 (3,000자 이상 4,000자 미만)
  * format 'json' 시 v2 DOM 매핑용 구조화 JSON 반환
  */
 export type VenueIntroResult =
@@ -193,7 +193,8 @@ function getV2ContentLength(v: VenueIntroV2): number {
   return lead + quote + body
 }
 
-const MIN_CONTENT_LENGTH = 2300
+const MIN_CONTENT_LENGTH = 3000
+const MAX_CONTENT_LENGTH = 4000
 
 const INTRO_BAN_PATTERN =
   '[금지 오프닝] 다음과 같이 시작하지 마라: "업소명은 지역명에 위치한", "업소명은 지역명 OO에 자리한". 다른 업소 소개와 구분되는 독특한 오프닝을 써라.'
@@ -201,23 +202,24 @@ const INTRO_BAN_PATTERN =
 const V2_JSON_INSTRUCTION = `
 [출력 형식 - JSON] 반드시 아래 JSON만 출력해라. 마크다운 코드블록(백틱), 설명, 주석 절대 금지. 순수 JSON만.
 [금지] 이모지(emoji) 절대 사용 금지. 텍스트만.
+[금지] 출력은 반드시 JSON 객체만. 사용자에게 보여줄 본문은 lead·quote·body_paragraphs의 텍스트만 포함. 코드·키 이름·마크업이 본문에 노출되면 안 됨.
 
-[필수 분량 - 반드시 준수] lead+quote+body_paragraphs 합계 2,500자 이상 3,000자 이내.
-- lead: 280~350자 (핵심 요약) — [오프닝 지시]에 맞게 시작할 것
-- quote: 180~250자 (인용 강조 문장, 없으면 null)
-- body_paragraphs: 최소 5개 단락, 각 350~500자, 합계 2,000자 이상 (본문의 대부분을 차지) — [포커스 지시]에 맞게 강조
-- 총합이 2,500자 미만이면 실패로 간주함.
+[필수 분량 - 반드시 준수] lead+quote+body_paragraphs 합계 3,000자 이상 4,000자 미만.
+- lead: 350~450자 (핵심 요약) — [오프닝 지시]에 맞게 시작할 것
+- quote: 200~300자 (인용 강조 문장, 없으면 null)
+- body_paragraphs: 최소 6개 단락, 각 400~600자, 합계 2,500자 이상 (본문의 대부분을 차지) — [포커스 지시]에 맞게 강조
+- 총합이 3,000자 미만이면 실패. 4,000자 이상이면 안 됨.
 
-headline은 예시일 뿐, 업소에 맞게 다양하게 변형하라. (예: "업소명 — 지역명 대표 프리미엄", "업소명 — 투명한 가격이 차별점")
+headline은 예시일 뿐, 업소에 맞게 다양하게 변형하라.
 
 {
   "tagline": "지역명 업종명 — 한 줄 캐치프레이즈 (50자 내외)",
   "intro": {
     "label": "ABOUT · 업소 소개",
     "headline": "업소에 맞는 다양한 표현",
-    "lead": "리드 문장 280~350자. [오프닝 지시] 준수.",
-    "quote": "인용 강조 문장 180~250자. 없으면 null",
-    "body_paragraphs": ["본문 단락1 (350~500자)", "본문 단락2 (350~500자)", "본문 단락3 (350~500자)", "본문 단락4 (350~500자)", "본문 단락5 (350~500자)"]
+    "lead": "리드 문장 350~450자. [오프닝 지시] 준수.",
+    "quote": "인용 강조 문장 200~300자. 없으면 null",
+    "body_paragraphs": ["본문 단락1 (400~600자)", "본문 단락2 (400~600자)", "본문 단락3 (400~600자)", "본문 단락4 (400~600자)", "본문 단락5 (400~600자)", "본문 단락6 (400~600자)"]
   }
 }
 `
@@ -324,19 +326,34 @@ export async function generateVenueIntro(
           if (len < MIN_CONTENT_LENGTH) {
             return {
               success: false,
-              message: `생성된 글이 ${len}자로 분량 부족입니다. 2,500자 이상이 필요합니다. 다시 생성해 주세요.`,
+              message: `생성된 글이 ${len}자로 분량 부족입니다. 3,000자 이상이 필요합니다. 다시 생성해 주세요.`,
               diag: { contentLength: len, required: MIN_CONTENT_LENGTH },
+            }
+          }
+          if (len > MAX_CONTENT_LENGTH) {
+            return {
+              success: false,
+              message: `생성된 글이 ${len}자로 초과입니다. 4,000자 미만이어야 합니다. 다시 생성해 주세요.`,
+              diag: { contentLength: len, max: MAX_CONTENT_LENGTH },
             }
           }
           text = [v2.intro?.lead, v2.intro?.quote, ...(v2.intro?.body_paragraphs ?? [])].filter(Boolean).join('\n\n')
         } else {
           const trimmed = text.trim()
+          const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[') || /^\s*["']?\s*{/.test(trimmed)
+          if (looksLikeJson) {
+            return {
+              success: false,
+              message: 'AI 응답 JSON 파싱에 실패했습니다. 코드(JSON)가 그대로 노출되지 않도록 다시 생성해 주세요.',
+              diag: { rawPreview: text.slice(0, 300), parseError: 'JSON parse failed' },
+            }
+          }
           const minFallbackLength = 200
           if (trimmed.length >= minFallbackLength) {
             v2 = {
               intro: {
                 label: 'ABOUT · 업소 소개',
-                lead: trimmed.slice(0, 400),
+                lead: trimmed.slice(0, 450),
                 body_paragraphs: [trimmed],
               },
             }
@@ -345,10 +362,7 @@ export async function generateVenueIntro(
             return {
               success: false,
               message: 'AI 응답 JSON 파싱에 실패했습니다. 다시 생성해 주세요.',
-              diag: {
-                rawPreview: text.slice(0, 500),
-                parseError: 'JSON parse failed',
-              },
+              diag: { rawPreview: text.slice(0, 500), parseError: 'JSON parse failed' },
             }
           }
         }

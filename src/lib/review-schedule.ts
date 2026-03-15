@@ -81,3 +81,42 @@ export function getTodayKSTRangeUTC(): { start: string; end: string } {
   const end = new Date(startUTC + 24 * 60 * 60 * 1000).toISOString()
   return { start, end }
 }
+
+/**
+ * 일일 한도까지 반영한 다음 리뷰 가능 시각
+ * @returns nextAt 다음 가능 시각(KST 기준), isTomorrow 오늘 한도 소진으로 내일부터인지
+ */
+export function getNextReviewAtWithDailyCap(
+  lastReviewAt: string | null | undefined,
+  todayCount: number,
+  presetId: string | null | undefined
+): { nextAt: Date; isTomorrow: boolean } {
+  const preset = getPreset(presetId)
+  if (todayCount >= preset.maxPerDay) {
+    const { end } = getTodayKSTRangeUTC()
+    return { nextAt: new Date(end), isTomorrow: true }
+  }
+  const next = getNextReviewAt(lastReviewAt, presetId)
+  return { nextAt: next, isTomorrow: false }
+}
+
+/**
+ * 목표 시각까지 남은 시간을 "약 N시간 N분 후" 형태로 반환 (분 단위 표기)
+ * 이미 지났으면 "곧"
+ */
+export function formatTimeUntil(target: Date): string {
+  const now = Date.now()
+  const t = target.getTime()
+  if (t <= now + 60 * 1000) return '곧'
+  const diffMs = t - now
+  const hours = Math.floor(diffMs / (60 * 60 * 1000))
+  const minutes = Math.floor((diffMs % (60 * 60 * 1000)) / (60 * 1000))
+  if (hours >= 24) {
+    const days = Math.floor(hours / 24)
+    const h = hours % 24
+    if (h === 0) return `약 ${days}일 후`
+    return `약 ${days}일 ${h}시간 ${minutes}분 후`
+  }
+  if (hours > 0) return `약 ${hours}시간 ${minutes}분 후`
+  return `약 ${minutes}분 후`
+}

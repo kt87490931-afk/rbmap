@@ -1,8 +1,12 @@
 /**
  * 리뷰 자동 생성 공통 로직 (Cron API / 어드민 수동 실행 공용)
  * 제휴업체별 스케줄 프리셋(6h/4, 8h/3, 12h/2, 24h/1) 적용
+ * 1회 실행당 최대 MAX_PER_RUN건만 처리 (제휴업체 증가 시 타임아웃·API 한도 방지)
  */
 import { supabaseAdmin } from './supabase-server'
+
+/** 1회 cron 실행 시 처리할 최대 업체 수 (나머지는 다음 실행에서 처리) */
+const MAX_PER_RUN = 25
 import { generateReview } from './gemini/review-api'
 import {
   pickScenarioCombo,
@@ -78,6 +82,18 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
   }
 
   const list = partners ?? []
+  type DueItem = {
+    partner: (typeof list)[0]
+    introText: string
+    regionSlug: string
+    typeSlug: string
+    venueSlug: string
+    scenario: ScenarioCombo
+    tone: ReviewTone
+    regionName: string
+    typeName: string
+  }
+  const dueList: DueItem[] = []
 
   for (const partner of list) {
     const { data: intros } = await supabaseAdmin
@@ -145,6 +161,32 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     const regionName = REGION_SLUG_TO_NAME[regionSlug] ?? partner.region ?? regionSlug
     const typeName = SLUG_TO_TYPE[typeSlug] ?? partner.type ?? typeSlug
 
+    dueList.push({
+      partner,
+      introText,
+      regionSlug,
+      typeSlug,
+      venueSlug,
+      scenario,
+      tone,
+      regionName,
+      typeName,
+    })
+  }
+
+  const toProcess = dueList.slice(0, MAX_PER_RUN)
+  if (dueList.length > MAX_PER_RUN) {
+    results.push({
+      partnerId: '',
+      name: '',
+      ok: false,
+      msg: `이번 실행은 상위 ${MAX_PER_RUN}건만 처리합니다. 미처리 ${dueList.length - MAX_PER_RUN}건은 다음 cron에서 처리됩니다.`,
+    })
+  }
+
+  for (const item of toProcess) {
+    const { partner, introText, regionSlug, typeSlug, venueSlug, scenario, tone, regionName, typeName } = item
+
     const genResult = await generateReview({
       venueName: partner.name,
       regionName,
@@ -159,7 +201,6 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       continue
     }
 
-    // 동일 업체·동일 시간대(2분 이내) 이미 삽입된 리뷰 있으면 스킵 (이중 방어)
     const publishedAt = new Date().toISOString()
     const windowStart = new Date(Date.now() - 2 * 60 * 1000).toISOString()
     const { data: recentSame } = await supabaseAdmin

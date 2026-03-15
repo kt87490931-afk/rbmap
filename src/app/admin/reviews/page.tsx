@@ -27,6 +27,18 @@ interface ReviewItem {
   scenario_used?: { tone?: string }
 }
 
+interface NextScheduleItem {
+  partnerId: string
+  name: string
+  region: string
+  type: string
+  presetLabel: string
+  nextAt: string
+  nextAtKST: string
+  inText: string
+  isTomorrow: boolean
+}
+
 function getToneName(toneId: string | undefined): string {
   if (!toneId) return '-'
   const t = REVIEW_TONES.find((x) => x.id === toneId)
@@ -45,7 +57,9 @@ function getCharCount(r: ReviewItem): number {
 
 export default function AdminReviewsPage() {
   const [items, setItems] = useState<ReviewItem[]>([])
+  const [nextSchedules, setNextSchedules] = useState<NextScheduleItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [scheduleLoading, setScheduleLoading] = useState(true)
   const [msg, setMsg] = useState('')
   const [editItem, setEditItem] = useState<ReviewItem | null>(null)
   const [editForm, setEditForm] = useState<{ title: string; star: number; sec_overview: string; sec_lineup: string; sec_price: string; sec_facility: string; sec_summary: string } | null>(null)
@@ -59,7 +73,18 @@ export default function AdminReviewsPage() {
     setLoading(false)
   }, [])
 
+  const fetchNextSchedules = useCallback(async () => {
+    setScheduleLoading(true)
+    try {
+      const res = await fetch('/api/admin/reviews/next-schedule', { credentials: 'include' })
+      const data = await res.json()
+      setNextSchedules(Array.isArray(data) ? data : [])
+    } catch { setNextSchedules([]) }
+    setScheduleLoading(false)
+  }, [])
+
   useEffect(() => { fetchItems() }, [fetchItems])
+  useEffect(() => { fetchNextSchedules() }, [fetchNextSchedules])
 
   /** 업체별 리뷰 수 (region|type|venue_slug → count) */
   const venueCountMap = useMemo(() => {
@@ -172,6 +197,43 @@ export default function AdminReviewsPage() {
           </div>
         </div>
       )}
+
+      <div className="card-box" style={{ marginBottom: 16 }}>
+        <div className="card-box-title">⏱ 다음 리뷰 생성 예정 (스케줄)</div>
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>각 제휴업체별 다음 리뷰 가능 시각·남은 시간 (분 단위 표기). Cron 실행 시 이 순서에 가까운 업체부터 처리됩니다.</p>
+        {scheduleLoading ? (
+          <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
+        ) : nextSchedules.length === 0 ? (
+          <p style={{ color: 'var(--muted)' }}>적용된 소개글이 있는 제휴업체가 없습니다.</p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>업소명</th>
+                  <th>지역</th>
+                  <th>업종</th>
+                  <th>스케줄</th>
+                  <th>다음 가능 시각 (KST)</th>
+                  <th>남은 시간</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nextSchedules.map((s) => (
+                  <tr key={s.partnerId}>
+                    <td><strong>{s.name}</strong></td>
+                    <td>{REGION_SLUG_TO_NAME[s.region] ?? s.region}</td>
+                    <td>{REVIEW_TYPE_TO_NAME[s.type] ?? s.type}</td>
+                    <td style={{ fontSize: 11, color: 'var(--muted)' }}>{s.presetLabel}</td>
+                    <td style={{ fontSize: 12 }}>{s.nextAtKST}{s.isTomorrow ? ' (내일)' : ''}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--gold)' }}>{s.inText}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       <div className="card-box">
         <div className="card-box-title">📋 등록된 리뷰</div>

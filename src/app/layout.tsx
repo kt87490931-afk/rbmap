@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const title = seo?.title || DEFAULT_TITLE;
     const description = seo?.description || DEFAULT_DESC;
     const siteUrl = seo?.siteUrl || SITE_URL;
-    const ogImageAbs = seo?.ogImage || `${siteUrl}/opengraph-image`;
+    const ogImageAbs = (seo?.ogImage?.trim() || `${siteUrl}/og/og-home.png`).replace(/^\/+/, siteUrl + "/");
     const googleVerify = seo?.googleVerify || "-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY";
     return {
       metadataBase: new URL(siteUrl),
@@ -71,14 +71,14 @@ export async function generateMetadata(): Promise<Metadata> {
         title: DEFAULT_TITLE,
         description: DEFAULT_DESC,
         images: [
-          { url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" },
+          { url: `${SITE_URL}/og/og-home.png`, width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" },
         ],
       },
       twitter: {
         card: "summary_large_image",
         title: DEFAULT_TITLE,
         description: "믿을 수 있는 업소를 한눈에!",
-        images: [`${SITE_URL}/opengraph-image`],
+        images: [`${SITE_URL}/og/og-home.png`],
       },
       verification: { google: "-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY" },
     };
@@ -109,6 +109,10 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <meta name="google-site-verification" content="-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY" />
+        <meta property="og:image" content={`${SITE_URL}/og/og-home.png`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="룸빵여지도 — 믿을 수 있는 업소를 한눈에" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteSchema) }}

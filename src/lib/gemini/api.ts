@@ -14,6 +14,20 @@ import {
   geminiRoles,
 } from './config'
 import { hashSeed, pickOpeningPattern, pickFocus } from '../intro-diversity'
+import {
+  idsToLabels,
+  INTERIOR_LABELS,
+  ROOM_CONDITION_LABELS,
+  SOUND_FACILITY_LABELS,
+  CLEAN_LABELS,
+  MANAGER_STYLE_LABELS,
+  MATCHING_LABELS,
+  FREE_SERVICE_LABELS,
+  CONVENIENCE_LABELS,
+  DISCOUNT_LABELS,
+  PHILOSOPHY_LABELS,
+  MANAGER_CAREER_LABELS,
+} from '../intro-options'
 
 function getApiKey(): string {
   let key = (process.env.GEMINI_API_KEY || '').replace(/\ufeff/g, '').trim()
@@ -101,18 +115,18 @@ function buildDataBlock(data: FormDataForGemini, essentialKeywords?: string[]): 
   block += `주소: ${data.location || ''}\n\n`
 
   block += '[작성할 데이터] (이 데이터를 바탕으로 2,500자 이상 3,000자 이내 업체소개글 작성)\n'
-  if (arr(data.interior).length) block += `인테리어: ${arr(data.interior)}\n`
-  if (arr(data.room_condition).length) block += `룸 구성: ${arr(data.room_condition)}\n`
-  if (arr(data.sound_facility).length) block += `음향/시설: ${arr(data.sound_facility)}\n`
-  if (arr(data.clean_points).length) block += `청결: ${arr(data.clean_points)}\n`
-  if (arr(data.manager_style).length) block += `매니저 스타일: ${arr(data.manager_style)}\n`
-  if (arr(data.matching).length) block += `매칭/시스템: ${arr(data.matching)}\n`
+  if (arr(data.interior).length) block += `인테리어: ${idsToLabels(data.interior, INTERIOR_LABELS)}\n`
+  if (arr(data.room_condition).length) block += `룸 구성: ${idsToLabels(data.room_condition, ROOM_CONDITION_LABELS)}\n`
+  if (arr(data.sound_facility).length) block += `음향/시설: ${idsToLabels(data.sound_facility, SOUND_FACILITY_LABELS)}\n`
+  if (arr(data.clean_points).length) block += `청결: ${idsToLabels(data.clean_points, CLEAN_LABELS)}\n`
+  if (arr(data.manager_style).length) block += `매니저 스타일: ${idsToLabels(data.manager_style, MANAGER_STYLE_LABELS)}\n`
+  if (arr(data.matching).length) block += `매칭/시스템: ${idsToLabels(data.matching, MATCHING_LABELS)}\n`
   if (data.staff_count) block += `출근 인원: ${data.staff_count}\n`
-  if (arr(data.free_service).length) block += `무료 서비스: ${arr(data.free_service)}\n`
-  if (arr(data.convenience).length) block += `편의 서비스: ${arr(data.convenience)}\n`
-  if (arr(data.discount).length) block += `할인: ${arr(data.discount)}\n`
-  if (arr(data.philosophy).length) block += `운영 철학: ${arr(data.philosophy)}\n`
-  if (arr(data.manager_career).length) block += `실장 경력: ${arr(data.manager_career)}\n`
+  if (arr(data.free_service).length) block += `무료 서비스: ${idsToLabels(data.free_service, FREE_SERVICE_LABELS)}\n`
+  if (arr(data.convenience).length) block += `편의 서비스: ${idsToLabels(data.convenience, CONVENIENCE_LABELS)}\n`
+  if (arr(data.discount).length) block += `할인: ${idsToLabels(data.discount, DISCOUNT_LABELS)}\n`
+  if (arr(data.philosophy).length) block += `운영 철학: ${idsToLabels(data.philosophy, PHILOSOPHY_LABELS)}\n`
+  if (arr(data.manager_career).length) block += `실장 경력: ${idsToLabels(data.manager_career, MANAGER_CAREER_LABELS)}\n`
   block += `업소 위치·소개: ${data.location_desc || ''}\n`
   block += `시설/환경: ${data.facility_env || ''}\n`
   block += `혜택: ${data.benefits || ''}\n`

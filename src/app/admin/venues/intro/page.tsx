@@ -3,6 +3,19 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { hashSeed, pickOpeningPattern, pickFocus } from '@/lib/intro-diversity'
+import {
+  INTERIOR_LABELS,
+  ROOM_CONDITION_LABELS,
+  SOUND_FACILITY_LABELS,
+  CLEAN_LABELS,
+  MANAGER_STYLE_LABELS,
+  MATCHING_LABELS,
+  FREE_SERVICE_LABELS,
+  CONVENIENCE_LABELS,
+  DISCOUNT_LABELS,
+  PHILOSOPHY_LABELS,
+  MANAGER_CAREER_LABELS,
+} from '@/lib/intro-options'
 
 const TYPE_OPTIONS = [
   { value: 'karaoke', label: '가라오케' },
@@ -19,84 +32,19 @@ const REGION_OPTIONS = [
   { value: 'jeju', label: '제주' },
 ]
 
-const INTERIOR_OPTIONS = [
-  { id: 'luxury_gold', label: '럭셔리 & 골드 (고급스러운 대리석 느낌)' },
-  { id: 'modern_white', label: '모던 & 화이트 (심플하고 깔끔한 느낌)' },
-  { id: 'cyberpunk', label: '사이버 펑크 (화려한 네온 조명)' },
-  { id: 'private_classic', label: '프라이빗 클래식 (중후하고 조용한 분위기)' },
-  { id: 'hip_club', label: '힙한 클럽 스타일 (화려한 무빙 라이트)' },
-]
+const toOptions = (m: Record<string, string>) => Object.entries(m).map(([id, label]) => ({ id, label }))
 
-const ROOM_CONDITION_OPTIONS = [
-  { id: 'large_50', label: '50인 수용 대형룸 (단체/회식 최적)' },
-  { id: 'room_toilet', label: '룸 내 개별 화장실 완비' },
-  { id: 'non_smoking', label: '비흡연자를 위한 금연룸 운영' },
-  { id: 'air_purifier', label: '최신형 공기청정기 풀가동' },
-  { id: 'soundproof', label: '층간 소음 완벽 차단 (방음 시설)' },
-  { id: 'small_private', label: '프라이빗 소형룸' },
-  { id: 'party_room', label: '파티/이벤트룸' },
-]
-
-const SOUND_FACILITY_OPTIONS = [
-  { id: 'latest_karaoke', label: '최신형 노래방 기기' },
-  { id: 'high_speaker', label: '고성능 스피커' },
-  { id: 'laser_light', label: '레이저 조명' },
-  { id: 'mirror_ball', label: '미러볼' },
-]
-
-const CLEAN_OPTIONS = [
-  { id: 'daily_sterilize', label: '매일 소독·살균' },
-  { id: 'air_purifier_24', label: '공기청정기 24시간 가동' },
-  { id: 'no_smell', label: '담배 냄새 없는 청결한 룸' },
-]
-
-const MANAGER_STYLE_OPTIONS = [
-  { id: 'young_20s', label: '20대 초반 위주 (젊은 에너지)' },
-  { id: 'model_grade', label: '모델/연예인 지망생 급 (비주얼 강조)' },
-  { id: 'friendly', label: '싹싹하고 친절한 마인드 (내상 제로)' },
-  { id: 'party_type', label: '텐션 높은 파티형 (분위기 메이커)' },
-  { id: 'innocent_intel', label: '청순/지적인 이미지' },
-]
-
-const MATCHING_OPTIONS = [
-  { id: 'unlimited_choice', label: '무한 초이스 시스템 (마음에 들 때까지)' },
-  { id: 'manager_match', label: '실장 추천 맞춤 매칭 (실패 없는 선택)' },
-  { id: 'no_rotation', label: '로테이션 없는 고정 시스템' },
-  { id: 'first_30', label: '첫 타임 출근 인원 30명 이상' },
-]
-
-const FREE_SERVICE_OPTIONS = [
-  { id: 'fruit_refill', label: '고급 과일 안주 무한 리필' },
-  { id: 'soju_beer', label: '소주/맥주 무제한 제공 이벤트' },
-  { id: 'ramen_meal', label: '라면/짜파게티 등 식사 대용 서비스' },
-  { id: 'whiskey_upgrade', label: '고급 양주 승급 이벤트 (저녁 9시 이전)' },
-]
-
-const CONVENIENCE_OPTIONS = [
-  { id: 'valet', label: '발렛 파킹 무료 서비스' },
-  { id: 'pickup', label: '인근 지역 픽업/샌딩 가능' },
-  { id: 'hangover', label: '숙취해소제(컨디션 등) 증정' },
-  { id: 'charging', label: '휴대폰 초고속 충전 서비스' },
-]
-
-const DISCOUNT_OPTIONS = [
-  { id: 'first_visit', label: '첫 방문 고객 특별 할인' },
-  { id: 'cash_extra', label: '현금 결제 시 추가 서비스 룸 제공' },
-  { id: 'birthday', label: '생일/기념일 축하 샴페인 증정' },
-]
-
-const PHILOSOPHY_OPTIONS = [
-  { id: 'fixed_price', label: '정찰제 운영 (추가금 일체 없음)' },
-  { id: 'real_liquor', label: '정품 양주/새 술 확인 시스템' },
-  { id: 'as_100', label: '내상 발생 시 100% AS 보장' },
-  { id: 'privacy', label: '프라이버시 철저 보장 (비밀 유지)' },
-]
-
-const MANAGER_CAREER_OPTIONS = [
-  { id: 'veteran', label: 'OO지역 10년차 베테랑 실장' },
-  { id: 'youtube_famous', label: '유튜브/커뮤니티 유명 실장 직접 케어' },
-  { id: 'outgoing', label: '외성적인 성격의 화끈한 케어 가능' },
-]
+const INTERIOR_OPTIONS = toOptions(INTERIOR_LABELS)
+const ROOM_CONDITION_OPTIONS = toOptions(ROOM_CONDITION_LABELS)
+const SOUND_FACILITY_OPTIONS = toOptions(SOUND_FACILITY_LABELS)
+const CLEAN_OPTIONS = toOptions(CLEAN_LABELS)
+const MANAGER_STYLE_OPTIONS = toOptions(MANAGER_STYLE_LABELS)
+const MATCHING_OPTIONS = toOptions(MATCHING_LABELS)
+const FREE_SERVICE_OPTIONS = toOptions(FREE_SERVICE_LABELS)
+const CONVENIENCE_OPTIONS = toOptions(CONVENIENCE_LABELS)
+const DISCOUNT_OPTIONS = toOptions(DISCOUNT_LABELS)
+const PHILOSOPHY_OPTIONS = toOptions(PHILOSOPHY_LABELS)
+const MANAGER_CAREER_OPTIONS = toOptions(MANAGER_CAREER_LABELS)
 
 interface PartnerOption {
   id: string

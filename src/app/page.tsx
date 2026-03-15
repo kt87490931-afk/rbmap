@@ -35,6 +35,7 @@ import { hasDevAdminCookie } from "@/lib/admin-auth";
 import { verifyOtpSession } from "@/lib/otp";
 
 type FeedConfig = { display_limit?: number };
+type ReviewConfig = { display_limit?: number };
 
 export default async function Home() {
   unstable_noStore();
@@ -50,8 +51,9 @@ export default async function Home() {
     }
   }
 
-  const [feedConfig, hero, ticker, header, about, categoryGuide, cta, footer, visitorDisplay, regions, partnerCounts, reviewCountsByRegion] = await Promise.all([
+  const [feedConfig, reviewConfig, hero, ticker, header, about, categoryGuide, cta, footer, visitorDisplay, regions, partnerCounts, reviewCountsByRegion] = await Promise.all([
     getSiteSection<FeedConfig>("feed_config"),
+    getSiteSection<ReviewConfig>("review_config"),
     getSiteSection<Parameters<typeof Hero>[0]["data"]>("hero"),
     getSiteSection<Parameters<typeof Ticker>[0]["data"]>("ticker"),
     getSiteSection<Parameters<typeof Header>[0]["data"]>("header"),
@@ -66,6 +68,9 @@ export default async function Home() {
   ]);
 
   const feedLimit = feedConfig?.display_limit ?? 10;
+  const reviewDisplayLimitRaw = reviewConfig?.display_limit ?? 6;
+  const REVIEW_DISPLAY_OPTIONS = [3, 6, 9, 12, 15];
+  const reviewDisplayLimit = REVIEW_DISPLAY_OPTIONS.includes(reviewDisplayLimitRaw) ? reviewDisplayLimitRaw : 6;
   const totalVenueCount = Object.values(partnerCounts).reduce((sum, c) => sum + (c?.venues ?? 0), 0);
   const partnerCountsWithReviews: Record<string, { venues: number; reviews: number }> = {};
   for (const [slug, c] of Object.entries(partnerCounts)) {
@@ -78,7 +83,7 @@ export default async function Home() {
   const [partnersForWidgets, reviewPosts, reviewPostsByClick] = await Promise.all([
     getPartners(),
     getReviewPostsList({ limit: feedLimit }),
-    getReviewPostsListByClickCount(5),
+    getReviewPostsListByClickCount(15),
   ]);
 
   const REGION_NAME_TO_SLUG: Record<string, string> = { 강남: "gangnam", 수원: "suwon", "수원 인계동": "suwon", 동탄: "dongtan", 오산: "osan", 가락: "garak", 제주: "jeju" };
@@ -86,7 +91,7 @@ export default async function Home() {
     const href = p.href?.startsWith("/") ? p.href : `/${(p.href ?? "").split("/")[1] ?? "gangnam"}/${TYPE_TO_SLUG[p.type] || "karaoke"}/${p.id}`;
     const regionName = REGION_SLUG_TO_NAME[(href?.split("/")[1] ?? "")] ?? p.region ?? "";
     const rawDesc = p.desc || "";
-    const desc = rawDesc.length > 300 ? rawDesc.slice(0, 300) + "…" : rawDesc || undefined;
+    const desc = rawDesc.length > 500 ? rawDesc.slice(0, 500) + "…" : rawDesc || undefined;
     return {
       href,
       region: regionName,
@@ -110,7 +115,7 @@ export default async function Home() {
       region: getRegionName(p.region),
       date: dateStr,
       title: p.title,
-      excerpt: (p.sec_overview || p.sec_summary || "").slice(0, 120) + ((p.sec_overview || p.sec_summary || "").length > 120 ? "…" : ""),
+      excerpt: (p.sec_overview || p.sec_summary || "").slice(0, 500) + ((p.sec_overview || p.sec_summary || "").length > 500 ? "…" : ""),
       stars: formatStars(p.star),
       venue: p.venue,
       is_new: isNew,
@@ -192,8 +197,8 @@ export default async function Home() {
         <FeaturedVenuesSection venues={venueCards.length > 0 ? venueCards : undefined} />
       </SectionWithSettings>
       <div className="gold-divider" />
-      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="review_config" sectionLabel="6시간마다 최신리뷰" adminLink="/admin/reviews">
-        <ReviewMagazineSection reviews={reviewMagazineItems} displayLimit={5} />
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="review_config" sectionLabel="6시간 마다 업데이트 인기 리뷰" adminLink="/admin/reviews">
+        <ReviewMagazineSection reviews={reviewMagazineItems} displayLimit={reviewDisplayLimit} />
       </SectionWithSettings>
       <div className="gold-divider" />
       <KeywordHubSection />

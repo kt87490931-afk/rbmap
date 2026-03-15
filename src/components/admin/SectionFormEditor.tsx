@@ -347,14 +347,27 @@ function FeedConfigForm({ data, onChange }: { data: Record<string, unknown>; onC
   )
 }
 
+const REVIEW_FEED_OPTIONS = [3, 6, 9, 12, 15] as const
+
 function ReviewConfigForm({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
   const d = data ?? {}
-  const set = (k: string, v: number) => onChange({ ...d, [k]: v })
+  const value = REVIEW_FEED_OPTIONS.includes((d.display_limit as number) as (typeof REVIEW_FEED_OPTIONS)[number])
+    ? (d.display_limit as number)
+    : 6
   return (
-    <>
-      <FormNumber label="메인 그리드 개수" value={(d.grid_limit as number) ?? 6} onChange={(n) => set('grid_limit', n)} min={1} />
-      <FormNumber label="전문 페이지 개수" value={(d.full_limit as number) ?? 10} onChange={(n) => set('full_limit', n)} min={1} />
-    </>
+    <div style={blockStyle}>
+      <label style={labelStyle}>피드 노출 개수</label>
+      <select
+        value={value}
+        onChange={(e) => onChange({ ...d, display_limit: Number(e.target.value) })}
+        style={inputStyle}
+      >
+        {REVIEW_FEED_OPTIONS.map((n) => (
+          <option key={n} value={n}>{n}개</option>
+        ))}
+      </select>
+      <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>메인 페이지 인기 리뷰 섹션에 표시할 카드 개수 (3 / 6 / 9 / 12 / 15)</p>
+    </div>
   )
 }
 

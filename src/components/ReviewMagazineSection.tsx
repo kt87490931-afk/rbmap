@@ -14,46 +14,33 @@ interface ReviewMagazineSectionProps {
   displayLimit?: number;
 }
 
-export default function ReviewMagazineSection({ reviews, displayLimit = 5 }: ReviewMagazineSectionProps) {
+export default function ReviewMagazineSection({ reviews, displayLimit = 6 }: ReviewMagazineSectionProps) {
   const raw = reviews?.length ? reviews : FALLBACK_REVIEWS;
   const list = raw.slice(0, displayLimit);
-  const [feature, ...rest] = list;
 
   return (
-    <section className="section" aria-label="최신 리뷰">
+    <section className="section bg-deep" aria-label="인기 리뷰">
       <div className="section-inner">
         <div className="section-head-row">
           <div>
             <span className="section-label">LATEST REVIEWS</span>
-            <h2 className="section-h2">6시간마다 업데이트 <em>최신 리뷰</em></h2>
+            <h2 className="section-h2">6시간 마다 업데이트 <em>인기 리뷰</em></h2>
           </div>
           <Link href="/reviews" className="see-all">전체 보기 →</Link>
         </div>
-        <div className="review-magazine">
-          {feature && (
-            <Link href={feature.href} className="review-feature">
-              <span className="rf-region">{feature.region}</span>
-              <span className="rf-date">{feature.date}</span>
-              <h3 className="rf-title">{feature.title}</h3>
-              <p className="rf-excerpt">{feature.excerpt}</p>
-              <div className="rf-footer">
-                <span className="rf-stars">{feature.stars}</span>
-                <span className="rf-venue">{feature.venue}</span>
+        <div className="venue-grid venue-grid-review">
+          {list.map((r) => (
+            <Link key={r.id} href={r.href} className="venue-card">
+              <div className="vc-region-line">{r.region}</div>
+              <div className="vc-top">
+                <span className="vc-name">{r.title}</span>
+                <span className="vc-star">{r.stars}</span>
               </div>
+              <div className="vc-type">{r.venue}</div>
+              {r.excerpt && <p className="vc-desc">{r.excerpt}</p>}
+              <div className="vc-footer">리뷰 상세 보기 →</div>
             </Link>
-          )}
-          {rest.length > 0 && (
-            <div className="review-stack">
-              {rest.map((r) => (
-                <Link key={r.id} href={r.href} className="review-mini">
-                  <span className="rm-region">{r.region}</span>
-                  <span className="rm-date">{r.date}</span>
-                  <span className="rm-title">{r.title}</span>
-                  <span className="rm-stars">{r.stars}</span>
-                </Link>
-              ))}
-            </div>
-          )}
+          ))}
         </div>
       </div>
     </section>

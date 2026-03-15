@@ -1172,6 +1172,22 @@ body::after {
     grid-template-columns: repeat(4, 1fr);
   }
 }
+/* 인기 리뷰: 가로 3열 (지역별 주요업소와 동일 그리드 스타일) */
+.venue-grid-review {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 500px) {
+  .venue-grid-review {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 768px) {
+  .venue-grid-review {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
 /* index-sample: venue-card (FeaturedVenues) */
 .venue-card {
   display: block;

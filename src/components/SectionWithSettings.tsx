@@ -13,7 +13,7 @@ const SECTION_LABELS: Record<string, string> = {
   feed: '5. 실시간 최신 업데이트',
   widgets_a: '6. 평균가격·위젯·랭킹·트랜드',
   region_preview: '7. 지역별 주요업소',
-  reviews: '8. 6시간마다 최신리뷰',
+  reviews: '8. 6시간 마다 업데이트 인기 리뷰',
   widgets_b: '9. 타임라인·지역빠른이동·공지·FAQ',
   stats: '10. 통계',
   cta: '11. 광고 및 등록 문의',

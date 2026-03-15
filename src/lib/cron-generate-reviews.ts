@@ -6,6 +6,7 @@ import { generateReview } from './gemini/review-api'
 import {
   pickScenarioCombo,
   pickTone,
+  reviewGenSeed,
   type ScenarioCombo,
   type ReviewTone,
 } from './review-scenarios'
@@ -114,8 +115,12 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       .map((r) => (r.scenario_used as { tone?: string })?.tone)
       .filter((t): t is ReviewTone => typeof t === 'string')
 
-    const scenario = pickScenarioCombo(recentCombos)
-    const tone = pickTone(recentTones)
+    const venueKey = `${partner.name}|${regionSlug}|${typeSlug}|${venueSlug}`
+    const existingCount = (historyRows ?? []).length
+    const seed = reviewGenSeed(venueKey, existingCount)
+
+    const scenario = pickScenarioCombo(recentCombos, seed)
+    const tone = pickTone(recentTones, seed + 10)
 
     const regionName = REGION_SLUG_TO_NAME[regionSlug] ?? partner.region ?? regionSlug
     const typeName = SLUG_TO_TYPE[typeSlug] ?? partner.type ?? typeSlug

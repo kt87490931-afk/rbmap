@@ -100,6 +100,13 @@ export default function AdminReviewGeneratePage() {
         <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
           적용된 소개글이 있고 활성화된 제휴업체만 표시됩니다. 8시간마다 1건 자동 생성, 수동 생성은 즉시 가능합니다.
         </p>
+        <div style={{ padding: 12, marginBottom: 16, background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12 }}>
+          <strong>🌱 시드 기반 다양성</strong>
+          <p style={{ margin: '6px 0 0', color: 'var(--muted)', lineHeight: 1.5 }}>
+            업체명·지역·기존 리뷰 수 기준으로 시나리오·톤·오프닝·포커스가 결정론적으로 선택됩니다. 
+            같은 업체도 리뷰가 쌓일수록 다른 조합이 적용되어 다양성이 확보됩니다.
+          </p>
+        </div>
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table">
             <thead>

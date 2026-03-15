@@ -1,8 +1,11 @@
 /**
  * 리뷰 다양성 확보 - 6축 시나리오 풀
  * 유사도 검사 없이 조합 기반으로 중복 방지
+ * 시드 기반 선택으로 결정론적 다양성 확보 (랜덤 대체)
  * @see 리뷰다 다양성 확보 선택지.txt
  */
+
+import { hashSeed } from './intro-diversity'
 
 /** 인원수 */
 export const SCENARIO_PEOPLE = [
@@ -127,24 +130,32 @@ export function scenarioToPromptText(combo: ScenarioCombo, tone: ReviewTone): st
   ].join('\n')
 }
 
-/** 랜덤 선택 (배열에서 1개) */
-function pickRandom<T>(arr: readonly T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
+/** 시드 기반 선택 (결정론적) */
+function pickBySeed<T>(arr: readonly T[], seed: number): T {
+  if (arr.length === 0) throw new Error('빈 배열')
+  const idx = Math.abs(seed) % arr.length
+  return arr[idx]
 }
 
-/** 기존 사용 이력과 다른 것 우선 선택 (중복 느낌 방지) */
-function pickDifferent<T extends { id: string }>(pool: readonly T[], usedIds: string[]): T {
+/** 시드 기반 + 미사용 우선 선택 (중복 방지 + 결정론적) */
+function pickDifferentBySeed<T extends { id: string }>(pool: readonly T[], usedIds: string[], seed: number): T {
   const used = new Set(usedIds)
   const unused = pool.filter((x) => !used.has(x.id))
   const arr = unused.length >= 2 ? unused : [...pool]
-  return pickRandom(arr)
+  return pickBySeed(arr, seed)
+}
+
+/** 랜덤 선택 (시드 없을 때 폴백) */
+function pickRandom<T>(arr: readonly T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
 }
 
 /**
  * 새 시나리오 조합 생성
  * recentCombos: 이 업체의 최근 N개 리뷰에 사용된 조합
+ * seed: 있으면 시드 기반 결정론적 선택, 없으면 기존 랜덤
  */
-export function pickScenarioCombo(recentCombos: ScenarioCombo[]): ScenarioCombo {
+export function pickScenarioCombo(recentCombos: ScenarioCombo[], seed?: number): ScenarioCombo {
   const usedPeople = recentCombos.map((c) => c.people)
   const usedTime = recentCombos.map((c) => c.time)
   const usedWhy = recentCombos.map((c) => c.why)
@@ -153,21 +164,28 @@ export function pickScenarioCombo(recentCombos: ScenarioCombo[]): ScenarioCombo 
   const usedMoodA = recentCombos.map((c) => c.moodAfter)
   const usedService = recentCombos.map((c) => c.service)
 
+  const s = seed ?? Math.floor(Math.random() * 0x7fffffff)
   return {
-    people: pickDifferent(SCENARIO_PEOPLE, usedPeople).id as ScenarioPeople,
-    time: pickDifferent(SCENARIO_TIME, usedTime).id as ScenarioTime,
-    why: pickDifferent(SCENARIO_WHY, usedWhy).id as ScenarioWhy,
-    event: pickDifferent(SCENARIO_EVENT, usedEvent).id as ScenarioEvent,
-    moodBefore: pickDifferent(SCENARIO_MOOD_BEFORE, usedMoodB).id as ScenarioMoodBefore,
-    moodAfter: pickDifferent(SCENARIO_MOOD_AFTER, usedMoodA).id as ScenarioMoodAfter,
-    service: pickDifferent(SCENARIO_SERVICE, usedService).id as ScenarioService,
+    people: pickDifferentBySeed(SCENARIO_PEOPLE, usedPeople, s + 1).id as ScenarioPeople,
+    time: pickDifferentBySeed(SCENARIO_TIME, usedTime, s + 2).id as ScenarioTime,
+    why: pickDifferentBySeed(SCENARIO_WHY, usedWhy, s + 3).id as ScenarioWhy,
+    event: pickDifferentBySeed(SCENARIO_EVENT, usedEvent, s + 4).id as ScenarioEvent,
+    moodBefore: pickDifferentBySeed(SCENARIO_MOOD_BEFORE, usedMoodB, s + 5).id as ScenarioMoodBefore,
+    moodAfter: pickDifferentBySeed(SCENARIO_MOOD_AFTER, usedMoodA, s + 6).id as ScenarioMoodAfter,
+    service: pickDifferentBySeed(SCENARIO_SERVICE, usedService, s + 7).id as ScenarioService,
   }
 }
 
-/** 랜덤 톤 선택 (최근 사용 톤 우회) */
-export function pickTone(recentTones: ReviewTone[]): ReviewTone {
+/** 톤 선택 (미사용 우선, 시드 있으면 결정론적) */
+export function pickTone(recentTones: ReviewTone[], seed?: number): ReviewTone {
   const used = new Set(recentTones)
-  const available = REVIEW_TONES.filter((t) => !used.has(t.id) || Math.random() > 0.6)
-  const arr = available.length > 0 ? available : [...REVIEW_TONES]
+  const unused = REVIEW_TONES.filter((t) => !used.has(t.id))
+  const arr = unused.length >= 2 ? unused : [...REVIEW_TONES]
+  if (seed != null) return pickBySeed(arr, seed).id
   return pickRandom(arr).id
+}
+
+/** 리뷰 생성용 시드 계산 (venue + 기존 리뷰 수 기반) */
+export function reviewGenSeed(venueKey: string, existingCount: number): number {
+  return hashSeed(`${venueKey}|${existingCount}`)
 }

@@ -9,7 +9,7 @@ import { geminiModel, geminiTemperature, geminiTopP, geminiMaxOutputTokens } fro
 import { reviewTonePrompts } from './review-config'
 import type { ScenarioCombo, ReviewTone } from '../review-scenarios'
 import { scenarioToPromptText } from '../review-scenarios'
-import { pickReviewOpeningHook, REVIEW_BAN_PATTERNS, reviewSeed } from '../review-diversity'
+import { pickReviewOpeningHook, pickReviewFocus, REVIEW_BAN_PATTERNS, reviewSeed } from '../review-diversity'
 
 function getApiKey(): string {
   let key = (process.env.GEMINI_API_KEY || '').replace(/\ufeff/g, '').trim()
@@ -87,6 +87,7 @@ export async function generateReview(params: {
   const scenarioHash = JSON.stringify(params.scenario)
   const seed = reviewSeed(params.venueName, scenarioHash)
   const openingHook = pickReviewOpeningHook(seed)
+  const focus = pickReviewFocus(seed + 100)
 
   const systemPrompt =
     '너는 실제로 해당 업소를 방문한 손님이다. 아래 [업소 소개글]을 참고하여, [시나리오]에 맞는 자연스러운 이용 후기를 작성해라.\n\n' +
@@ -97,6 +98,7 @@ export async function generateReview(params: {
     '- 실제 방문 경험처럼 구체적으로. 과장 없이.\n' +
     '- 제목 1줄 + 본문 형태로 작성. 제목은 --- 로 구분.\n' +
     `[오프닝 지시] ${openingHook.instruction}\n` +
+    `[포커스 지시] ${focus.instruction}\n` +
     `[금지] ${REVIEW_BAN_PATTERNS}\n\n` +
     `[시나리오]\n${scenarioBlock}\n\n` +
     `[업소 정보]\n업소명: ${params.venueName}\n지역: ${params.regionName}\n업종: ${params.typeName}\n\n` +

@@ -50,3 +50,20 @@ export const REVIEW_BAN_PATTERNS =
 export function reviewSeed(venueName: string, scenarioHash: string): number {
   return hashSeed(venueName + '|' + scenarioHash)
 }
+
+/** 리뷰 포커스 5종 — 본문에서 강조할 축 (업체소개와 동일 다양성) */
+export const REVIEW_FOCUS_OPTIONS = [
+  { id: 'facility', label: '시설·인테리어', instruction: '본문에서 시설, 인테리어, 룸 분위기, 음향 등을 특히 강조하라.' },
+  { id: 'price', label: '가격·가성비', instruction: '본문에서 가격 대비 만족도, 가성비, 투명한 가격 등을 특히 강조하라.' },
+  { id: 'service', label: '서비스·매니저', instruction: '본문에서 매니저 케어, 매칭, 서비스 품질 등을 특히 강조하라.' },
+  { id: 'comparison', label: '비교·차별점', instruction: '본문에서 다른 곳과 비교한 차별점, 선택 이유를 특히 강조하라.' },
+  { id: 'mood', label: '분위기·결과', instruction: '본문에서 방문 후 기분 전환, 만족도, 전체적인 분위기를 특히 강조하라.' },
+] as const
+
+export type ReviewFocusId = (typeof REVIEW_FOCUS_OPTIONS)[number]['id']
+
+/** 시드로 리뷰 포커스 선택 */
+export function pickReviewFocus(seed: number): (typeof REVIEW_FOCUS_OPTIONS)[number] {
+  const idx = Math.abs(seed) % REVIEW_FOCUS_OPTIONS.length
+  return REVIEW_FOCUS_OPTIONS[idx]
+}

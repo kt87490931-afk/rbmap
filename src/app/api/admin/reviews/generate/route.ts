@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 import { requireAdminOrSetup } from '@/lib/admin-auth'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { generateReview } from '@/lib/gemini/review-api'
-import { pickScenarioCombo, pickTone, REVIEW_TONES, type ScenarioCombo, type ReviewTone } from '@/lib/review-scenarios'
+import { pickScenarioCombo, pickTone, reviewGenSeed, REVIEW_TONES, type ScenarioCombo, type ReviewTone } from '@/lib/review-scenarios'
 import { REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from '@/lib/data/venues'
 import { parseUrlSuffixFromHref } from '@/lib/partner-url'
 
@@ -84,8 +84,12 @@ export async function POST(request: Request) {
     .map((r) => (r.scenario_used as { tone?: string })?.tone)
     .filter((t): t is ReviewTone => typeof t === 'string')
 
-  const scenario = pickScenarioCombo(recentCombos)
-  const tone = pickTone(recentTones)
+  const venueKey = `${partner.name}|${regionSlug}|${typeSlug}|${venueSlug}`
+  const existingCount = (historyRows ?? []).length
+  const seed = reviewGenSeed(venueKey, existingCount)
+
+  const scenario = pickScenarioCombo(recentCombos, seed)
+  const tone = pickTone(recentTones, seed + 10)
   const regionName = REGION_SLUG_TO_NAME[regionSlug] ?? partner.region ?? regionSlug
   const typeName = SLUG_TO_TYPE[typeSlug] ?? partner.type ?? typeSlug
 

@@ -1,9 +1,9 @@
 #!/bin/bash
-# 리뷰 6시간 자동생성 Cron 래퍼
+# 리뷰 8시간 자동생성 Cron 래퍼
 # .env.production에서 CRON_SECRET 로드 후 API 호출
 #
-# 스케줄 (서버 UTC 기준): 0 3,9,15,21 * * *  → KST 12:00, 18:00, 00:00, 06:00
-# 서버가 Asia/Seoul 이면: 0 0,6,12,18 * * *
+# 스케줄 (서버 UTC 기준): 0 7,15,23 * * *  → KST 16:00, 00:00, 08:00 (8시간 간격 3회)
+# 서버가 Asia/Seoul 이면: 0 0,8,16 * * *
 #
 LOG_DIR="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)/logs"
 cd /var/www/rbmap 2>/dev/null || cd "$(dirname "$0")/.."

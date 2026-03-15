@@ -8,7 +8,7 @@ import { REVIEW_TONES } from '@/lib/review-scenarios'
 
 export const dynamic = 'force-dynamic'
 
-const SIX_HOURS_MS = 6 * 60 * 60 * 1000
+const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000
 
 function parseHref(href: string) {
   const parts = (href || '').replace(/\/$/, '').split('/').filter(Boolean)
@@ -72,7 +72,7 @@ export async function GET() {
 
     let nextReviewAt: string | null = null
     if (lastReviewAt) {
-      const next = new Date(new Date(lastReviewAt).getTime() + SIX_HOURS_MS)
+      const next = new Date(new Date(lastReviewAt).getTime() + EIGHT_HOURS_MS)
       nextReviewAt = next.toISOString()
     } else {
       nextReviewAt = new Date().toISOString()

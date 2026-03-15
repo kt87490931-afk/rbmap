@@ -75,7 +75,7 @@ export default function AdminReviewGeneratePage() {
     <>
       <div className="admin-header">
         <h1 className="admin-title">리뷰생성</h1>
-        <p className="admin-subtitle">제휴업체별 AI 리뷰 수동 생성 · 6시간마다 자동 생성 (Cron)</p>
+        <p className="admin-subtitle">제휴업체별 AI 리뷰 수동 생성 · 8시간마다 자동 생성 (Cron)</p>
       </div>
 
       {msg && (
@@ -98,7 +98,7 @@ export default function AdminReviewGeneratePage() {
       <div className="card-box">
         <div className="card-box-title">📋 제휴업체별 스케줄</div>
         <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-          적용된 소개글이 있고 활성화된 제휴업체만 표시됩니다. 6시간마다 1건 자동 생성, 수동 생성은 즉시 가능합니다.
+          적용된 소개글이 있고 활성화된 제휴업체만 표시됩니다. 8시간마다 1건 자동 생성, 수동 생성은 즉시 가능합니다.
         </p>
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table">
@@ -134,7 +134,7 @@ export default function AdminReviewGeneratePage() {
                       style={{ padding: '4px 10px', fontSize: 11 }}
                       onClick={() => generateForPartner(r.partnerId)}
                       disabled={!r.canGenerate || generatingId === r.partnerId}
-                      title={!r.hasIntro ? '적용된 소개글 필요' : !r.canGenerate ? '6시간 대기 중' : '지금 생성'}
+                      title={!r.hasIntro ? '적용된 소개글 필요' : !r.canGenerate ? '8시간 대기 중' : '지금 생성'}
                     >
                       {generatingId === r.partnerId ? '생성 중…' : r.canGenerate ? '지금 생성' : '대기 중'}
                     </button>

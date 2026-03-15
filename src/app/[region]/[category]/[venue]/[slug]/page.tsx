@@ -92,6 +92,7 @@ export default async function ReviewReadPage({
     '@context': 'https://schema.org',
     '@type': 'Review',
     name: post.title,
+    author: { '@type': 'Organization', name: '룸빵여지도' },
     reviewBody: post.sec_overview || post.sec_summary,
     reviewRating: { '@type': 'Rating', ratingValue: String(post.star), bestRating: '5' },
     itemReviewed: { '@type': 'LocalBusiness', name: `${post.venue} ${typeName}` },

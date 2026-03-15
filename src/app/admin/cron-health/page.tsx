@@ -156,10 +156,22 @@ export default function AdminCronHealthPage() {
     renderExtra?: () => React.ReactNode
   ) {
     const { items, summary } = jobData
+    const latest = items[0]
+    const latestStatus = latest ? getStatusLabel(latest) : null
     return (
       <div className="card-box" style={{ marginBottom: 16 }}>
         <div className="card-box-title">{title}</div>
         <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>{subtitle}</p>
+        {latestStatus && (
+          <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', background: latest.endedAt == null ? 'rgba(230,201,110,.1)' : latest.ok ? 'rgba(46,204,113,.08)' : 'rgba(255,71,87,.08)' }}>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>최근 실행 상태: </span>
+            <span style={{ fontWeight: 600, color: latestStatus.color }}>{latestStatus.label}</span>
+            {latest.endedAt != null && <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 8 }}>{formatDate(latest.startedAt)}</span>}
+            {latest.endedAt != null && !latest.ok && latest.msg && (
+              <div style={{ marginTop: 6, fontSize: 12, color: 'var(--red)' }}>실패 원인: {latest.msg}</div>
+            )}
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 12 }}>
           <div style={{ padding: 16, background: 'var(--card2)', borderRadius: 8, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>마지막 성공</div>
@@ -185,6 +197,14 @@ export default function AdminCronHealthPage() {
     )
   }
 
+  function getStatusLabel(r: CronLogItem): { label: string; bg: string; color: string } {
+    if (r.endedAt == null) {
+      return { label: '진행 중', bg: 'rgba(230, 201, 110, .25)', color: 'var(--gold)' }
+    }
+    if (r.ok) return { label: '완료 (성공)', bg: 'rgba(46,204,113,.2)', color: 'var(--green)' }
+    return { label: '완료 (실패)', bg: 'rgba(255,71,87,.2)', color: 'var(--red)' }
+  }
+
   function renderHistoryTable(items: CronLogItem[], showDetail: (r: CronLogItem) => boolean) {
     return (
       <>
@@ -194,7 +214,7 @@ export default function AdminCronHealthPage() {
               <tr>
                 <th>실행 시각</th>
                 <th>상태</th>
-                <th>메시지</th>
+                <th>메시지 / 실패 사유</th>
                 <th>처리</th>
                 <th>성공</th>
                 <th>소요(ms)</th>
@@ -203,6 +223,8 @@ export default function AdminCronHealthPage() {
             <tbody>
               {items.map((r) => {
                 const resList = Array.isArray(r.results) ? r.results as { name?: string; ok?: boolean; msg?: string }[] : []
+                const status = getStatusLabel(r)
+                const isFailed = r.endedAt != null && !r.ok
                 return (
                   <React.Fragment key={r.id}>
                     <tr>
@@ -214,20 +236,27 @@ export default function AdminCronHealthPage() {
                             borderRadius: 4,
                             fontSize: 11,
                             fontWeight: 600,
-                            background: r.ok ? 'rgba(46,204,113,.2)' : 'rgba(255,71,87,.2)',
-                            color: r.ok ? 'var(--green)' : 'var(--red)',
+                            background: status.bg,
+                            color: status.color,
                           }}
                         >
-                          {r.ok ? '성공' : '실패'}
+                          {status.label}
                         </span>
                       </td>
-                      <td style={{ fontSize: 12, maxWidth: 220 }} title={r.msg ?? ''}>
-                        {r.msg ? (r.msg.length > 30 ? r.msg.slice(0, 30) + '…' : r.msg) : '-'}
+                      <td style={{ fontSize: 12, maxWidth: 320 }} title={r.msg ?? ''}>
+                        {r.msg ? (r.msg.length > 50 ? r.msg.slice(0, 50) + '…' : r.msg) : '-'}
                       </td>
                       <td>{r.processed}</td>
                       <td>{r.successCount}</td>
                       <td>{r.durationMs != null ? `${r.durationMs}ms` : '-'}</td>
                     </tr>
+                    {isFailed && r.msg && (
+                      <tr style={{ background: 'rgba(255,71,87,.08)' }}>
+                        <td colSpan={6} style={{ padding: '10px 16px', fontSize: 12, color: 'var(--red)', borderTop: 'none', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                          <strong>실패 원인:</strong> {r.msg}
+                        </td>
+                      </tr>
+                    )}
                     {showDetail(r) && resList.length > 0 && (
                       <tr style={{ background: 'var(--card2)' }}>
                         <td colSpan={6} style={{ padding: '8px 16px', fontSize: 11, color: 'var(--muted)', borderTop: 'none' }}>
@@ -245,6 +274,9 @@ export default function AdminCronHealthPage() {
             </tbody>
           </table>
         </div>
+        <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
+          <strong>상태:</strong> 진행 중 = 아직 종료되지 않음(실행 중이거나 중단됨). 완료 (성공) = 정상 종료. 완료 (실패) = 오류로 종료(아래 실패 원인 확인).
+        </p>
         {items.length === 0 && (
           <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 24 }}>
             아직 실행 이력이 없습니다. Cron이 한 번이라도 실행되면 여기에 표시됩니다.

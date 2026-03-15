@@ -39,6 +39,13 @@ interface NextScheduleItem {
   isTomorrow: boolean
 }
 
+interface LatestCronRun {
+  startedAt: string
+  endedAt: string | null
+  ok: boolean
+  msg: string | null
+}
+
 function getToneName(toneId: string | undefined): string {
   if (!toneId) return '-'
   const t = REVIEW_TONES.find((x) => x.id === toneId)
@@ -58,8 +65,10 @@ function getCharCount(r: ReviewItem): number {
 export default function AdminReviewsPage() {
   const [items, setItems] = useState<ReviewItem[]>([])
   const [nextSchedules, setNextSchedules] = useState<NextScheduleItem[]>([])
+  const [latestCronRun, setLatestCronRun] = useState<LatestCronRun | null>(null)
   const [loading, setLoading] = useState(true)
   const [scheduleLoading, setScheduleLoading] = useState(true)
+  const [cronStatusLoading, setCronStatusLoading] = useState(true)
   const [msg, setMsg] = useState('')
   const [editItem, setEditItem] = useState<ReviewItem | null>(null)
   const [editForm, setEditForm] = useState<{ title: string; star: number; sec_overview: string; sec_lineup: string; sec_price: string; sec_facility: string; sec_summary: string } | null>(null)
@@ -83,8 +92,30 @@ export default function AdminReviewsPage() {
     setScheduleLoading(false)
   }, [])
 
+  const fetchLatestCronRun = useCallback(async () => {
+    setCronStatusLoading(true)
+    try {
+      const res = await fetch('/api/admin/cron-health?job=generate-reviews&limit=5', { credentials: 'include' })
+      const json = await res.json()
+      const items = json?.jobs?.['generate-reviews']?.items ?? []
+      const latest = items[0]
+      if (latest) {
+        setLatestCronRun({
+          startedAt: latest.startedAt,
+          endedAt: latest.endedAt ?? null,
+          ok: !!latest.ok,
+          msg: latest.msg ?? null,
+        })
+      } else {
+        setLatestCronRun(null)
+      }
+    } catch { setLatestCronRun(null) }
+    setCronStatusLoading(false)
+  }, [])
+
   useEffect(() => { fetchItems() }, [fetchItems])
   useEffect(() => { fetchNextSchedules() }, [fetchNextSchedules])
+  useEffect(() => { fetchLatestCronRun() }, [fetchLatestCronRun])
 
   /** 업체별 리뷰 수 (region|type|venue_slug → count) */
   const venueCountMap = useMemo(() => {
@@ -203,6 +234,30 @@ export default function AdminReviewsPage() {
         <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
           각 제휴업체별 다음 리뷰 가능 시각·남은 시간 (분 단위 표기). <strong>「곧」</strong> = 이미 가능 시각이 지났거나 1분 이내(다음 Cron 실행 시 우선 처리). Cron은 <strong>다음 가능 시각이 가장 빠른 업체부터</strong> 최대 25건까지 처리합니다.
         </p>
+        {cronStatusLoading ? (
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>크론 상태 로딩 중...</p>
+        ) : latestCronRun ? (
+          <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', background: latestCronRun.endedAt == null ? 'rgba(230,201,110,.1)' : latestCronRun.ok ? 'rgba(46,204,113,.08)' : 'rgba(255,71,87,.08)' }}>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>최근 크론 실행: </span>
+            <span
+              style={{
+                fontWeight: 600,
+                color: latestCronRun.endedAt == null ? 'var(--gold)' : latestCronRun.ok ? 'var(--green)' : 'var(--red)',
+              }}
+            >
+              {latestCronRun.endedAt == null ? '진행 중' : latestCronRun.ok ? '완료 (성공)' : '완료 (실패)'}
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 8 }}>
+              {new Date(latestCronRun.startedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+            {latestCronRun.endedAt != null && !latestCronRun.ok && latestCronRun.msg && (
+              <div style={{ marginTop: 6, fontSize: 12, color: 'var(--red)' }}>실패 원인: {latestCronRun.msg}</div>
+            )}
+            <div style={{ marginTop: 6, fontSize: 11 }}>
+              <Link href="/admin/cron-health" style={{ color: 'var(--gold)' }}>전체 실행 이력 보기 (크론헬스) →</Link>
+            </div>
+          </div>
+        ) : null}
         {scheduleLoading ? (
           <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
         ) : nextSchedules.length === 0 ? (

@@ -159,6 +159,22 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       continue
     }
 
+    // 동일 업체·동일 시간대(2분 이내) 이미 삽입된 리뷰 있으면 스킵 (이중 방어)
+    const publishedAt = new Date().toISOString()
+    const windowStart = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+    const { data: recentSame } = await supabaseAdmin
+      .from('review_posts')
+      .select('id')
+      .eq('region', regionSlug)
+      .eq('type', typeSlug)
+      .eq('venue_slug', venueSlug)
+      .gte('published_at', windowStart)
+      .limit(1)
+    if (recentSame && recentSame.length > 0) {
+      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '같은 시간대 이미 생성됨(중복 방지)' })
+      continue
+    }
+
     const reviewSlug = `${slugify(partner.name)}-${Date.now().toString(36)}`
     const insertRow = {
       region: regionSlug,
@@ -170,7 +186,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       star: 5,
       visit_date: new Date().toISOString().slice(0, 10),
       status: 'published',
-      published_at: new Date().toISOString(),
+      published_at: publishedAt,
       sec_overview: genResult.content,
       sec_lineup: '',
       sec_price: '',

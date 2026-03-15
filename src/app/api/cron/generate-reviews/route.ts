@@ -24,13 +24,44 @@ export async function GET(request: Request) {
   let healthId: string | null = null
 
   try {
+    // 1) 먼저 이번 실행 기록 삽입 (동시 실행 판단용)
     try {
       const { data: healthRow } = await supabaseAdmin
         .from('cron_health')
         .insert({ job_name: 'generate-reviews', started_at: new Date().toISOString(), ok: false })
-        .select('id')
+        .select('id, started_at')
         .single()
       healthId = healthRow?.id ?? null
+      const myStartedAt = healthRow?.started_at
+
+      // 2) 동시 실행 방지: 나보다 먼저 시작됐고 아직 안 끝난 실행이 있으면 스킵 (토큰·리뷰 중복 방지)
+      if (myStartedAt) {
+        const { data: olderRunning } = await supabaseAdmin
+          .from('cron_health')
+          .select('id')
+          .eq('job_name', 'generate-reviews')
+          .is('ended_at', null)
+          .lt('started_at', myStartedAt)
+          .limit(1)
+        if (olderRunning && olderRunning.length > 0) {
+          await supabaseAdmin
+            .from('cron_health')
+            .update({
+              ended_at: new Date().toISOString(),
+              ok: false,
+              msg: '다른 실행이 먼저 진행 중이라 스킵 (중복 방지)',
+              duration_ms: Date.now() - startAt,
+            })
+            .eq('id', healthId)
+          return NextResponse.json({
+            ok: true,
+            skipped: true,
+            reason: '다른 리뷰 생성 실행이 진행 중이라 이번 호출은 스킵했습니다. 토큰/리뷰 중복을 방지합니다.',
+            duration_ms: Date.now() - startAt,
+          })
+        }
+        // 15분 넘게 ended_at 없는 오래된 실행은 무시 (크래시 복구)
+      }
     } catch { /* cron_health 테이블 없으면 무시 */ }
 
     const { results, durationMs } = await runGenerateReviews(null)

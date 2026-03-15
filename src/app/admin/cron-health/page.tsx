@@ -127,7 +127,7 @@ export default function AdminCronHealthPage() {
       })
       const json = await res.json()
       if (res.ok) {
-        setSitemapMsg(json.ok ? '구글 Ping 성공!' : (json.msg ?? '실패'))
+        setSitemapMsg(json.ok ? '사이트맵 검증 성공!' : (json.msg ?? '실패'))
         fetchData()
       } else {
         setSitemapMsg(json?.error ?? '실행 실패')
@@ -309,7 +309,7 @@ export default function AdminCronHealthPage() {
 
       {renderJobSection(
         '🗺️ 사이트맵 Ping',
-        '매일 KST 06시 실행. 구글에 sitemap.xml 크롤을 요청하여 새 콘텐츠 색인을 촉진합니다.',
+        '매일 KST 06시 실행. sitemap.xml 접근성 검증 + Bing ping (Google ping은 2024년 폐기됨). Search Console에서 사이트맵 제출 권장.',
         sitemapJob,
         (items) => renderHistoryTable(items, () => false),
         () => (

@@ -1,16 +1,16 @@
 /**
- * 구글 사이트맵 Ping Cron API
- * 매일 KST 06시 호출: 구글에 sitemap.xml 크롤 요청
+ * 사이트맵 검증 Cron API (매일 KST 06시)
+ * sitemap.xml 접근성 검증 + Bing ping (Google ping은 2024년 폐기)
  * GET ?cron_secret=xxx 또는 Authorization: Bearer xxx
  */
-
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
-const SITEMAP_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
-const PING_URL = `https://www.google.com/ping?sitemap=${SITEMAP_URL}/sitemap.xml`
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
+const SITEMAP_URL = `${SITE_URL}/sitemap.xml`
+const BING_PING_URL = `https://www.bing.com/ping?sitemap=${encodeURIComponent(SITEMAP_URL)}`
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization')
@@ -34,10 +34,24 @@ export async function GET(request: Request) {
       healthId = healthRow?.id ?? null
     } catch { /* cron_health 테이블 없으면 무시 */ }
 
-    const res = await fetch(PING_URL, { method: 'GET', signal: AbortSignal.timeout(15000) })
+    const sitemapRes = await fetch(SITEMAP_URL, {
+      method: 'GET',
+      signal: AbortSignal.timeout(15000),
+      headers: { 'User-Agent': 'RBBMap-SitemapCheck/1.0' },
+    })
+    const sitemapOk = sitemapRes.ok
+    let msg = sitemapOk ? '사이트맵 검증 성공' : `사이트맵 HTTP ${sitemapRes.status}`
+
+    let bingOk = false
+    try {
+      const bingRes = await fetch(BING_PING_URL, { method: 'GET', signal: AbortSignal.timeout(8000) })
+      bingOk = bingRes.ok
+      if (sitemapOk && bingOk) msg = '사이트맵 검증 + Bing Ping 성공'
+      else if (sitemapOk && !bingOk) msg = '사이트맵 검증 성공 (Bing ping 보조 실패)'
+    } catch { /* ignore */ }
+
+    const ok = sitemapOk
     const durationMs = Date.now() - startAt
-    const ok = res.ok
-    const msg = ok ? '구글 Ping 성공' : `HTTP ${res.status}`
 
     if (healthId) {
       try {
@@ -49,7 +63,10 @@ export async function GET(request: Request) {
             msg,
             processed: 1,
             success_count: ok ? 1 : 0,
-            results: [{ ping_url: PING_URL, http_status: res.status }],
+            results: [
+              { check: 'sitemap', url: SITEMAP_URL, http_status: sitemapRes.status },
+              { check: 'bing_ping', bing_ok: bingOk },
+            ],
             duration_ms: durationMs,
           })
           .eq('id', healthId)
@@ -60,7 +77,7 @@ export async function GET(request: Request) {
       ok,
       msg,
       duration_ms: durationMs,
-      http_status: res.status,
+      http_status: sitemapRes.status,
     })
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : 'Unknown error'

@@ -10,9 +10,11 @@ export const REVIEW_TYPE_TO_NAME: Record<string, string> = {
   karaoke: '가라오케',
   highpublic: '하이퍼블릭',
   jjomoh: '쩜오',
+  'room-salon': '룸싸롱',
   shirtsroom: '셔츠룸',
   shirtroom: '셔츠룸',
   public: '퍼블릭',
+  bar: '바',
 }
 
 export const REGION_PILL_STYLE: Record<string, { bg: string; color: string; border: string }> = {

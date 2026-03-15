@@ -629,7 +629,7 @@ async function enrichVenueWithReviewPosts(
         title: p.title,
         stars: formatStars(p.star),
         starsNum: String(p.star),
-        body: body.slice(0, 200) + (body.length > 200 ? "..." : ""),
+        body: body.slice(0, 500) + (body.length > 500 ? "..." : ""),
         date: p.published_at
           ? new Date(p.published_at).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(/\. /g, ".").replace(/\.$/, "")
           : "",

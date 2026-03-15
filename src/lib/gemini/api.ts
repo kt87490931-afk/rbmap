@@ -194,7 +194,6 @@ function getV2ContentLength(v: VenueIntroV2): number {
 }
 
 const MIN_CONTENT_LENGTH = 3000
-const MAX_CONTENT_LENGTH = 4000
 
 const INTRO_BAN_PATTERN =
   '[금지 오프닝] 다음과 같이 시작하지 마라: "업소명은 지역명에 위치한", "업소명은 지역명 OO에 자리한". 다른 업소 소개와 구분되는 독특한 오프닝을 써라.'
@@ -328,13 +327,6 @@ export async function generateVenueIntro(
               success: false,
               message: `생성된 글이 ${len}자로 분량 부족입니다. 3,000자 이상이 필요합니다. 다시 생성해 주세요.`,
               diag: { contentLength: len, required: MIN_CONTENT_LENGTH },
-            }
-          }
-          if (len > MAX_CONTENT_LENGTH) {
-            return {
-              success: false,
-              message: `생성된 글이 ${len}자로 초과입니다. 4,000자 미만이어야 합니다. 다시 생성해 주세요.`,
-              diag: { contentLength: len, max: MAX_CONTENT_LENGTH },
             }
           }
           text = [v2.intro?.lead, v2.intro?.quote, ...(v2.intro?.body_paragraphs ?? [])].filter(Boolean).join('\n\n')

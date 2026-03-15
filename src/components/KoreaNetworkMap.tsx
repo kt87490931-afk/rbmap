@@ -32,6 +32,7 @@ const FALLBACK_COORDS: Record<string, { x: number; y: number; dx: number; dy: nu
   suwon: { x: 148, y: 162, dx: -52, dy: -4 },
   dongtan: { x: 162, y: 200, dx: 8, dy: -4 },
   osan: { x: 152, y: 222, dx: -44, dy: -3 },
+  garak: { x: 208, y: 128, dx: 8, dy: -4 },
   jeju: { x: 152, y: 420, dx: 8, dy: -4 },
   incheon: { x: 112, y: 108, dx: -46, dy: -4 },
   busan: { x: 248, y: 280, dx: 8, dy: -4 },

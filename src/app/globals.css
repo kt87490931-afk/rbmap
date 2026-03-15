@@ -416,11 +416,14 @@ body::after {
   }
 }
 .hero-right {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
 }
 @media (min-width: 900px) {
   .hero-right {
-    display: flex;
+    min-height: auto;
   }
 }
 .hero-badge {

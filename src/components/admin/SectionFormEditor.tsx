@@ -347,7 +347,7 @@ function FeedConfigForm({ data, onChange }: { data: Record<string, unknown>; onC
   )
 }
 
-const REVIEW_FEED_OPTIONS = [3, 6, 9, 12, 15] as const
+const REVIEW_FEED_OPTIONS = [3, 6, 9, 12, 15, 30, 45, 60] as const
 
 function ReviewConfigForm({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
   const d = data ?? {}
@@ -366,7 +366,7 @@ function ReviewConfigForm({ data, onChange }: { data: Record<string, unknown>; o
           <option key={n} value={n}>{n}개</option>
         ))}
       </select>
-      <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>메인 페이지 인기 리뷰 섹션에 표시할 카드 개수 (3 / 6 / 9 / 12 / 15)</p>
+      <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>메인 페이지 인기 리뷰 섹션에 표시할 카드 개수 (3 / 6 / 9 / 12 / 15 / 30 / 45 / 60)</p>
     </div>
   )
 }

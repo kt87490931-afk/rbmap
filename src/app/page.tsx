@@ -69,7 +69,7 @@ export default async function Home() {
 
   const feedLimit = feedConfig?.display_limit ?? 10;
   const reviewDisplayLimitRaw = reviewConfig?.display_limit ?? 6;
-  const REVIEW_DISPLAY_OPTIONS = [3, 6, 9, 12, 15];
+  const REVIEW_DISPLAY_OPTIONS = [3, 6, 9, 12, 15, 30, 45, 60];
   const reviewDisplayLimit = REVIEW_DISPLAY_OPTIONS.includes(reviewDisplayLimitRaw) ? reviewDisplayLimitRaw : 6;
   const totalVenueCount = Object.values(partnerCounts).reduce((sum, c) => sum + (c?.venues ?? 0), 0);
   const partnerCountsWithReviews: Record<string, { venues: number; reviews: number }> = {};
@@ -83,7 +83,7 @@ export default async function Home() {
   const [partnersForWidgets, reviewPosts, reviewPostsByClick] = await Promise.all([
     getPartners(),
     getReviewPostsList({ limit: feedLimit }),
-    getReviewPostsListByClickCount(15),
+    getReviewPostsListByClickCount(60),
   ]);
 
   const REGION_NAME_TO_SLUG: Record<string, string> = { 강남: "gangnam", 수원: "suwon", "수원 인계동": "suwon", 동탄: "dongtan", 오산: "osan", 가락: "garak", 제주: "jeju" };

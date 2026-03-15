@@ -52,7 +52,6 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
     logo_sub: 'ROOMBANG YEOJIDO',
     nav: [
       { label: '업소별리뷰', href: '/reviews' },
-      { label: '랭킹', href: '/ranking' },
       { label: '문의', href: 'https://t.me/rbbmap', cta: true },
     ],
   },

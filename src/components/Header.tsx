@@ -22,7 +22,6 @@ const DEFAULT: HeaderData = {
   logo_sub: "ROOMBANG YEOJIDO",
   nav: [
     { label: "업소별리뷰", href: "/reviews" },
-    { label: "랭킹", href: "/ranking" },
     { label: "문의", href: "https://t.me/rbbmap", cta: true },
   ],
 };
@@ -47,7 +46,7 @@ export default function Header({ data }: { data?: HeaderData | null }) {
               href={item.href}
               target="_blank"
               rel="noopener noreferrer"
-              className={item.cta ? "nav-cta" : "hide-sm"}
+              className={item.cta ? "nav-cta" : ""}
             >
               {item.label}
             </a>
@@ -55,7 +54,7 @@ export default function Header({ data }: { data?: HeaderData | null }) {
             <Link
               key={item.href + item.label}
               href={item.href}
-              className={item.cta ? "nav-cta" : "hide-sm"}
+              className={item.cta ? "nav-cta" : ""}
             >
               {item.label}
             </Link>

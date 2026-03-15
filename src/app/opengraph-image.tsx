@@ -10,9 +10,16 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image() {
-  const notoSansBold = await fetch(
-    new URL("https://fonts.gstatic.com/s/notosanskr/v36/PbykFmXiEBPT4ITbgNA5Cgm20xz64px_1hVWr0wuPNGmlQNMEfD4.0.woff2")
-  ).then((res) => res.arrayBuffer());
+  let fontData: ArrayBuffer | null = null;
+  try {
+    fontData = await fetch(
+      new URL("https://fonts.gstatic.com/s/notosanskr/v36/PbykFmXiEBPT4ITbgNA5Cgm20xz64px_1hVWr0wuPNGmlQNMEfD4.0.woff2")
+    ).then((res) => (res.ok ? res.arrayBuffer() : Promise.resolve(null)));
+  } catch {
+    /* 폰트 로드 실패 시 기본 폰트 사용 */
+  }
+
+  const fontConfig = fontData ? [{ name: "Noto Sans KR", data: fontData, weight: 700 as const }] : undefined;
 
   return new ImageResponse(
     (
@@ -22,7 +29,7 @@ export default async function Image() {
           height: "630px",
           background: "#070707",
           display: "flex",
-          fontFamily: '"Noto Sans KR"',
+          fontFamily: fontData ? '"Noto Sans KR"' : 'system-ui, "Segoe UI", sans-serif',
           position: "relative",
           overflow: "hidden",
         }}
@@ -208,7 +215,7 @@ export default async function Image() {
     ),
     {
       ...size,
-      fonts: [{ name: "Noto Sans KR", data: notoSansBold, weight: 700 }],
+      ...(fontConfig && fontConfig.length > 0 ? { fonts: fontConfig } : {}),
     }
   );
 }

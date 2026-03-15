@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const title = seo?.title || DEFAULT_TITLE;
     const description = seo?.description || DEFAULT_DESC;
     const siteUrl = seo?.siteUrl || SITE_URL;
-    const ogImage = seo?.ogImage || `${siteUrl}/og/og-home.png`;
+    const ogImageAbs = seo?.ogImage || `${siteUrl}/opengraph-image`;
     const googleVerify = seo?.googleVerify || "-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY";
     return {
       metadataBase: new URL(siteUrl),
@@ -38,14 +38,14 @@ export async function generateMetadata(): Promise<Metadata> {
         title,
         description,
         images: [
-          { url: "/og/og-home.png", width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" },
+          { url: ogImageAbs, width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" },
         ],
       },
       twitter: {
         card: "summary_large_image",
         title,
         description: "믿을 수 있는 업소를 한눈에!",
-        images: ["/og/og-home.png"],
+        images: [ogImageAbs],
       },
       verification: { google: googleVerify },
     };
@@ -71,14 +71,14 @@ export async function generateMetadata(): Promise<Metadata> {
         title: DEFAULT_TITLE,
         description: DEFAULT_DESC,
         images: [
-          { url: "/og/og-home.png", width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" },
+          { url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" },
         ],
       },
       twitter: {
         card: "summary_large_image",
         title: DEFAULT_TITLE,
         description: "믿을 수 있는 업소를 한눈에!",
-        images: ["/og/og-home.png"],
+        images: [`${SITE_URL}/opengraph-image`],
       },
       verification: { google: "-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY" },
     };
@@ -107,6 +107,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <meta name="google-site-verification" content="-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY" />
         <script
           type="application/ld+json"

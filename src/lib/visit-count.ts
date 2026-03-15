@@ -43,8 +43,27 @@ export async function getTodayVisitorCount(): Promise<{ total: number; visitors:
   return { total: t, visitors: t - b, bots: b };
 }
 
+/** KST 00:00 기준 경과 분 (0 ~ 1440 미만) */
+function getMinutesSinceMidnightKST(): number {
+  const msKST = Date.now() + 9 * 60 * 60 * 1000;
+  const msInDay = 24 * 60 * 60 * 1000;
+  const msSinceMidnight = ((msKST % msInDay) + msInDay) % msInDay;
+  return msSinceMidnight / (60 * 1000);
+}
+
 /**
- * 메인 표시용 접속자 수 (실제 방문자 + visitor_offset)
+ * 24시 기준 점진 증가: 설정된 추가 인원(offset)을 00시~24시에 걸쳐 선형으로 반영.
+ * 00시에는 0, 24시에 가까울수록 설정값에 수렴.
+ */
+export function getEffectiveVisitorOffset(offset: number): number {
+  if (offset <= 0) return 0;
+  const minutesSinceMidnight = getMinutesSinceMidnightKST();
+  const ratio = Math.min(1, minutesSinceMidnight / (24 * 60));
+  return Math.round(offset * ratio);
+}
+
+/**
+ * 메인 표시용 접속자 수 (실제 방문자 + 24시 기준 점진 증가하는 추가 인원)
  */
 export async function getDisplayVisitorCount(): Promise<{ actual: number; offset: number; display: number }> {
   const [stats, { data: configRow }] = await Promise.all([
@@ -53,7 +72,8 @@ export async function getDisplayVisitorCount(): Promise<{ actual: number; offset
   ]);
 
   const offset = Number((configRow?.content as { visitor_offset?: number })?.visitor_offset ?? 0) || 0;
-  const display = Math.max(0, stats.visitors + offset);
+  const effectiveOffset = getEffectiveVisitorOffset(offset);
+  const display = Math.max(0, stats.visitors + effectiveOffset);
 
   return { actual: stats.visitors, offset, display };
 }

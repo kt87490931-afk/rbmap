@@ -11,6 +11,16 @@ export default function AdminDashboard() {
   const [visitorSaving, setVisitorSaving] = useState(false)
   const [visitorSaved, setVisitorSaved] = useState(false)
 
+  // 24시 KST 기준 점진 반영: 추가 인원이 00시에는 0, 24시에 가까울수록 설정값까지 증가
+  const effectiveVisitorOffset = (() => {
+    const msKST = Date.now() + 9 * 60 * 60 * 1000
+    const msInDay = 24 * 60 * 60 * 1000
+    const msSinceMidnight = ((msKST % msInDay) + msInDay) % msInDay
+    const minutesSinceMidnight = msSinceMidnight / (60 * 1000)
+    const ratio = Math.min(1, minutesSinceMidnight / (24 * 60))
+    return Math.round(visitorOffset * ratio)
+  })()
+
   const fetchCounts = useCallback(async () => {
     try {
       const [r, p, f, rev, logs, config] = await Promise.all([
@@ -74,13 +84,13 @@ export default function AdminDashboard() {
       <div className="card-box">
         <div className="card-box-title">오늘 접속자 설정</div>
         <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 12 }}>
-          메인 페이지에 &quot;오늘의접속자: (실제 방문자 + 추가 인원)&quot;으로 표시됩니다.
+          메인 페이지에는 &quot;오늘의접속자: (실제 방문자 + 추가 인원)&quot;이 <strong>24시 기준으로 점차 증가</strong>하는 방식으로 표시됩니다. 00시에는 추가 인원이 0에서 시작해, 24시에 가까울수록 설정한 추가 인원까지 천천히 반영됩니다.
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span>실제 방문자: {todayVisitors.toLocaleString()}</span>
           <span>+</span>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>추가 인원</span>
+            <span>추가 인원 (24시 목표)</span>
             <input
               type="number"
               min={0}
@@ -90,7 +100,10 @@ export default function AdminDashboard() {
             />
           </label>
           <span>=</span>
-          <strong>메인 표시: {(todayVisitors + visitorOffset).toLocaleString()}</strong>
+          <strong>메인 표시 (현재): {(todayVisitors + effectiveVisitorOffset).toLocaleString()}</strong>
+          <span style={{ color: 'var(--muted)', fontSize: 13 }}>
+            (현재 시점 반영: +{effectiveVisitorOffset.toLocaleString()})
+          </span>
           <button
             type="button"
             className="btn-save"

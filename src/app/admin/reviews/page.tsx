@@ -69,6 +69,8 @@ export default function AdminReviewsPage() {
   const [loading, setLoading] = useState(true)
   const [scheduleLoading, setScheduleLoading] = useState(true)
   const [cronStatusLoading, setCronStatusLoading] = useState(true)
+  const [manualRunLoading, setManualRunLoading] = useState(false)
+  const [manualRunMsg, setManualRunMsg] = useState('')
   const [msg, setMsg] = useState('')
   const [editItem, setEditItem] = useState<ReviewItem | null>(null)
   const [editForm, setEditForm] = useState<{ title: string; star: number; sec_overview: string; sec_lineup: string; sec_price: string; sec_facility: string; sec_summary: string } | null>(null)
@@ -116,6 +118,32 @@ export default function AdminReviewsPage() {
   useEffect(() => { fetchItems() }, [fetchItems])
   useEffect(() => { fetchNextSchedules() }, [fetchNextSchedules])
   useEffect(() => { fetchLatestCronRun() }, [fetchLatestCronRun])
+
+  async function runDueNow() {
+    setManualRunLoading(true)
+    setManualRunMsg('')
+    try {
+      const res = await fetch('/api/admin/cron-health/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({}),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setManualRunMsg(`완료: 성공 ${json.success ?? 0}건 / 처리 ${json.processed ?? 0}건`)
+        fetchNextSchedules()
+        fetchLatestCronRun()
+        fetchItems()
+      } else {
+        setManualRunMsg(json?.error ?? '실패')
+      }
+    } catch {
+      setManualRunMsg('요청 실패')
+    }
+    setManualRunLoading(false)
+    setTimeout(() => setManualRunMsg(''), 8000)
+  }
 
   /** 업체별 리뷰 수 (region|type|venue_slug → count) */
   const venueCountMap = useMemo(() => {
@@ -253,11 +281,24 @@ export default function AdminReviewsPage() {
             {latestCronRun.endedAt != null && !latestCronRun.ok && latestCronRun.msg && (
               <div style={{ marginTop: 6, fontSize: 12, color: 'var(--red)' }}>실패 원인: {latestCronRun.msg}</div>
             )}
-            <div style={{ marginTop: 6, fontSize: 11 }}>
+            <div style={{ marginTop: 6, fontSize: 11, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <Link href="/admin/cron-health" style={{ color: 'var(--gold)' }}>전체 실행 이력 보기 (크론헬스) →</Link>
+              <button
+                type="button"
+                onClick={runDueNow}
+                disabled={manualRunLoading}
+                className="btn-save"
+                style={{ padding: '6px 14px', fontSize: 12 }}
+              >
+                {manualRunLoading ? '처리 중...' : '곧 항목 수동 처리'}
+              </button>
+              {manualRunMsg && <span style={{ fontSize: 12, color: 'var(--green)' }}>{manualRunMsg}</span>}
             </div>
           </div>
         ) : null}
+        <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
+          「곧」으로 표시된 업체는 다음 가능 시각이 이미 지난 상태입니다. <strong>곧 항목 수동 처리</strong>를 누르면 지금 당장 같은 규칙(다음 가능 시각 빠른 순, 최대 25건)으로 리뷰를 생성합니다. 수동 처리해도 다음 스케줄(예: 12시간 후)은 그대로 적용됩니다.
+        </p>
         {scheduleLoading ? (
           <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
         ) : nextSchedules.length === 0 ? (

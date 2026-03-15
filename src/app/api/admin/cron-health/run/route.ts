@@ -1,5 +1,7 @@
 /**
- * 수동 실행: 선택한 제휴업체에 대해 리뷰 생성 (스케줄 무관)
+ * 수동 실행
+ * - body 없음 또는 partnerIds 빈 배열: "곧"인 항목만 스케줄대로 처리 (다음 가능 시각 지난 업체, 최대 25건)
+ * - partnerIds 있음: 선택한 제휴업체만 처리 (스케줄 무관)
  */
 import { NextResponse } from 'next/server'
 import { requireAdminOrSetup } from '@/lib/admin-auth'
@@ -13,17 +15,17 @@ export async function POST(request: Request) {
   const authErr = await requireAdminOrSetup()
   if (authErr) return authErr
 
-  let partnerIds: string[] = []
+  let partnerIds: string[] | null = null
   try {
-    const body = await request.json()
-    partnerIds = Array.isArray(body?.partnerIds) ? body.partnerIds : []
+    const body = await request.json().catch(() => ({}))
+    if (body && Array.isArray(body.partnerIds) && body.partnerIds.length > 0) {
+      partnerIds = body.partnerIds
+    }
   } catch {
-    return NextResponse.json({ error: 'partnerIds 배열이 필요합니다.' }, { status: 400 })
+    partnerIds = null
   }
-
-  if (partnerIds.length === 0) {
-    return NextResponse.json({ error: '제휴업체를 1개 이상 선택하세요.' }, { status: 400 })
-  }
+  // partnerIds가 없거나 빈 배열 → "곧" 항목 전체 처리 (runGenerateReviews(null))
+  // partnerIds 있음 → 선택 업체만 처리
 
   const startAt = Date.now()
   let healthId: string | null = null
@@ -45,6 +47,7 @@ export async function POST(request: Request) {
 
     const { results, durationMs } = await runGenerateReviews(partnerIds)
     const successCount = results.filter((r) => r.ok).length
+    const isDueRun = partnerIds === null
 
     if (healthId) {
       try {
@@ -53,7 +56,7 @@ export async function POST(request: Request) {
           .update({
             ended_at: new Date().toISOString(),
             ok: true,
-            msg: `수동 실행: ${successCount}/${results.length}건`,
+            msg: isDueRun ? `곧 항목 수동 처리: ${successCount}/${results.length}건` : `수동 실행: ${successCount}/${results.length}건`,
             processed: results.length,
             success_count: successCount,
             results,

@@ -19,19 +19,23 @@ export interface HeroProps {
   partnerCounts?: Record<string, { venues?: number; reviews?: number }>;
   /** 어드민 제휴업체 수와 연동 — 전달 시 KPI "등록 업소"를 이 값으로 표시 */
   totalVenueCount?: number | null;
+  /** 등록 지역 수(노출 지역만) — 전달 시 KPI "등록 지역" 표시 */
+  regionCount?: number | null;
+  /** 누적 리뷰 수 — 전달 시 KPI "누적 리뷰" 표시 */
+  totalReviewCount?: number | null;
 }
 
 const DEFAULT: HeroData = {
-  eyebrow: "6시간 자동 업데이트",
+  eyebrow: "20분 자동 업데이트",
   h1_line1: "전국 룸빵 정보,",
   h1_line2: "여기서 다 찾자",
   desc_1: "검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다.",
   desc_2: "최신 정보로 실패 없는 밤을 약속합니다.",
   kpis: [
-    { num: "14", label: "등록 지역" },
-    { num: "380+", label: "등록 업소" },
-    { num: "3,200+", label: "누적 리뷰" },
-    { num: "6H", label: "업데이트" },
+    { num: "—", label: "등록 지역" },
+    { num: "—", label: "등록 업소" },
+    { num: "—", label: "누적 리뷰" },
+    { num: "20분", label: "업데이트" },
   ],
   btns: [
     { text: "🗺️ 지역 선택하기", href: "/regions" },
@@ -39,14 +43,15 @@ const DEFAULT: HeroData = {
   ],
 };
 
-export default function Hero({ data, visitorCount, regions = [], partnerCounts, totalVenueCount }: HeroProps) {
+export default function Hero({ data, visitorCount, regions = [], partnerCounts, totalVenueCount, regionCount, totalReviewCount }: HeroProps) {
   const d = { ...DEFAULT, ...data };
   let kpis = d.kpis ?? DEFAULT.kpis ?? [];
-  if (totalVenueCount != null && totalVenueCount >= 0) {
-    kpis = kpis.map((k) =>
-      k.label === "등록 업소" || k.label === "제휴업소" ? { ...k, num: String(totalVenueCount) } : k
-    );
-  }
+  kpis = kpis.map((k) => {
+    if (k.label === "등록 업소" || k.label === "제휴업소") return totalVenueCount != null && totalVenueCount >= 0 ? { ...k, num: String(totalVenueCount) } : k;
+    if (k.label === "등록 지역") return regionCount != null && regionCount >= 0 ? { ...k, num: String(regionCount) } : k;
+    if (k.label === "누적 리뷰") return totalReviewCount != null && totalReviewCount >= 0 ? { ...k, num: String(totalReviewCount) } : k;
+    return k;
+  });
   const btns = d.btns ?? DEFAULT.btns ?? [];
   const eyebrowText =
     visitorCount != null

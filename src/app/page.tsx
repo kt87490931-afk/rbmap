@@ -72,6 +72,8 @@ export default async function Home() {
   const REVIEW_DISPLAY_OPTIONS = [3, 6, 9, 12, 15, 30, 45, 60];
   const reviewDisplayLimit = REVIEW_DISPLAY_OPTIONS.includes(reviewDisplayLimitRaw) ? reviewDisplayLimitRaw : 6;
   const totalVenueCount = Object.values(partnerCounts).reduce((sum, c) => sum + (c?.venues ?? 0), 0);
+  const regionCount = regions.filter((r) => !r.coming).length;
+  const totalReviewCount = Object.values(reviewCountsByRegion).reduce((sum, n) => sum + (n ?? 0), 0);
   const partnerCountsWithReviews: Record<string, { venues: number; reviews: number }> = {};
   for (const [slug, c] of Object.entries(partnerCounts)) {
     partnerCountsWithReviews[slug] = {
@@ -168,6 +170,8 @@ export default async function Home() {
           regions={regions}
           partnerCounts={partnerCountsWithReviews}
           totalVenueCount={totalVenueCount}
+          regionCount={regionCount}
+          totalReviewCount={totalReviewCount}
         />
       </SectionWithSettings>
       <div className="gold-divider" />

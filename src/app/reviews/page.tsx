@@ -11,7 +11,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
 
 export const metadata: Metadata = {
   title: '전체 리뷰 | 강남·수원·동탄·제주 가라오케·하이퍼블릭 이용 후기 | 룸빵여지도',
-  description: '강남·수원·동탄·제주 가라오케·하이퍼블릭·쩜오 이용 후기 모음. AI가 6시간마다 최신 리뷰를 업데이트합니다.',
+  description: '강남·수원·동탄·제주 가라오케·하이퍼블릭·쩜오 이용 후기 모음. AI가 20분마다 최신 리뷰를 업데이트합니다.',
   alternates: { canonical: `${SITE_URL}/reviews` },
 }
 
@@ -57,13 +57,13 @@ export default async function ReviewsListPage({
             <h1 className="ph-title">전체 <em>이용 후기</em></h1>
             <p className="ph-desc">
               검증된 전국 1종 및 2종 업소와 실제 이용 후기가 당신의 선택을 돕습니다.<br />
-              6시간마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.
+              20분마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.
             </p>
           </div>
           <div className="ph-kpi">
             <div className="ph-kpi-item"><strong>{posts.length}</strong><span>리뷰 수</span></div>
             <div className="ph-kpi-item"><strong>4.7</strong><span>전체 평점</span></div>
-            <div className="ph-kpi-item"><strong>6H</strong><span>업데이트</span></div>
+            <div className="ph-kpi-item"><strong>20분</strong><span>업데이트</span></div>
           </div>
         </div>
       </section>

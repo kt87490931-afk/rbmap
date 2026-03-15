@@ -22,16 +22,16 @@ export type SiteSectionKey =
 
 const FALLBACKS: Record<SiteSectionKey, unknown> = {
   hero: {
-    eyebrow: '6시간 자동 업데이트',
+    eyebrow: '20분 자동 업데이트',
     h1_line1: '전국 룸빵 정보,',
     h1_line2: '여기서 다 찾자',
     desc_1: '검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다.',
     desc_2: '최신 정보로 실패 없는 밤을 약속합니다.',
     kpis: [
-      { num: '14', label: '등록 지역' },
-      { num: '380+', label: '등록 업소' },
-      { num: '3,200+', label: '누적 리뷰' },
-      { num: '6H', label: '업데이트' },
+      { num: '—', label: '등록 지역' },
+      { num: '—', label: '등록 업소' },
+      { num: '—', label: '누적 리뷰' },
+      { num: '20분', label: '업데이트' },
     ],
     btns: [
       { text: '🗺 지역 선택하기', href: '#regions' },
@@ -57,9 +57,9 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
   },
   about: {
     intro_label: 'ABOUT 룸빵여지도',
-    intro_text: '<strong>룸빵여지도</strong>는 강남·수원·동탄·제주 등 전국 주요 지역의 <strong>가라오케·룸싸롱·하이퍼블릭·셔츠룸·퍼블릭</strong> 정보를 한눈에 비교할 수 있는 국내 최대 유흥 정보 허브입니다. AI가 Google Places 데이터를 기반으로 <strong>6시간마다 자동 업데이트</strong>하여 항상 가장 최신의 정보를 제공합니다.',
+    intro_text: '<strong>룸빵여지도</strong>는 강남·수원·동탄·제주 등 전국 주요 지역의 <strong>가라오케·룸싸롱·하이퍼블릭·셔츠룸·퍼블릭</strong> 정보를 한눈에 비교할 수 있는 국내 최대 유흥 정보 허브입니다. AI가 Google Places 데이터를 기반으로 <strong>20분마다 자동 업데이트</strong>하여 항상 가장 최신의 정보를 제공합니다.',
     cards: [
-      { icon: '🤖', title: 'AI 기반 자동 업데이트', desc: 'AI가 구글 플레이스 데이터를 분석해 6시간마다 리뷰와 업소 정보를 자동 생성합니다.' },
+      { icon: '🤖', title: 'AI 기반 자동 업데이트', desc: 'AI가 구글 플레이스 데이터를 분석해 20분마다 리뷰와 업소 정보를 자동 생성합니다.' },
       { icon: '📍', title: '전국 지역별 맞춤 정보', desc: '강남·수원 인계동·동탄·제주를 시작으로 전국 14개 지역으로 확장 중입니다.' },
       { icon: '💰', title: '투명한 가격 정보 공개', desc: '지역별·업종별 1인 평균 주대를 주 1회 업데이트합니다.' },
     ],
@@ -177,7 +177,7 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
       { badge: 'nb-n', text: '<strong>인천·부산</strong> 4월 오픈 예정', date: '03.07' },
     ],
     faq: [
-      { q: '리뷰는 어떻게 작성되나요?', a: 'AI가 구글 플레이스 데이터를 기반으로 6시간마다 자동 생성합니다.' },
+      { q: '리뷰는 어떻게 작성되나요?', a: 'AI가 구글 플레이스 데이터를 기반으로 20분마다 자동 생성합니다.' },
       { q: '업소 등록은 어떻게 하나요?', a: '광고 문의 페이지를 통해 등록 신청이 가능합니다. 심사 후 등록됩니다.' },
       { q: '가격 정보는 최신인가요?', a: '가격은 주 1회 업데이트되며, 실제 방문 시 변동이 있을 수 있습니다.' },
     ],
@@ -197,7 +197,7 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
     btn_href: 'https://t.me/rbbmap',
   },
   footer: {
-    desc: '믿을 수 있는 업소를 한눈에! 룸빵여지도에서 전국 유흥 정보를 확인하세요. 검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다. 6시간마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.',
+    desc: '믿을 수 있는 업소를 한눈에! 룸빵여지도에서 전국 유흥 정보를 확인하세요. 검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다. 20분마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.',
     copyright: '© 2025 룸빵여지도. All rights reserved.',
     links: [
       { label: '개인정보처리방침', href: '/privacy' },
@@ -208,7 +208,7 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
   region_sidebar: {} as Record<string, { priceRows?: { type: string; val: string; chg: string }[]; priceNote?: string; tips?: { title: string; text: string; color: string }[]; nearbyRegions?: { slug: string; name: string; venues: number; reviews: number }[] }>,
   seo: {
     title: '룸빵여지도 | 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 정보',
-    description: '믿을 수 있는 업소를 한눈에! 룸빵여지도에서 전국 유흥 정보를 확인하세요. 검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다. 6시간마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.',
+    description: '믿을 수 있는 업소를 한눈에! 룸빵여지도에서 전국 유흥 정보를 확인하세요. 검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다. 20분마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.',
     ogImage: 'https://rbbmap.com/og/og-home.png',
     siteUrl: 'https://rbbmap.com',
     googleVerify: '-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY',

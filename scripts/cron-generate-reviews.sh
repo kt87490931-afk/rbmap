@@ -2,7 +2,7 @@
 # 리뷰 자동생성 Cron 래퍼 (DigitalOcean rbmap 서버용)
 # .env.production에서 CRON_SECRET 또는 CRON_GENERATE_REVIEWS_SECRET 로드 후 API 호출
 #
-# 스케줄: 30분마다 (0,30 * * * *) → 업체별 다음 가능 시각에 맞춰 처리
+# 스케줄: 20분마다 (0,20,40 * * * *) → 업체별 다음 가능 시각에 맞춰 처리 (테스트용; 운영 시 30분마다로 변경 가능)
 # 설정: scripts/setup-cron-rbmap.sh 실행 또는 crontab -e 로 추가
 #
 LOG_DIR="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)/logs"

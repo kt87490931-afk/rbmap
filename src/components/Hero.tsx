@@ -17,6 +17,8 @@ export interface HeroProps {
   visitorCount?: number | null;
   regions?: Region[];
   partnerCounts?: Record<string, { venues?: number; reviews?: number }>;
+  /** 어드민 제휴업체 수와 연동 — 전달 시 KPI "등록 업소"를 이 값으로 표시 */
+  totalVenueCount?: number | null;
 }
 
 const DEFAULT: HeroData = {
@@ -37,9 +39,14 @@ const DEFAULT: HeroData = {
   ],
 };
 
-export default function Hero({ data, visitorCount, regions = [], partnerCounts }: HeroProps) {
+export default function Hero({ data, visitorCount, regions = [], partnerCounts, totalVenueCount }: HeroProps) {
   const d = { ...DEFAULT, ...data };
-  const kpis = d.kpis ?? DEFAULT.kpis ?? [];
+  let kpis = d.kpis ?? DEFAULT.kpis ?? [];
+  if (totalVenueCount != null && totalVenueCount >= 0) {
+    kpis = kpis.map((k) =>
+      k.label === "등록 업소" || k.label === "제휴업소" ? { ...k, num: String(totalVenueCount) } : k
+    );
+  }
   const btns = d.btns ?? DEFAULT.btns ?? [];
   const eyebrowText =
     visitorCount != null

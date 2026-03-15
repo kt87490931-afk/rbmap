@@ -64,6 +64,7 @@ export default async function Home() {
   ]);
 
   const feedLimit = feedConfig?.display_limit ?? 10;
+  const totalVenueCount = Object.values(partnerCounts).reduce((sum, c) => sum + (c?.venues ?? 0), 0);
 
   const [partnersForWidgets, reviewPosts, reviewPostsByClick] = await Promise.all([
     getPartners(50),
@@ -148,6 +149,7 @@ export default async function Home() {
           visitorCount={visitorDisplay}
           regions={regions}
           partnerCounts={partnerCounts}
+          totalVenueCount={totalVenueCount}
         />
       </SectionWithSettings>
       <div className="gold-divider" />

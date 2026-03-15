@@ -203,8 +203,9 @@ const INTRO_BAN_PATTERN =
 const TEXT_ONLY_INSTRUCTION = `
 [출력 형식] 반드시 순수 텍스트만 출력해라. JSON, 코드, 마크다운(백틱), 설명 문장 절대 금지.
 [금지] 이모지(emoji) 절대 사용 금지.
-[필수 분량] 3,000자 이상 4,000자 미만. 단락은 빈 줄(엔터 두 번)로 구분.
-[구성] 첫 단락은 [오프닝 지시]에 맞게 핵심 요약(350~450자). 이어서 [포커스 지시]에 맞게 본문 단락들을 이어 써라.
+[필수 분량 - 반드시 준수] 전체 글자 수 3,000자 이상 4,000자 미만. 3,000자 미만이면 실패로 간주하므로 반드시 길게 작성할 것.
+[금지] 짧게 요약하거나 마무리하지 말 것. 본문을 여러 단락으로 풀어서 쓸 것.
+[구성] 단락은 빈 줄(엔터 두 번)로 구분. 첫 단락은 [오프닝 지시]에 맞게 핵심 요약(350~450자). 이어서 [포커스 지시]에 맞게 본문 단락을 6개 이상, 각 400자 내외로 이어 써라.
 `
 
 /** 서버 측 맵핑: 평문을 lead / quote / body_paragraphs 로 나눔 */
@@ -260,7 +261,7 @@ export async function generateVenueIntro(
   basePrompt += `[포커스 지시] ${focus.instruction}\n`
   basePrompt += TEXT_ONLY_INSTRUCTION
   const dataBlock = buildDataBlock(data, keywords)
-  const fullPrompt = basePrompt + '\n' + dataBlock
+  const fullPrompt = basePrompt + '\n' + dataBlock + '\n\n[최종 확인] 위 데이터를 바탕으로 반드시 3,000자 이상 되는 업체소개글만 출력할 것. 3,000자 미만이면 사용 불가이므로 본문을 충분히 길게 작성할 것.'
 
   const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`
   const url = `${baseUrl}?key=${encodeURIComponent(apiKey)}`

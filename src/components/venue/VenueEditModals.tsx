@@ -316,7 +316,7 @@ export function VenueEditModals({ regionSlug, categorySlug, venueSlug, data }: V
   const introLead = data.introLead ?? (data.introParagraphs ?? [])[0] ?? "";
   const introQuote = data.introQuote ?? "";
   const introBody = (data.introBodyParagraphs ?? (data.introParagraphs ?? []).slice(1)).join("\n\n") || "입장부터 퇴장까지 1:1 전담 실장이 밀착 관리합니다.";
-  const priceLead = data.priceLead ?? "달토는 입장 전 가격을 명확히 안내하며, 안내받은 금액 그대로 결제됩니다.";
+  const priceLead = data.priceLead ?? `${data.name}는 입장 전 가격을 명확히 안내하며, 안내받은 금액 그대로 결제됩니다.`;
   const priceRows: PriceRow[] = (data.priceRows ?? []).length > 0 ? data.priceRows! : [
     { name: "기본 세트", desc: "양주 1병 + 안주 + 초이스", duration: "2인 이상·2시간", price: "55만원~", badge: "recommend" },
     { name: "프리미엄 세트", desc: "양주 2병 + 안주 풀세팅 + 초이스", duration: "2인 이상·3시간", price: "85만원~", badge: "popular" },
@@ -553,7 +553,7 @@ export function VenueEditModals({ regionSlug, categorySlug, venueSlug, data }: V
                 defaultValue={((data.seoCols ?? []) as { blocks: { type: string; content: string }[] }[]).map((col) =>
                   col.blocks.map((b) => (b.type === "h3" ? `### ${b.content}` : b.content)).join("\n\n")
                 ).join("\n---\n")}
-                placeholder="### 달토 가라오케란? — 강남 가라오케 1위&#10;&#10;본문 내용...&#10;&#10;---&#10;&#10;### 이용 방법&#10;&#10;다음 섹션 본문..."
+                placeholder={`### ${data.name}란? — 업종 소개&#10;&#10;본문 내용...&#10;&#10;---&#10;&#10;### 이용 방법&#10;&#10;다음 섹션 본문...`}
               />
             </div>
             <div className="mf-row" style={{ marginTop: 16 }}>
@@ -562,7 +562,7 @@ export function VenueEditModals({ regionSlug, categorySlug, venueSlug, data }: V
                 id="m-seo-keywords"
                 rows={6}
                 defaultValue={((data.seoKwLinks ?? []) as { href: string; text: string }[]).map((k) => (k.href && k.href !== "#" ? `${k.href}|${k.text}` : k.text)).join("\n")}
-                placeholder="/gangnam/karaoke/dalto|달토 가라오케&#10;달토 가라오케 후기&#10;/gangnam|강남 유흥 정보"
+                placeholder="경로|표시 텍스트 (한 줄에 하나). 예: /지역/업종/업소슬러그|업소명"
               />
             </div>
           </div>

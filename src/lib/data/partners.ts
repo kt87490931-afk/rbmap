@@ -77,14 +77,18 @@ const REGION_NAME_TO_SLUG: Record<string, string> = {
   수원: "suwon",
   "수원 인계동": "suwon",
   동탄: "dongtan",
+  오산: "osan",
   제주: "jeju",
 }
 const REGION_SLUG_TO_NAME: Record<string, string> = {
   gangnam: "강남",
   suwon: "수원 인계동",
   dongtan: "동탄",
+  osan: "오산",
   jeju: "제주",
 }
+
+const REGION_ORDER = ["gangnam", "suwon", "dongtan", "osan", "jeju"]
 
 export async function getRegionsWithPartners(): Promise<{ slug: string; name: string }[]> {
   const all = await getPartners()
@@ -96,10 +100,9 @@ export async function getRegionsWithPartners(): Promise<{ slug: string; name: st
       slugSet.add(slug)
     }
     const hrefSlug = p.href?.replace(/^\//, "").split("/")[0]
-    if (hrefSlug && (REGION_SLUG_TO_NAME[hrefSlug] || ["gangnam", "suwon", "dongtan", "jeju"].includes(hrefSlug))) slugSet.add(hrefSlug)
+    if (hrefSlug && (REGION_SLUG_TO_NAME[hrefSlug] || REGION_ORDER.includes(hrefSlug))) slugSet.add(hrefSlug)
   }
-  const order = ["gangnam", "suwon", "dongtan", "jeju"]
-  return order.filter((s) => slugSet.has(s)).map((s) => ({ slug: s, name: REGION_SLUG_TO_NAME[s] ?? s }))
+  return REGION_ORDER.filter((s) => slugSet.has(s)).map((s) => ({ slug: s, name: REGION_SLUG_TO_NAME[s] ?? s }))
 }
 
 /** 지역별 제휴업체 수 (인근 지역 바로가기 등용) */

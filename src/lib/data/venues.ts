@@ -78,11 +78,12 @@ export const SLUG_TO_TYPE: Record<string, string> = Object.fromEntries(
   Object.entries(TYPE_TO_SLUG).map(([k, v]) => [v, k])
 );
 
-export const REGION_SLUGS = ["gangnam", "suwon", "dongtan", "jeju"] as const;
+export const REGION_SLUGS = ["gangnam", "suwon", "dongtan", "osan", "jeju"] as const;
 export const REGION_SLUG_TO_NAME: Record<string, string> = {
   gangnam: "강남",
   suwon: "수원 인계동",
   dongtan: "동탄",
+  osan: "오산",
   jeju: "제주",
 };
 
@@ -92,6 +93,7 @@ export const REGION_NAME_TO_SLUG: Record<string, string> = {
   "수원": "suwon",
   "수원 인계동": "suwon",
   동탄: "dongtan",
+  오산: "osan",
   제주: "jeju",
 };
 
@@ -759,6 +761,17 @@ function partnerToVenueDetail(
   const regionName = REGION_SLUG_TO_NAME[regionSlug] ?? p.region ?? regionSlug;
   const typeName = SLUG_TO_TYPE[categorySlug] ?? p.type ?? "";
   const v2 = paras.length > 0 ? plainToV2Intro(p.name, regionName, typeName, paras) : {};
+  const venueUrl = buildVenueUrl(regionSlug, categorySlug, venueSlug);
+
+  // 제휴업체는 업소명 기준 문구 사용. 샘플(달토) 가이드/리뷰 미사용 — DB·venue_edits에서만 표시
+  const priceLeadDefault = `${p.name}는 입장 전 가격을 명확히 안내하며, 안내받은 금액 그대로 결제됩니다.`;
+  const seoKwLinksForVenue: VenueDetail["seoKwLinks"] = [
+    { href: venueUrl, text: p.name },
+    { href: `${venueUrl}/reviews`, text: `${p.name} 후기` },
+    { href: venueUrl, text: `${p.name} 가격` },
+    { href: venueUrl, text: `${p.name} 위치` },
+    { href: `/${regionSlug}`, text: `${regionName} 유흥 정보` },
+  ];
 
   return {
     ...base,
@@ -769,7 +782,7 @@ function partnerToVenueDetail(
     regionSlug,
     type: p.type,
     categorySlug,
-    url: buildVenueUrl(regionSlug, categorySlug, venueSlug),
+    url: venueUrl,
     ad: true,
     rating: "4.5",
     stars: p.stars ?? "★★★★☆",
@@ -783,15 +796,16 @@ function partnerToVenueDetail(
     infoCards: base.infoCards ?? [],
     introTitle: `${p.name} 소개`,
     introParagraphs: paras.length > 0 ? paras : [p.desc?.trim() || "업소 소개를 입력해 주세요."],
+    priceLead: priceLeadDefault,
     priceRows: base.priceRows ?? [],
     priceNote: base.priceNote ?? "",
     opList: base.opList ?? [],
     stats: base.stats ?? [],
     nearbyVenues: base.nearbyVenues ?? [],
     similarVenues: base.similarVenues ?? [],
-    seoKwLinks: base.seoKwLinks ?? [],
-    seoCols: base.seoCols ?? [],
-    reviews: base.reviews ?? [],
+    seoKwLinks: seoKwLinksForVenue,
+    seoCols: [],
+    reviews: [],
     reviewBars: base.reviewBars ?? [],
     aspects: base.aspects ?? [],
   };

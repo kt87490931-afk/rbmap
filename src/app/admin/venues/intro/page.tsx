@@ -25,13 +25,6 @@ const TYPE_OPTIONS = [
   { value: 'jjomoh', label: '쩜오' },
 ]
 
-const REGION_OPTIONS = [
-  { value: 'gangnam', label: '강남' },
-  { value: 'suwon', label: '수원' },
-  { value: 'dongtan', label: '동탄' },
-  { value: 'jeju', label: '제주' },
-]
-
 const toOptions = (m: Record<string, string>) => Object.entries(m).map(([id, label]) => ({ id, label }))
 
 const INTERIOR_OPTIONS = toOptions(INTERIOR_LABELS)
@@ -53,8 +46,15 @@ interface PartnerOption {
   type: string
 }
 
+/** 지역관리(admin/regions)에서 등록한 지역 목록 — API에서 로드 */
+interface RegionOption {
+  value: string
+  label: string
+}
+
 export default function AdminVenueIntroPage() {
   const [partners, setPartners] = useState<PartnerOption[]>([])
+  const [regionOptions, setRegionOptions] = useState<RegionOption[]>([])
   const [selectedPartnerId, setSelectedPartnerId] = useState('')
 
   const [name, setName] = useState('')
@@ -117,6 +117,19 @@ export default function AdminVenueIntroPage() {
     } catch { /* ignore */ }
   }, [])
 
+  /** 지역관리에서 등록한 지역 목록 로드 — 지역 추가 시 업체소개글 작성 지역 선택에 반영 */
+  const fetchRegions = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/regions', { credentials: 'include' })
+      const data = await res.json()
+      const list = Array.isArray(data) ? data : []
+      setRegionOptions(list.map((r: { slug: string; name: string }) => ({
+        value: r.slug || '',
+        label: r.name || r.slug || '',
+      })))
+    } catch { /* ignore */ }
+  }, [])
+
   const buildContentFromV2 = (v2: { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }) => {
     if (!v2?.intro) return ''
     const parts = [
@@ -140,8 +153,9 @@ export default function AdminVenueIntroPage() {
 
   useEffect(() => {
     fetchPartners()
+    fetchRegions()
     fetchSavedIntros()
-  }, [fetchPartners, fetchSavedIntros])
+  }, [fetchPartners, fetchRegions, fetchSavedIntros])
 
   const loadId = searchParams.get('load')
   useEffect(() => {
@@ -419,7 +433,7 @@ export default function AdminVenueIntroPage() {
                 style={{ width: '100%' }}
               >
                 <option value="">— 선택 —</option>
-                {REGION_OPTIONS.map((r) => (
+                {regionOptions.map((r) => (
                   <option key={r.value} value={r.value}>{r.label}</option>
                 ))}
               </select>
@@ -773,7 +787,7 @@ export default function AdminVenueIntroPage() {
             </div>
             <div style={{ marginBottom: 8 }}>
               <span style={{ color: 'var(--muted)' }}>📍 지역</span>
-              <div>{REGION_OPTIONS.find((r) => r.value === region)?.label || region || '—'}</div>
+              <div>{regionOptions.find((r) => r.value === region)?.label || region || '—'}</div>
             </div>
             <div style={{ marginBottom: 8 }}>
               <span style={{ color: 'var(--muted)' }}>💼 업종</span>

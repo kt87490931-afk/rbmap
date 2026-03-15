@@ -7,9 +7,12 @@ import { getRegions } from "@/lib/data/regions";
 import { getPartnerCountsByRegion } from "@/lib/data/partners";
 import { getSiteSection } from "@/lib/data/site";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rbbmap.com";
+
 export const metadata = {
   title: "전체 지역 | 강남·수원·동탄·제주 가라오케·유흥 정보 | 룸빵여지도",
   description: "강남, 수원, 동탄, 제주 등 전국 지역별 가라오케·룸싸롱·하이퍼블릭 정보. 어드민에 등록된 지역을 한눈에 확인하세요.",
+  alternates: { canonical: `${SITE_URL}/regions` },
 };
 
 export default async function RegionsPage() {

@@ -168,6 +168,8 @@ const SEO_CONTENT: Record<string, { cols: { blocks: { type: "h3" | "p"; content:
   },
 };
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rbbmap.com";
+
 export async function generateMetadata({ params }: { params: Promise<{ region: string }> }) {
   const { region } = await params;
   const regionData = await getRegionBySlug(region);
@@ -177,11 +179,13 @@ export async function generateMetadata({ params }: { params: Promise<{ region: s
   const title = `${name} 가라오케·하이퍼블릭 추천 | 룸빵여지도`;
   const venues = regionData?.venues ?? 0;
   const reviews = regionData?.reviews ?? 0;
+  const canonicalUrl = `${SITE_URL}/${region}`;
   return {
     title,
     description: `${name} 가라오케·하이퍼블릭·${cfg?.sub ?? ""} 정보. ${name} 인기 업소 ${venues}곳의 실제 이용 후기와 가격을 6시간마다 업데이트합니다.`,
     keywords: `${name}가라오케, ${name}하이퍼블릭, ${name}룸싸롱, ${name}유흥`,
-    openGraph: { title: `${name} 가라오케·하이퍼블릭 추천 | 룸빵여지도`, description: `${name} 유흥 정보. ${venues}개 업소, ${reviews}개 리뷰, 6시간 업데이트.`, type: "website" },
+    openGraph: { title: `${name} 가라오케·하이퍼블릭 추천 | 룸빵여지도`, description: `${name} 유흥 정보. ${venues}개 업소, ${reviews}개 리뷰, 6시간 업데이트.`, type: "website", url: canonicalUrl },
+    alternates: { canonical: canonicalUrl },
   };
 }
 

@@ -7,9 +7,12 @@ import { getRegions } from '@/lib/data/regions'
 import { getReviewPostsList, buildReviewUrl, getRegionName, getTypeName, formatStars, REGION_PILL_STYLE } from '@/lib/data/review-posts'
 import { getSiteSection } from '@/lib/data/site'
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
+
 export const metadata: Metadata = {
   title: '전체 리뷰 | 강남·수원·동탄·제주 가라오케·하이퍼블릭 이용 후기 | 룸빵여지도',
   description: '강남·수원·동탄·제주 가라오케·하이퍼블릭·쩜오 이용 후기 모음. AI가 6시간마다 최신 리뷰를 업데이트합니다.',
+  alternates: { canonical: `${SITE_URL}/reviews` },
 }
 
 export const dynamic = 'force-dynamic'

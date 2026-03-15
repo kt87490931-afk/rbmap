@@ -17,7 +17,7 @@ import {
 import { REGION_SLUG_TO_NAME, REGION_SLUGS } from '@/lib/data/venues'
 import { getSiteSection } from '@/lib/data/site'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://roombang.co.kr'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
 
 type Params = { region: string; category: string; venue: string; slug: string }
 
@@ -36,14 +36,21 @@ export async function generateMetadata({
 
   const title = `${post.title} | 룸빵여지도`
   const desc = post.meta_description || post.sec_overview?.slice(0, 120) || `${post.venue} ${getTypeName(post.type)} 이용 후기`
+  const canonicalPath = buildReviewUrl(region, category, venue, slug)
+  const canonicalUrl = `${SITE_URL}${canonicalPath}`
+  const ogImage = `${SITE_URL}/og/og-home.png`
 
   return {
     title,
     description: desc,
     openGraph: {
       title: `${post.title} | 룸빵여지도`,
+      description: desc,
       type: 'article',
+      url: canonicalUrl,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: `${post.venue} 이용 후기 | 룸빵여지도` }],
     },
+    alternates: { canonical: canonicalUrl },
     robots: { index: true, follow: true },
   }
 }

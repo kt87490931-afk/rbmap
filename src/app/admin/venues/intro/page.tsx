@@ -20,6 +20,7 @@ import {
 const TYPE_OPTIONS = [
   { value: 'karaoke', label: '가라오케' },
   { value: 'highpublic', label: '하이퍼블릭' },
+  { value: 'room-salon', label: '룸싸롱' },
   { value: 'shirtsroom', label: '셔츠룸' },
   { value: 'public', label: '퍼블릭' },
   { value: 'jjomoh', label: '쩜오' },

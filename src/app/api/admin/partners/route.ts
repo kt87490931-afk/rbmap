@@ -43,6 +43,7 @@ export async function POST(request: Request) {
       period_days: days,
       period_end: periodEnd.toISOString().slice(0, 10),
       is_active: body.is_active !== false,
+      review_schedule_preset: body.review_schedule_preset ?? '8h_3',
     })
     .select()
     .single()

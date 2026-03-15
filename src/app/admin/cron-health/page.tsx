@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { REVIEW_SCHEDULE_PRESETS, type ReviewSchedulePresetId } from '@/lib/review-schedule'
 
 interface CronLogItem {
   id: string
@@ -30,6 +31,7 @@ interface CronHealthResponse {
 interface PartnerOption {
   id: string
   name: string
+  review_schedule_preset?: string
 }
 
 export default function AdminCronHealthPage() {
@@ -267,7 +269,7 @@ export default function AdminCronHealthPage() {
 
       {renderJobSection(
         '📌 리뷰 자동 생성',
-        'Cron은 KST 0시, 6시, 12시, 18시에 실행됩니다. 적용된 소개글이 있는 제휴업체마다 리뷰 1건씩 생성됩니다.',
+        'Cron은 KST 0시, 6시, 12시, 18시 실행. 제휴업체별 스케줄(6h/4건, 8h/3건, 12h/2건, 24h/1건)에 따라 간격·일 한도 적용.',
         reviewsJob,
         (items) => renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as { name?: string }[]).some((x) => x.name)),
         () => (
@@ -282,12 +284,17 @@ export default function AdminCronHealthPage() {
                   <span style={{ fontSize: 12, color: 'var(--muted)' }}>{selectedIds.size}개 선택</span>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-                  {partners.map((p) => (
-                    <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
-                      <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => togglePartner(p.id)} />
-                      {p.name}
-                    </label>
-                  ))}
+                  {partners.map((p) => {
+                    const presetId = (p.review_schedule_preset || '8h_3') as ReviewSchedulePresetId
+                    const presetLabel = REVIEW_SCHEDULE_PRESETS[presetId]?.label ?? presetId
+                    return (
+                      <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
+                        <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => togglePartner(p.id)} />
+                        <span>{p.name}</span>
+                        <span style={{ fontSize: 11, color: 'var(--muted)' }}>({presetLabel})</span>
+                      </label>
+                    )
+                  })}
                 </div>
                 <button
                   type="button"

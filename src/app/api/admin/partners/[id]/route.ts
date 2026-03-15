@@ -15,7 +15,7 @@ export async function PATCH(
   const body = await _request.json()
 
   const update: Record<string, unknown> = {}
-  const keys = ['href', 'icon', 'region', 'type', 'type_class', 'type_style', 'name', 'stars', 'contact', 'tags', 'location', 'desc', 'char_count', 'sort_order', 'period_days', 'period_end', 'is_active']
+  const keys = ['href', 'icon', 'region', 'type', 'type_class', 'type_style', 'name', 'stars', 'contact', 'tags', 'location', 'desc', 'char_count', 'sort_order', 'period_days', 'period_end', 'is_active', 'review_schedule_preset']
   for (const k of keys) {
     if (body[k] !== undefined) update[k] = body[k]
   }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { buildPartnerHrefFromParts, parseUrlSuffixFromHref } from '@/lib/partner-url'
 import { SLUG_TO_TYPE } from '@/lib/data/venues'
+import { REVIEW_SCHEDULE_PRESETS, type ReviewSchedulePresetId } from '@/lib/review-schedule'
 
 interface PartnerItem {
   id: string
@@ -20,6 +21,7 @@ interface PartnerItem {
   period_days?: number
   period_end?: string
   is_active?: boolean
+  review_schedule_preset?: string
 }
 
 interface RegionItem {
@@ -62,6 +64,7 @@ export default function AdminPartnersPage() {
     tags: '',
     period_days: 30,
     is_active: true,
+    review_schedule_preset: '8h_3' as ReviewSchedulePresetId,
   })
 
   const fetchItems = useCallback(async () => {
@@ -127,12 +130,13 @@ export default function AdminPartnersPage() {
           tags: form.tags ? form.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
           period_days: form.period_days || 30,
           is_active: form.is_active !== false,
+          review_schedule_preset: form.review_schedule_preset || '8h_3',
         }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
         setItems((prev) => [...prev, data])
-        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true })
+        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true, review_schedule_preset: '8h_3' })
         showMsg('추가 완료!')
       } else {
         const errMsg = data.error || (res.status === 403 ? 'OTP 인증이 필요합니다. OTP 인증 페이지에서 다시 인증해 주세요.' : '추가 실패')
@@ -175,6 +179,7 @@ export default function AdminPartnersPage() {
     const categorySlug = parts[1] ?? ''
     const typeLabel = SLUG_TO_TYPE[categorySlug] || item.type
     const urlSuffix = parts[2] ?? parseUrlSuffixFromHref(item.href)
+    const preset = (item.review_schedule_preset && (REVIEW_SCHEDULE_PRESETS as Record<string, unknown>)[item.review_schedule_preset]) ? item.review_schedule_preset : '8h_3'
     setForm({
       regionSlug,
       type: typeLabel,
@@ -188,6 +193,7 @@ export default function AdminPartnersPage() {
       tags: (item.tags || []).join(', '),
       period_days: item.period_days ?? 30,
       is_active: item.is_active !== false,
+      review_schedule_preset: preset as ReviewSchedulePresetId,
     })
     setEditingId(item.id)
   }
@@ -223,6 +229,7 @@ export default function AdminPartnersPage() {
       tags: form.tags ? form.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
       period_days: form.period_days || 30,
       is_active: form.is_active !== false,
+      review_schedule_preset: form.review_schedule_preset || '8h_3',
     }
     try {
       const res = await fetch(`/api/admin/partners/${editingId}`, {
@@ -235,7 +242,7 @@ export default function AdminPartnersPage() {
       if (res.ok) {
         setItems((prev) => prev.map((p) => (p.id === editingId ? data : p)))
         setEditingId(null)
-        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true })
+        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true, review_schedule_preset: '8h_3' })
         showMsg('수정 완료!')
       } else {
         showMsg(data.error || '수정 실패', 'error')
@@ -327,6 +334,11 @@ export default function AdminPartnersPage() {
             <option value={60}>60일</option>
             <option value={90}>90일</option>
           </select>
+          <select className="form-input" value={form.review_schedule_preset} onChange={(e) => setForm((f) => ({ ...f, review_schedule_preset: e.target.value as ReviewSchedulePresetId }))} title="리뷰 자동생성 스케줄 (24시간 기준)">
+            {(Object.keys(REVIEW_SCHEDULE_PRESETS) as ReviewSchedulePresetId[]).map((id) => (
+              <option key={id} value={id}>{REVIEW_SCHEDULE_PRESETS[id].label}</option>
+            ))}
+          </select>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
             <input type="checkbox" checked={form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} />
             활성화 (비활성 시 리뷰 생성 제외)
@@ -338,7 +350,7 @@ export default function AdminPartnersPage() {
           {editingId ? (
             <>
               <button className="btn-save" onClick={saveEdit} disabled={adding}>수정 저장</button>
-              <button className="btn-ghost" style={{ padding: '8px 14px' }} onClick={() => { setEditingId(null); setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true }) }}>취소</button>
+              <button className="btn-ghost" style={{ padding: '8px 14px' }} onClick={() => { setEditingId(null); setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true, review_schedule_preset: '8h_3' }) }}>취소</button>
             </>
           ) : (
             <button className="btn-save" onClick={addItem} disabled={adding}>추가</button>
@@ -361,6 +373,7 @@ export default function AdminPartnersPage() {
                 <th>이름</th>
                 <th>연락처</th>
                 <th>기간</th>
+                <th>리뷰 스케줄</th>
                 <th>활성</th>
                 <th>링크</th>
                 <th>작업</th>
@@ -375,6 +388,11 @@ export default function AdminPartnersPage() {
                   <td>{p.name}</td>
                   <td style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.contact}</td>
                   <td style={{ fontSize: 11, whiteSpace: 'nowrap' }} title={`만료: ${p.period_end ?? '-'}`}>{p.period_days ?? 30}일{p.period_end ? ` (~${p.period_end})` : ''}</td>
+                  <td style={{ fontSize: 11 }}>
+                    {p.review_schedule_preset && REVIEW_SCHEDULE_PRESETS[p.review_schedule_preset as ReviewSchedulePresetId]
+                      ? REVIEW_SCHEDULE_PRESETS[p.review_schedule_preset as ReviewSchedulePresetId].label
+                      : REVIEW_SCHEDULE_PRESETS['8h_3'].label}
+                  </td>
                   <td>
                     <button
                       className={p.is_active !== false ? 'btn-save' : 'btn-ghost'}

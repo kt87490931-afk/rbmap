@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { REVIEW_SCHEDULE_PRESETS, type ReviewSchedulePresetId } from '@/lib/review-schedule'
 
 interface ScheduleItem {
   partnerId: string
@@ -14,6 +15,7 @@ interface ScheduleItem {
   lastTone: string | null
   nextReviewAt: string | null
   canGenerate: boolean
+  reviewSchedulePreset?: string
 }
 
 export default function AdminReviewGeneratePage() {
@@ -98,7 +100,7 @@ export default function AdminReviewGeneratePage() {
       <div className="card-box">
         <div className="card-box-title">📋 제휴업체별 스케줄</div>
         <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-          적용된 소개글이 있고 활성화된 제휴업체만 표시됩니다. 8시간마다 1건 자동 생성, 수동 생성은 즉시 가능합니다.
+          적용된 소개글이 있고 활성화된 제휴업체만 표시됩니다. 제휴업체별 스케줄(6h/4건, 8h/3건, 12h/2건, 24h/1건)에 따라 자동·수동 생성 가능 시점이 달라집니다.
         </p>
         <div style={{ padding: 12, marginBottom: 16, background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12 }}>
           <strong>🌱 시드 기반 다양성</strong>
@@ -114,6 +116,7 @@ export default function AdminReviewGeneratePage() {
                 <th>업체명</th>
                 <th>지역</th>
                 <th>업종</th>
+                <th>스케줄</th>
                 <th>소개글</th>
                 <th>마지막 리뷰</th>
                 <th>글자수</th>
@@ -123,11 +126,15 @@ export default function AdminReviewGeneratePage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((r) => (
+              {items.map((r) => {
+                const presetId = (r.reviewSchedulePreset || '8h_3') as ReviewSchedulePresetId
+                const presetLabel = REVIEW_SCHEDULE_PRESETS[presetId]?.label ?? presetId
+                return (
                 <tr key={r.partnerId}>
                   <td style={{ fontWeight: 600 }}>{r.name}</td>
                   <td>{r.region}</td>
                   <td>{r.type}</td>
+                  <td style={{ fontSize: 11, whiteSpace: 'nowrap' }}>{presetLabel}</td>
                   <td>{r.hasIntro ? '✓' : <span style={{ color: 'var(--red)' }}>없음</span>}</td>
                   <td style={{ fontSize: 12 }}>{formatDate(r.lastReviewAt)}</td>
                   <td>{r.lastCharCount != null ? `${r.lastCharCount}자` : '-'}</td>
@@ -141,13 +148,14 @@ export default function AdminReviewGeneratePage() {
                       style={{ padding: '4px 10px', fontSize: 11 }}
                       onClick={() => generateForPartner(r.partnerId)}
                       disabled={!r.canGenerate || generatingId === r.partnerId}
-                      title={!r.hasIntro ? '적용된 소개글 필요' : !r.canGenerate ? '8시간 대기 중' : '지금 생성'}
+                      title={!r.hasIntro ? '적용된 소개글 필요' : !r.canGenerate ? '간격/일 한도 대기 중' : '지금 생성'}
                     >
                       {generatingId === r.partnerId ? '생성 중…' : r.canGenerate ? '지금 생성' : '대기 중'}
                     </button>
                   </td>
                 </tr>
-              ))}
+              )
+              })}
             </tbody>
           </table>
         </div>

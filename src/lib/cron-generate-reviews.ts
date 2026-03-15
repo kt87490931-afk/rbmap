@@ -1,5 +1,6 @@
 /**
  * 리뷰 자동 생성 공통 로직 (Cron API / 어드민 수동 실행 공용)
+ * 제휴업체별 스케줄 프리셋(6h/4, 8h/3, 12h/2, 24h/1) 적용
  */
 import { supabaseAdmin } from './supabase-server'
 import { generateReview } from './gemini/review-api'
@@ -12,6 +13,7 @@ import {
 } from './review-scenarios'
 import { REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from './data/venues'
 import { parseUrlSuffixFromHref } from './partner-url'
+import { canGenerateReview, getTodayKSTRangeUTC } from './review-schedule'
 
 export type GenerateReviewResult = { partnerId: string; name: string; ok: boolean; msg: string }
 
@@ -61,7 +63,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
 
   let q = supabaseAdmin
     .from('partners')
-    .select('id, name, href, region, type')
+    .select('id, name, href, region, type, review_schedule_preset')
     .eq('is_active', true)
   if (partnerIds != null && partnerIds.length > 0) {
     q = q.in('id', partnerIds)
@@ -99,14 +101,32 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
 
     const { regionSlug, typeSlug, venueSlug } = parseHref(partner.href)
 
+    const presetId = (partner as { review_schedule_preset?: string }).review_schedule_preset ?? undefined
+    const todayRange = getTodayKSTRangeUTC()
+    const { data: todayRows } = await supabaseAdmin
+      .from('review_posts')
+      .select('created_at')
+      .eq('region', regionSlug)
+      .eq('type', typeSlug)
+      .eq('venue_slug', venueSlug)
+      .gte('created_at', todayRange.start)
+      .lt('created_at', todayRange.end)
+    const todayCount = todayRows?.length ?? 0
+
     const { data: historyRows } = await supabaseAdmin
       .from('review_posts')
-      .select('scenario_used')
+      .select('scenario_used, created_at')
       .eq('region', regionSlug)
       .eq('type', typeSlug)
       .eq('venue_slug', venueSlug)
       .order('created_at', { ascending: false })
       .limit(10)
+
+    const lastReviewAt = historyRows?.[0]?.created_at ?? null
+    if (!canGenerateReview(lastReviewAt, todayCount, presetId)) {
+      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '간격/일 한도 미충족' })
+      continue
+    }
 
     const recentCombos: ScenarioCombo[] = (historyRows ?? [])
       .map((r) => r.scenario_used as ScenarioCombo | null)

@@ -618,7 +618,7 @@ async function enrichVenueWithReviewPosts(
   venueSlug: string
 ): Promise<VenueDetail> {
   try {
-    const posts = await getReviewPostsByVenue(regionSlug, venueSlug, undefined, 20);
+    const posts = await getReviewPostsByVenue(regionSlug, venueSlug, undefined, 1000);
     if (posts.length === 0) return venue;
     const reviews = posts.map((p) => {
       const body = (p.sec_overview || p.sec_summary || "").trim();

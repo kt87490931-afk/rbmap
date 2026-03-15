@@ -301,7 +301,7 @@ export default function AdminCronHealthPage() {
 
       {renderJobSection(
         '📌 리뷰 자동 생성',
-        'Cron은 KST 0시, 6시, 12시, 18시 실행. 제휴업체별 스케줄(6h/4건, 8h/3건, 12h/2건, 24h/1건)에 따라 간격·일 한도 적용.',
+        'Cron은 30분마다 실행. 제휴업체별 스케줄(6h/4건, 8h/3건, 12h/2건, 24h/1건)에 따라 다음 가능 시각이 지난 업체부터 최대 25건 처리.',
         reviewsJob,
         (items) => renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as { name?: string }[]).some((x) => x.name)),
         () => (

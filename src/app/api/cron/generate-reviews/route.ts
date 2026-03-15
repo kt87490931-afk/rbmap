@@ -1,6 +1,6 @@
 /**
  * 리뷰 자동 생성 Cron API
- * 6시간마다 호출: 활성 제휴업체 중 is_applied된 소개글이 있는 곳에 1건씩 리뷰 생성
+ * 30분마다 호출 권장 (vercel.json crons): 업체별 다음 가능 시각(예: 12시간 간격 → 01:04)에 맞춰 처리
  * GET ?cron_secret=xxx 또는 Authorization: Bearer xxx
  */
 

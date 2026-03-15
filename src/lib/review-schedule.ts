@@ -102,12 +102,23 @@ export function getNextReviewAtWithDailyCap(
 
 /**
  * 목표 시각까지 남은 시간을 "약 N시간 N분 후" 형태로 반환 (분 단위 표기)
- * 이미 지났으면 "곧"
+ * 이미 지났으면 "곧 (경과 N분)" — 다음 크론 실행 시 처리 대기 중임을 알 수 있음
  */
 export function formatTimeUntil(target: Date): string {
   const now = Date.now()
   const t = target.getTime()
-  if (t <= now + 60 * 1000) return '곧'
+  if (t <= now + 60 * 1000) {
+    const elapsedMs = now - t
+    if (elapsedMs >= 60 * 60 * 1000) {
+      const elapsedMin = Math.floor(elapsedMs / (60 * 1000))
+      return `곧 (경과 ${elapsedMin}분 · 다음 크론에서 처리)`
+    }
+    if (elapsedMs >= 60 * 1000) {
+      const elapsedMin = Math.floor(elapsedMs / (60 * 1000))
+      return `곧 (경과 ${elapsedMin}분)`
+    }
+    return '곧'
+  }
   const diffMs = t - now
   const hours = Math.floor(diffMs / (60 * 60 * 1000))
   const minutes = Math.floor((diffMs % (60 * 60 * 1000)) / (60 * 1000))

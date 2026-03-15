@@ -232,7 +232,7 @@ export default function AdminReviewsPage() {
       <div className="card-box" style={{ marginBottom: 16 }}>
         <div className="card-box-title">⏱ 다음 리뷰 생성 예정 (스케줄)</div>
         <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-          각 제휴업체별 다음 리뷰 가능 시각·남은 시간 (분 단위 표기). <strong>「곧」</strong> = 이미 가능 시각이 지났거나 1분 이내(다음 Cron 실행 시 우선 처리). Cron은 <strong>다음 가능 시각이 가장 빠른 업체부터</strong> 최대 25건까지 처리합니다.
+          각 제휴업체별 다음 리뷰 가능 시각·남은 시간 (분 단위 표기). <strong>「곧」</strong> = 이미 가능 시각이 지났거나 1분 이내(다음 Cron 실행 시 우선 처리). <strong>「곧 (경과 N분)」</strong> = 가능 시각이 N분 전에 지남(다음 Cron 실행 시 처리). Cron은 <strong>30분마다</strong> 실행되며, 다음 가능 시각이 가장 빠른 업체부터 최대 25건까지 처리합니다. (업체별 스케줄 예: 12시간 간격 → 01:04 다음은 01:30 전후 크론에서 처리)
         </p>
         {cronStatusLoading ? (
           <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>크론 상태 로딩 중...</p>

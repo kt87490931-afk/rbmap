@@ -381,11 +381,6 @@ export default async function VenueDetailPage({
               </Link>
             ))}
           </div>
-          <div style={{ textAlign: "center", marginTop: 20 }}>
-            <Link href={`/reviews?region=${region}&type=${category}`} style={{ display: "inline-block", padding: "11px 28px", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--muted)", textDecoration: "none", transition: "all 0.2s" }}>
-              {data.name} 후기 전체 {data.reviewCount}개 보기 →
-            </Link>
-          </div>
         </section>
 
         {/* 섹션 5: 유사 업소 */}

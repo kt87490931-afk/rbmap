@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { hashSeed, pickOpeningPattern, pickFocus } from '@/lib/intro-diversity'
 
 const TYPE_OPTIONS = [
   { value: 'karaoke', label: '가라오케' },
@@ -134,6 +135,15 @@ export default function AdminVenueIntroPage() {
 
   const [aiTone, setAiTone] = useState<'pro' | 'partner_pro' | 'premium' | 'friendly' | 'trust'>('pro')
   const [periodDays, setPeriodDays] = useState(30)
+
+  /** 시드 기반 다양성: 업소명+지역+업종으로 오프닝·포커스 자동 결정 (백엔드와 동일 로직) */
+  const seedBasedDiversity = useMemo(() => {
+    const seedStr = `${name ?? ''}|${region ?? ''}|${type ?? ''}`
+    const seed = hashSeed(seedStr)
+    const opening = pickOpeningPattern(seed)
+    const focus = pickFocus(seed)
+    return { seed, opening, focus }
+  }, [name, region, type])
 
   const [msg, setMsg] = useState('')
   const [saving, setSaving] = useState(false)
@@ -713,18 +723,35 @@ export default function AdminVenueIntroPage() {
             />
           </div>
 
+          <div style={{ marginTop: 24, padding: 14, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+            <div className="form-label" style={{ marginBottom: 8 }}>🌱 시드 기반 다양성 (자동 적용)</div>
+            <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>업소명+지역+업종 기준으로 오프닝·포커스가 자동 선택됩니다. AI 생성 시 적용됩니다.</p>
+            <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+              <div><span style={{ color: 'var(--muted)' }}>오프닝:</span> {seedBasedDiversity.opening.hint}</div>
+              <div><span style={{ color: 'var(--muted)' }}>포커스:</span> {seedBasedDiversity.focus.label}</div>
+            </div>
+          </div>
+
           <div style={{ marginTop: 24 }}>
-            <div className="form-label" style={{ marginBottom: 8 }}>AI 톤 (다양성 확보)</div>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div className="form-label" style={{ marginBottom: 8 }}>AI 톤 (5종 선택)</div>
+            <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>소개글 말투·분위기를 선택합니다</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
               {(['pro', 'partner_pro', 'premium', 'friendly', 'trust'] as const).map((t) => (
-                <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <label
+                  key={t}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                    padding: '10px 12px', borderRadius: 8, border: aiTone === t ? '2px solid var(--accent)' : '1px solid var(--border)',
+                    background: aiTone === t ? 'rgba(var(--accent-rgb, 99, 102, 241), 0.08)' : 'transparent',
+                  }}
+                >
                   <input type="radio" name="aiTone" checked={aiTone === t} onChange={() => setAiTone(t)} />
-                  <span>
+                  <span style={{ fontSize: 12, fontWeight: aiTone === t ? 600 : 400 }}>
                     {t === 'pro' && '💎 전문가'}
                     {t === 'partner_pro' && '🤝 듬직한 파트너'}
-                    {t === 'premium' && '✨ 럭셔리 프리미엄'}
-                    {t === 'friendly' && '😊 친근·편안'}
-                    {t === 'trust' && '🛡 신뢰·검증'}
+                    {t === 'premium' && '✨ 럭셔리'}
+                    {t === 'friendly' && '😊 친근'}
+                    {t === 'trust' && '🛡 신뢰'}
                   </span>
                 </label>
               ))}
@@ -868,6 +895,12 @@ export default function AdminVenueIntroPage() {
               <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{extra || '—'}</div>
             </div>
             <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+              <span style={{ color: 'var(--muted)' }}>시드 기반 다양성</span>
+              <div style={{ fontSize: 11, marginTop: 4 }}>
+                오프닝: {seedBasedDiversity.opening.hint} · 포커스: {seedBasedDiversity.focus.label}
+              </div>
+            </div>
+            <div style={{ marginTop: 8 }}>
               <span style={{ color: 'var(--muted)' }}>톤</span>
               <div>
                 {aiTone === 'pro' && '💎 전문가'}

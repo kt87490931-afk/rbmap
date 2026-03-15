@@ -7,6 +7,9 @@ import { supabaseAdmin } from './supabase-server'
 
 /** 1회 cron 실행 시 처리할 최대 업체 수 (나머지는 다음 실행에서 처리) */
 const MAX_PER_RUN = 25
+
+/** 동일 업체 리뷰 중복 방지 윈도우(ms). 이 시간 이내 이미 리뷰가 있으면 AI 호출·삽입 모두 스킵 */
+export const DUPLICATE_WINDOW_MS = 30 * 60 * 1000
 import { generateReview } from './gemini/review-api'
 import {
   pickScenarioCombo,
@@ -189,8 +192,25 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     })
   }
 
+  // AI 호출 전 검사로 비용 방지, 삽입 직전 재확인으로 동시 실행 시 중복 방지
+
   for (const item of toProcess) {
     const { partner, introText, regionSlug, typeSlug, venueSlug, scenario, tone, regionName, typeName } = item
+
+    // [1] AI 호출 전 중복 검사 — 최근 30분 이내 동일 업체 리뷰 있으면 API 호출하지 않음 (비용 절약)
+    const windowStart = new Date(Date.now() - DUPLICATE_WINDOW_MS).toISOString()
+    const { data: recentSameBefore } = await supabaseAdmin
+      .from('review_posts')
+      .select('id')
+      .eq('region', regionSlug)
+      .eq('type', typeSlug)
+      .eq('venue_slug', venueSlug)
+      .gte('published_at', windowStart)
+      .limit(1)
+    if (recentSameBefore && recentSameBefore.length > 0) {
+      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '최근 30분 이내 동일 업체 리뷰 있음(중복·비용 방지)' })
+      continue
+    }
 
     const genResult = await generateReview({
       venueName: partner.name,
@@ -207,10 +227,8 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     }
 
     const publishedAt = new Date().toISOString()
-    // 크론 주기(20분) 이상으로 윈도우 설정 — 같은 업체가 연속 실행에서 두 번 처리되는 것 방지
-    const DUPLICATE_WINDOW_MS = 25 * 60 * 1000
-    const windowStart = new Date(Date.now() - DUPLICATE_WINDOW_MS).toISOString()
-    const { data: recentSame } = await supabaseAdmin
+    // [2] 삽입 직전 재확인 — 동시 실행 시 중복 삽입 방지
+    const { data: recentSameAfter } = await supabaseAdmin
       .from('review_posts')
       .select('id')
       .eq('region', regionSlug)
@@ -218,8 +236,8 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       .eq('venue_slug', venueSlug)
       .gte('published_at', windowStart)
       .limit(1)
-    if (recentSame && recentSame.length > 0) {
-      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '최근 25분 이내 동일 업체 리뷰 있음(중복 방지)' })
+    if (recentSameAfter && recentSameAfter.length > 0) {
+      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '삽입 직전 동일 업체 리뷰 발견(중복 방지)' })
       continue
     }
 

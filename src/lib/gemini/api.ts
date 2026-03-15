@@ -331,7 +331,8 @@ export async function generateVenueIntro(
           text = [v2.intro?.lead, v2.intro?.quote, ...(v2.intro?.body_paragraphs ?? [])].filter(Boolean).join('\n\n')
         } else {
           const trimmed = text.trim()
-          if (trimmed.length >= MIN_CONTENT_LENGTH) {
+          const minFallbackLength = 200
+          if (trimmed.length >= minFallbackLength) {
             v2 = {
               intro: {
                 label: 'ABOUT · 업소 소개',
@@ -341,13 +342,12 @@ export async function generateVenueIntro(
             }
             text = trimmed
           } else {
-            const parseErr = new Error('JSON parse failed')
             return {
               success: false,
               message: 'AI 응답 JSON 파싱에 실패했습니다. 다시 생성해 주세요.',
               diag: {
                 rawPreview: text.slice(0, 500),
-                parseError: parseErr.message,
+                parseError: 'JSON parse failed',
               },
             }
           }

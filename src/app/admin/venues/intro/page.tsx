@@ -132,7 +132,7 @@ export default function AdminVenueIntroPage() {
   const [managerCareer, setManagerCareer] = useState<string[]>([])
   const [staffCount, setStaffCount] = useState('')
 
-  const [aiTone, setAiTone] = useState<'pro' | 'partner_pro'>('pro')
+  const [aiTone, setAiTone] = useState<'pro' | 'partner_pro' | 'premium' | 'friendly' | 'trust'>('pro')
   const [periodDays, setPeriodDays] = useState(30)
 
   const [msg, setMsg] = useState('')
@@ -216,7 +216,8 @@ export default function AdminVenueIntroPage() {
     setPhilosophy(Array.isArray(f.philosophy) ? f.philosophy : [])
     setManagerCareer(Array.isArray(f.manager_career) ? f.manager_career : [])
     setStaffCount(String(f.staff_count ?? ''))
-    setAiTone(item.ai_tone === 'partner_pro' ? 'partner_pro' : 'pro')
+    const validTones = ['pro', 'partner_pro', 'premium', 'friendly', 'trust'] as const
+    setAiTone(validTones.includes(item.ai_tone as typeof validTones[number]) ? (item.ai_tone as typeof validTones[number]) : 'pro')
     setPeriodDays(Number(item.period_days) || 30)
     const ij = item.intro_ai_json
     const v2 = ij?.v2 as { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } } | undefined
@@ -712,25 +713,22 @@ export default function AdminVenueIntroPage() {
             />
           </div>
 
-          <div style={{ marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="aiTone"
-                checked={aiTone === 'pro'}
-                onChange={() => setAiTone('pro')}
-              />
-              <span>💎 전문가 톤</span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="aiTone"
-                checked={aiTone === 'partner_pro'}
-                onChange={() => setAiTone('partner_pro')}
-              />
-              <span>🤝 듬직한 파트너 톤</span>
-            </label>
+          <div style={{ marginTop: 24 }}>
+            <div className="form-label" style={{ marginBottom: 8 }}>AI 톤 (다양성 확보)</div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {(['pro', 'partner_pro', 'premium', 'friendly', 'trust'] as const).map((t) => (
+                <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <input type="radio" name="aiTone" checked={aiTone === t} onChange={() => setAiTone(t)} />
+                  <span>
+                    {t === 'pro' && '💎 전문가'}
+                    {t === 'partner_pro' && '🤝 듬직한 파트너'}
+                    {t === 'premium' && '✨ 럭셔리 프리미엄'}
+                    {t === 'friendly' && '😊 친근·편안'}
+                    {t === 'trust' && '🛡 신뢰·검증'}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div style={{ marginTop: 16 }}>
@@ -871,7 +869,13 @@ export default function AdminVenueIntroPage() {
             </div>
             <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
               <span style={{ color: 'var(--muted)' }}>톤</span>
-              <div>{aiTone === 'pro' ? '💎 전문가' : '🤝 듬직한 파트너'}</div>
+              <div>
+                {aiTone === 'pro' && '💎 전문가'}
+                {aiTone === 'partner_pro' && '🤝 듬직한 파트너'}
+                {aiTone === 'premium' && '✨ 럭셔리'}
+                {aiTone === 'friendly' && '😊 친근'}
+                {aiTone === 'trust' && '🛡 신뢰'}
+              </div>
             </div>
             <div style={{ marginBottom: 8 }}>
               <span style={{ color: 'var(--muted)' }}>기간</span>

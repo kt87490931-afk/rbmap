@@ -32,7 +32,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'form 필드가 필요합니다.' }, { status: 400 })
   }
 
-  const tone = ai_tone === 'partner_pro' ? 'partner_pro' : 'pro'
+  const validTones = ['pro', 'partner_pro', 'premium', 'friendly', 'trust'] as const
+  const tone = validTones.includes(ai_tone as (typeof validTones)[number]) ? (ai_tone as (typeof validTones)[number]) : 'pro'
   const data = form as FormDataForGemini
   const essentialKeywords = await getEssentialKeywords()
   const outFormat = format === 'json' ? 'json' : 'text'

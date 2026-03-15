@@ -13,6 +13,7 @@ import {
   geminiMaxOutputTokens,
   geminiRoles,
 } from './config'
+import { hashSeed, pickOpeningPattern, pickFocus } from '../intro-diversity'
 
 function getApiKey(): string {
   let key = (process.env.GEMINI_API_KEY || '').replace(/\ufeff/g, '').trim()
@@ -47,7 +48,7 @@ function getApiKey(): string {
   return ''
 }
 
-export type IntroTone = 'pro' | 'partner_pro'
+export type IntroTone = 'pro' | 'partner_pro' | 'premium' | 'friendly' | 'trust'
 
 export interface FormDataForGemini {
   name?: string
@@ -180,22 +181,27 @@ function getV2ContentLength(v: VenueIntroV2): number {
 
 const MIN_CONTENT_LENGTH = 2300
 
+const INTRO_BAN_PATTERN =
+  '[금지 오프닝] 다음과 같이 시작하지 마라: "업소명은 지역명에 위치한", "업소명은 지역명 OO에 자리한". 다른 업소 소개와 구분되는 독특한 오프닝을 써라.'
+
 const V2_JSON_INSTRUCTION = `
 [출력 형식 - JSON] 반드시 아래 JSON만 출력해라. 마크다운 코드블록(백틱), 설명, 주석 절대 금지. 순수 JSON만.
 [금지] 이모지(emoji) 절대 사용 금지. 텍스트만.
 
 [필수 분량 - 반드시 준수] lead+quote+body_paragraphs 합계 2,500자 이상 3,000자 이내.
-- lead: 280~350자 (핵심 요약)
+- lead: 280~350자 (핵심 요약) — [오프닝 지시]에 맞게 시작할 것
 - quote: 180~250자 (인용 강조 문장, 없으면 null)
-- body_paragraphs: 최소 5개 단락, 각 350~500자, 합계 2,000자 이상 (본문의 대부분을 차지)
+- body_paragraphs: 최소 5개 단락, 각 350~500자, 합계 2,000자 이상 (본문의 대부분을 차지) — [포커스 지시]에 맞게 강조
 - 총합이 2,500자 미만이면 실패로 간주함.
+
+headline은 예시일 뿐, 업소에 맞게 다양하게 변형하라. (예: "업소명 — 지역명 대표 프리미엄", "업소명 — 투명한 가격이 차별점")
 
 {
   "tagline": "지역명 업종명 — 한 줄 캐치프레이즈 (50자 내외)",
   "intro": {
     "label": "ABOUT · 업소 소개",
-    "headline": "업소명 — 지역명 업종명의 새로운 기준",
-    "lead": "리드 문장 280~350자로 작성. 업소 핵심 특징을 요약.",
+    "headline": "업소에 맞는 다양한 표현",
+    "lead": "리드 문장 280~350자. [오프닝 지시] 준수.",
     "quote": "인용 강조 문장 180~250자. 없으면 null",
     "body_paragraphs": ["본문 단락1 (350~500자)", "본문 단락2 (350~500자)", "본문 단락3 (350~500자)", "본문 단락4 (350~500자)", "본문 단락5 (350~500자)"]
   }
@@ -206,7 +212,7 @@ export async function generateVenueIntro(
   data: FormDataForGemini,
   tone: IntroTone = 'pro',
   essentialKeywords?: string[],
-  options?: { format?: 'text' | 'json' }
+  options?: { format?: 'text' | 'json'; openingPatternSeed?: number; focusSeed?: number }
 ): Promise<VenueIntroResult> {
   const apiKey = getApiKey()
   if (!apiKey) {
@@ -218,9 +224,17 @@ export async function generateVenueIntro(
     ? essentialKeywords
     : DEFAULT_ESSENTIAL_KEYWORDS
 
-  const roleId = tone === 'partner_pro' ? 'partner_pro' : 'pro'
+  const seedStr = `${data.name ?? ''}|${data.region ?? ''}|${data.type ?? ''}`
+  const seed = options?.openingPatternSeed ?? hashSeed(seedStr)
+  const openingPattern = pickOpeningPattern(seed)
+  const focus = pickFocus(seed)
+
+  const roleId = ['pro', 'partner_pro', 'premium', 'friendly', 'trust'].includes(tone) ? tone : 'pro'
   const role = geminiRoles[roleId] || geminiRoles.pro
   let basePrompt = role.prompt
+  basePrompt += INTRO_BAN_PATTERN + '\n'
+  basePrompt += `[오프닝 지시] ${openingPattern.instruction}\n`
+  basePrompt += `[포커스 지시] ${focus.instruction}\n`
   if (format === 'json') {
     basePrompt += '\n[중요] JSON 형식으로만 출력할 것. 마크다운 코드블록 없이 순수 JSON만 출력.\n'
     basePrompt += V2_JSON_INSTRUCTION

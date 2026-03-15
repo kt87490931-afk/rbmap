@@ -309,7 +309,7 @@ export default function AdminCronHealthPage() {
 
       {renderJobSection(
         '🗺️ 사이트맵 Ping',
-        '매일 KST 06시 실행. sitemap.xml 접근성 검증 + Bing ping (Google ping은 2024년 폐기됨). Search Console에서 사이트맵 제출 권장.',
+        '매일 KST 06시 실행. sitemap 생성 로직 직접 검증 (URL 개수 확인). Google Search Console에서 사이트맵 제출 권장.',
         sitemapJob,
         (items) => renderHistoryTable(items, () => false),
         () => (

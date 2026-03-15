@@ -146,10 +146,14 @@ export default async function Home() {
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="ticker">
         <Ticker
           data={ticker}
-          items={reviewPosts.slice(0, 6).map((p) => ({
-            region: getRegionName(p.region),
-            text: `${p.venue} 리뷰 등록`,
-          }))}
+          items={reviewPosts.slice(0, 6).map((p) => {
+            const body = (p.sec_overview || p.sec_summary || p.title || "").trim();
+            const text30 = body.length > 30 ? `${body.slice(0, 30)}…` : body;
+            return {
+              region: getRegionName(p.region),
+              text: text30 || `${p.venue} 리뷰 등록`,
+            };
+          })}
         />
       </SectionWithSettings>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="hero">

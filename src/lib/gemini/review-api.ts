@@ -78,6 +78,8 @@ export async function generateReview(params: {
   introText: string
   scenario: ScenarioCombo
   tone: ReviewTone
+  /** 이번 리뷰 주제 — 제목·본문이 이 주제를 반영해야 함 */
+  topic?: string
 }): Promise<ReviewResult> {
   const apiKey = getApiKey()
   if (!apiKey) return { success: false, message: 'API 키가 설정되지 않았습니다.' }
@@ -88,6 +90,10 @@ export async function generateReview(params: {
   const seed = reviewSeed(params.venueName, scenarioHash)
   const openingHook = pickReviewOpeningHook(seed)
   const focus = pickReviewFocus(seed + 100)
+
+  const topicBlock = params.topic
+    ? `[이번 리뷰 주제]\n${params.topic}\n\n위 주제에 맞춰 제목과 본문을 작성하라. 제목이 이 주제를 드러내야 한다.\n\n`
+    : ''
 
   const systemPrompt =
     '너는 실제로 해당 업소를 방문한 손님이다. 아래 [업소 소개글]을 참고하여, [시나리오]에 맞는 자연스러운 이용 후기를 작성해라.\n\n' +
@@ -100,6 +106,7 @@ export async function generateReview(params: {
     `[오프닝 지시] ${openingHook.instruction}\n` +
     `[포커스 지시] ${focus.instruction}\n` +
     `[금지] ${REVIEW_BAN_PATTERNS}\n\n` +
+    topicBlock +
     `[시나리오]\n${scenarioBlock}\n\n` +
     `[업소 정보]\n업소명: ${params.venueName}\n지역: ${params.regionName}\n업종: ${params.typeName}\n\n` +
     '[업소 소개글]\n' +

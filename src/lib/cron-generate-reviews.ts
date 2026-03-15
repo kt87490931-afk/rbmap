@@ -21,6 +21,7 @@ import {
 import { REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from './data/venues'
 import { parseUrlSuffixFromHref } from './partner-url'
 import { canGenerateReview, getTodayKSTRangeUTC, getNextReviewAtWithDailyCap } from './review-schedule'
+import { pickTopicExcludingRecent } from './review-topics'
 
 export type GenerateReviewResult = { partnerId: string; name: string; ok: boolean; msg: string }
 
@@ -212,6 +213,23 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       continue
     }
 
+    // 1번: 같은 업소 최근 주제 회피 — 최근 N건에서 사용한 주제는 제외하고 선택
+    const RECENT_TOPICS_LIMIT = 15
+    const { data: recentReviewsForTopic } = await supabaseAdmin
+      .from('review_posts')
+      .select('scenario_used')
+      .eq('region', regionSlug)
+      .eq('type', typeSlug)
+      .eq('venue_slug', venueSlug)
+      .order('published_at', { ascending: false })
+      .limit(RECENT_TOPICS_LIMIT)
+    const recentTopics = (recentReviewsForTopic ?? [])
+      .map((r) => (r.scenario_used as { topic?: string } | null)?.topic)
+      .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+    const venueKey = `${partner.name}|${regionSlug}|${typeSlug}|${venueSlug}`
+    const seedForTopic = reviewGenSeed(venueKey, recentTopics.length)
+    const topic = pickTopicExcludingRecent(recentTopics, seedForTopic)
+
     const genResult = await generateReview({
       venueName: partner.name,
       regionName,
@@ -219,6 +237,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       introText,
       scenario,
       tone,
+      topic,
     })
 
     if (!genResult.success) {
@@ -238,6 +257,21 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       .limit(1)
     if (recentSameAfter && recentSameAfter.length > 0) {
       results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '삽입 직전 동일 업체 리뷰 발견(중복 방지)' })
+      continue
+    }
+
+    // 3번: 제목 중복 방지 — 동일 업체에 같은 제목 리뷰가 이미 있으면 삽입 스킵
+    const titleTrimmed = genResult.title.trim()
+    const { data: sameTitleRows } = await supabaseAdmin
+      .from('review_posts')
+      .select('id')
+      .eq('region', regionSlug)
+      .eq('type', typeSlug)
+      .eq('venue_slug', venueSlug)
+      .eq('title', titleTrimmed)
+      .limit(1)
+    if (sameTitleRows && sameTitleRows.length > 0) {
+      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '동일 제목 리뷰 있음(중복 방지)' })
       continue
     }
 
@@ -270,7 +304,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       venue_page_url: partner.href?.startsWith('/') ? partner.href : `/${regionSlug}/${typeSlug}/${venueSlug}`,
       sort_order: 0,
       partner_id: partner.id,
-      scenario_used: { ...scenario, tone },
+      scenario_used: { ...scenario, tone, topic },
     }
 
     const { error: insertErr } = await supabaseAdmin.from('review_posts').insert(insertRow)

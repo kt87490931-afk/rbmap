@@ -151,7 +151,7 @@ export interface VenueIntroV2 {
 
 /**
  * 업체소개글 텍스트 생성 (3,000자 이상 4,000자 미만)
- * format 'json' 시 v2 DOM 매핑용 구조화 JSON 반환
+ * API는 평문만 요청하고, 서버에서 lead/quote/body_paragraphs 로 맵핑해 v2 반환
  */
 export type VenueIntroResult =
   | { success: true; text: string; v2?: VenueIntroV2; elapsedMs?: number; needsReview?: boolean }
@@ -199,43 +199,50 @@ const REVIEW_THRESHOLD_LENGTH = 4000
 const INTRO_BAN_PATTERN =
   '[금지 오프닝] 다음과 같이 시작하지 마라: "업소명은 지역명에 위치한", "업소명은 지역명 OO에 자리한". 다른 업소 소개와 구분되는 독특한 오프닝을 써라.'
 
-const V2_JSON_INSTRUCTION = `
-[출력 형식 - JSON] 반드시 아래 JSON만 출력해라. 마크다운 코드블록(백틱), 설명, 주석 절대 금지. 순수 JSON만.
-[금지] 이모지(emoji) 절대 사용 금지. 텍스트만.
-[금지] 출력은 반드시 JSON 객체만. 사용자에게 보여줄 본문은 lead·quote·body_paragraphs의 텍스트만 포함. 코드·키 이름·마크업이 본문에 노출되면 안 됨.
+/** API는 텍스트만 생성. 서버에서 v2 구조로 맵핑 (JSON 파싱 오류 방지) */
+const TEXT_ONLY_INSTRUCTION = `
+[출력 형식] 반드시 순수 텍스트만 출력해라. JSON, 코드, 마크다운(백틱), 설명 문장 절대 금지.
+[금지] 이모지(emoji) 절대 사용 금지.
+[필수 분량] 3,000자 이상 4,000자 미만. 단락은 빈 줄(엔터 두 번)로 구분.
+[구성] 첫 단락은 [오프닝 지시]에 맞게 핵심 요약(350~450자). 이어서 [포커스 지시]에 맞게 본문 단락들을 이어 써라.
+`
 
-[필수 분량 - 반드시 준수] lead+quote+body_paragraphs 합계 3,000자 이상 4,000자 미만.
-- lead: 350~450자 (핵심 요약) — [오프닝 지시]에 맞게 시작할 것
-- quote: 200~300자 (인용 강조 문장, 없으면 null)
-- body_paragraphs: 최소 6개 단락, 각 400~600자, 합계 2,500자 이상 (본문의 대부분을 차지) — [포커스 지시]에 맞게 강조
-- 총합이 3,000자 미만이면 실패. 4,000자 이상이면 안 됨.
-
-headline은 예시일 뿐, 업소에 맞게 다양하게 변형하라.
-
-{
-  "tagline": "지역명 업종명 — 한 줄 캐치프레이즈 (50자 내외)",
-  "intro": {
-    "label": "ABOUT · 업소 소개",
-    "headline": "업소에 맞는 다양한 표현",
-    "lead": "리드 문장 350~450자. [오프닝 지시] 준수.",
-    "quote": "인용 강조 문장 200~300자. 없으면 null",
-    "body_paragraphs": ["본문 단락1 (400~600자)", "본문 단락2 (400~600자)", "본문 단락3 (400~600자)", "본문 단락4 (400~600자)", "본문 단락5 (400~600자)", "본문 단락6 (400~600자)"]
+/** 서버 측 맵핑: 평문을 lead / quote / body_paragraphs 로 나눔 */
+function mapPlainTextToV2(text: string): VenueIntroV2 {
+  const trimmed = text.trim()
+  const paragraphs = trimmed.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
+  const lead = paragraphs[0] ?? trimmed.slice(0, 450)
+  const second = paragraphs[1]
+  const quote =
+    second && second.length >= 150 && second.length <= 350 ? second : null
+  const bodyStart = quote ? 2 : 1
+  let body_paragraphs = paragraphs.slice(bodyStart).filter(Boolean)
+  if (body_paragraphs.length === 0) {
+    const rest = trimmed.slice(lead.length).trim()
+    if (rest.length > 0) body_paragraphs = [rest]
+    else body_paragraphs = [lead]
+  }
+  return {
+    intro: {
+      label: 'ABOUT · 업소 소개',
+      lead,
+      ...(quote && { quote }),
+      body_paragraphs,
+    },
   }
 }
-`
 
 export async function generateVenueIntro(
   data: FormDataForGemini,
   tone: IntroTone = 'pro',
   essentialKeywords?: string[],
-  options?: { format?: 'text' | 'json'; openingPatternSeed?: number; focusSeed?: number }
+  options?: { openingPatternSeed?: number; focusSeed?: number }
 ): Promise<VenueIntroResult> {
   const apiKey = getApiKey()
   if (!apiKey) {
     return { success: false, message: 'API 키가 설정되지 않았습니다.' }
   }
 
-  const format = options?.format ?? 'text'
   const keywords = essentialKeywords && essentialKeywords.length > 0
     ? essentialKeywords
     : DEFAULT_ESSENTIAL_KEYWORDS
@@ -251,23 +258,16 @@ export async function generateVenueIntro(
   basePrompt += INTRO_BAN_PATTERN + '\n'
   basePrompt += `[오프닝 지시] ${openingPattern.instruction}\n`
   basePrompt += `[포커스 지시] ${focus.instruction}\n`
-  if (format === 'json') {
-    basePrompt += '\n[중요] JSON 형식으로만 출력할 것. 마크다운 코드블록 없이 순수 JSON만 출력.\n'
-    basePrompt += V2_JSON_INSTRUCTION
-  }
+  basePrompt += TEXT_ONLY_INSTRUCTION
   const dataBlock = buildDataBlock(data, keywords)
   const fullPrompt = basePrompt + '\n' + dataBlock
 
-  // API 키 전달: 헤더 + 쿼리(이중화) — 일부 프록시/CDN에서 헤더 누락 대비
   const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`
   const url = `${baseUrl}?key=${encodeURIComponent(apiKey)}`
   const generationConfig: Record<string, unknown> = {
     temperature: geminiTemperature,
     maxOutputTokens: geminiMaxOutputTokens,
     topP: geminiTopP,
-  }
-  if (format === 'json') {
-    generationConfig.responseMimeType = 'application/json'
   }
   const payload = {
     contents: [{ parts: [{ text: fullPrompt }] }],
@@ -289,73 +289,27 @@ export async function generateVenueIntro(
 
     const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text
     if (rawText && typeof rawText === 'string') {
-      let text = rawText.trim()
-      let v2: VenueIntroV2 | undefined
-      if (format === 'json') {
-        function tryParseJson(raw: string): VenueIntroV2 | undefined {
-          let cleaned = raw
-            .replace(/^```(?:json)?\s*\n?/i, '')
-            .replace(/\n?\s*```\s*$/i, '')
-            .trim()
-          if (!cleaned.startsWith('{')) {
-            const first = cleaned.indexOf('{')
-            const last = cleaned.lastIndexOf('}')
-            if (first >= 0 && last > first) cleaned = cleaned.slice(first, last + 1)
-          }
-          cleaned = cleaned.replace(/,[\s\n]*([}\]])/g, '$1')
-          try {
-            return JSON.parse(cleaned) as VenueIntroV2
-          } catch {
-            return undefined
-          }
+      const text = stripEmoji(rawText.trim())
+      if (text.length < 100) {
+        return {
+          success: false,
+          message: 'AI 응답이 비어 있거나 너무 짧습니다. 다시 생성해 주세요.',
+          diag: { rawPreview: text.slice(0, 300) },
         }
-        v2 = tryParseJson(text)
-        if (!v2 && text.includes('{')) {
-          const first = text.indexOf('{')
-          const last = text.lastIndexOf('}')
-          if (first >= 0 && last > first) {
-            const extracted = text.slice(first, last + 1).replace(/,[\s\n]*([}\]])/g, '$1')
-            try {
-              v2 = JSON.parse(extracted) as VenueIntroV2
-            } catch { /* ignore */ }
-          }
-        }
-        if (v2) {
-          v2 = stripEmojiFromV2(v2)
-          const len = getV2ContentLength(v2)
-          if (len < MIN_CONTENT_LENGTH) {
-            return {
-              success: false,
-              message: `생성된 글이 ${len}자로 분량 부족입니다. 3,000자 이상이 필요합니다. 다시 생성해 주세요.`,
-              diag: { contentLength: len, required: MIN_CONTENT_LENGTH },
-            }
-          }
-          text = [v2.intro?.lead, v2.intro?.quote, ...(v2.intro?.body_paragraphs ?? [])].filter(Boolean).join('\n\n')
-          const needsReview = len > REVIEW_THRESHOLD_LENGTH
-          return { success: true, text, v2, elapsedMs, needsReview }
-        } else {
-          const trimmed = text.trim()
-          if (trimmed.length >= 10) {
-            v2 = {
-              intro: {
-                label: 'ABOUT · 업소 소개',
-                lead: trimmed.slice(0, 450),
-                body_paragraphs: [trimmed],
-              },
-            }
-            text = trimmed
-            return { success: true, text, v2, elapsedMs, needsReview: true }
-          }
-          return {
-            success: false,
-            message: 'AI 응답이 비어 있거나 너무 짧습니다. 다시 생성해 주세요.',
-            diag: { rawPreview: text.slice(0, 300), parseError: 'JSON parse failed' },
-          }
-        }
-      } else {
-        text = stripEmoji(text)
       }
-      return { success: true, text, v2, elapsedMs }
+      const v2 = mapPlainTextToV2(text)
+      const v2Clean = stripEmojiFromV2(v2)
+      const len = getV2ContentLength(v2Clean)
+      if (len < MIN_CONTENT_LENGTH) {
+        return {
+          success: false,
+          message: `생성된 글이 ${len}자로 분량 부족입니다. 3,000자 이상이 필요합니다. 다시 생성해 주세요.`,
+          diag: { contentLength: len, required: MIN_CONTENT_LENGTH },
+        }
+      }
+      const displayText = [v2Clean.intro?.lead, v2Clean.intro?.quote, ...(v2Clean.intro?.body_paragraphs ?? [])].filter(Boolean).join('\n\n')
+      const needsReview = len > REVIEW_THRESHOLD_LENGTH
+      return { success: true, text: displayText, v2: v2Clean, elapsedMs, needsReview }
     }
 
     const errMsg = json?.error?.message || '알 수 없는 오류'

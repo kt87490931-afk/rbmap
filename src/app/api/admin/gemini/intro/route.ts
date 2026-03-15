@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   if (authErr) return authErr
 
   const body = await request.json()
-  const { form, ai_tone, format } = body
+  const { form, ai_tone } = body
 
   if (!form || typeof form !== 'object') {
     return NextResponse.json({ error: 'form 필드가 필요합니다.' }, { status: 400 })
@@ -36,13 +36,12 @@ export async function POST(request: Request) {
   const tone = validTones.includes(ai_tone as (typeof validTones)[number]) ? (ai_tone as (typeof validTones)[number]) : 'pro'
   const data = form as FormDataForGemini
   const essentialKeywords = await getEssentialKeywords()
-  const outFormat = format === 'json' ? 'json' : 'text'
 
-  const result = await generateVenueIntro(data, tone, essentialKeywords, { format: outFormat })
+  const result = await generateVenueIntro(data, tone, essentialKeywords, {})
 
   if (result.success) {
     // eslint-disable-next-line no-console
-    console.log('[gemini/intro] ok', { name: data.name, format: outFormat, elapsedMs: result.elapsedMs, len: result.text?.length, hasV2: !!result.v2, needsReview: result.needsReview })
+    console.log('[gemini/intro] ok', { name: data.name, elapsedMs: result.elapsedMs, len: result.text?.length, hasV2: !!result.v2, needsReview: result.needsReview })
     return NextResponse.json({
       success: true,
       text: result.text,

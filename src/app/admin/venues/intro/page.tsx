@@ -272,7 +272,7 @@ export default function AdminVenueIntroPage() {
       const res = await fetch('/api/admin/gemini/intro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ form: formData, ai_tone: aiTone, format: 'json' }),
+        body: JSON.stringify({ form: formData, ai_tone: aiTone }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || data.error || `생성 실패 (HTTP ${res.status})`)

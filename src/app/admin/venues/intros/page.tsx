@@ -15,16 +15,43 @@ interface IntroItem {
   created_at: string
 }
 
-/** JSON 형태로 저장된 content를 읽기용 텍스트로 변환 */
+/** JSON 블록처럼 보이는 문자열에서 intro 본문만 추출 */
+function extractTextFromJsonLike(str: string): string | null {
+  const trimmed = str.trim()
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null
+  try {
+    const cleaned = trimmed.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?\s*```\s*$/i, '').trim()
+    const first = cleaned.indexOf('{')
+    const last = cleaned.lastIndexOf('}')
+    if (first >= 0 && last > first) {
+      const parsed = JSON.parse(cleaned.slice(first, last + 1)) as { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }
+      if (parsed?.intro) {
+        const parts = [parsed.intro.lead, parsed.intro.quote, ...(parsed.intro.body_paragraphs ?? [])].filter(Boolean)
+        return parts.join('\n\n')
+      }
+    }
+  } catch { /* ignore */ }
+  return null
+}
+
+/** JSON 형태로 저장된 content를 읽기용 텍스트로 변환 (코드/키 노출 없이 본문만) */
 function contentToDisplayText(item: IntroItem): string {
   const raw = item.intro_ai_json?.content ?? ''
   const v2 = item.intro_ai_json?.v2
   if (v2?.intro) {
     const parts = [v2.intro.lead, v2.intro.quote, ...(v2.intro.body_paragraphs ?? [])].filter(Boolean)
-    return parts.join('\n\n')
+    const joined = parts.join('\n\n')
+    if (joined.startsWith('{') || joined.includes('"tagline"') || joined.includes('"intro"')) {
+      const extracted = extractTextFromJsonLike(joined)
+      if (extracted) return extracted
+      return '[JSON 형식으로 저장된 항목입니다. 수정 버튼으로 편집 후 적용해 주세요.]'
+    }
+    return joined
   }
   const trimmed = raw.trim()
   if (trimmed.startsWith('{') || trimmed.startsWith('```')) {
+    const extracted = extractTextFromJsonLike(trimmed)
+    if (extracted) return extracted
     try {
       const cleaned = trimmed.replace(/^```json?\s*/i, '').replace(/\s*```\s*$/, '').trim()
       const parsed = JSON.parse(cleaned) as { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }
@@ -33,6 +60,7 @@ function contentToDisplayText(item: IntroItem): string {
         return parts.join('\n\n')
       }
     } catch { /* fallthrough */ }
+    return '[JSON 형식으로 저장된 항목입니다. 수정 버튼으로 편집 후 적용해 주세요.]'
   }
   return raw
 }

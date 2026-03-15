@@ -17,7 +17,7 @@ import {
 } from './review-scenarios'
 import { REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from './data/venues'
 import { parseUrlSuffixFromHref } from './partner-url'
-import { canGenerateReview, getTodayKSTRangeUTC } from './review-schedule'
+import { canGenerateReview, getTodayKSTRangeUTC, getNextReviewAtWithDailyCap } from './review-schedule'
 
 export type GenerateReviewResult = { partnerId: string; name: string; ok: boolean; msg: string }
 
@@ -92,6 +92,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     tone: ReviewTone
     regionName: string
     typeName: string
+    nextAtMs: number
   }
   const dueList: DueItem[] = []
 
@@ -160,6 +161,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
 
     const regionName = REGION_SLUG_TO_NAME[regionSlug] ?? partner.region ?? regionSlug
     const typeName = SLUG_TO_TYPE[typeSlug] ?? partner.type ?? typeSlug
+    const { nextAt } = getNextReviewAtWithDailyCap(lastReviewAt, todayCount, presetId)
 
     dueList.push({
       partner,
@@ -171,9 +173,12 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       tone,
       regionName,
       typeName,
+      nextAtMs: nextAt.getTime(),
     })
   }
 
+  // 다음 가능 시각이 빠른 순(곧 → 나중)으로 정렬 → "곧"인 업체가 먼저 처리되도록
+  dueList.sort((a, b) => a.nextAtMs - b.nextAtMs)
   const toProcess = dueList.slice(0, MAX_PER_RUN)
   if (dueList.length > MAX_PER_RUN) {
     results.push({

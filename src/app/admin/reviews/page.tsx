@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { REGION_SLUG_TO_NAME } from '@/lib/data/venues'
 import { REVIEW_TYPE_TO_NAME } from '@/lib/data/review-posts'
 import { REVIEW_TONES } from '@/lib/review-scenarios'
@@ -60,6 +60,35 @@ export default function AdminReviewsPage() {
   }, [])
 
   useEffect(() => { fetchItems() }, [fetchItems])
+
+  /** 업체별 리뷰 수 (region|type|venue_slug → count) */
+  const venueCountMap = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const r of items) {
+      const key = `${r.region}|${r.type}|${r.venue_slug}`
+      m.set(key, (m.get(key) ?? 0) + 1)
+    }
+    return m
+  }, [items])
+
+  /** 업체별 리뷰 수 정렬 (건수 내림차순) */
+  const venueCountList = useMemo(() => {
+    const list: { key: string; venue: string; region: string; type: string; count: number }[] = []
+    const seen = new Set<string>()
+    for (const r of items) {
+      const key = `${r.region}|${r.type}|${r.venue_slug}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      list.push({
+        key,
+        venue: r.venue,
+        region: r.region,
+        type: r.type,
+        count: venueCountMap.get(key) ?? 0,
+      })
+    }
+    return list.sort((a, b) => b.count - a.count)
+  }, [items, venueCountMap])
 
   function showMsg(text: string) {
     setMsg(text)
@@ -129,6 +158,21 @@ export default function AdminReviewsPage() {
         <div style={{ padding: '10px 16px', marginBottom: 14, borderRadius: 8, fontSize: 13, fontWeight: 600, background: 'rgba(46,204,113,.1)', color: 'var(--green)', border: '1px solid rgba(46,204,113,.3)' }}>{msg}</div>
       )}
 
+      {venueCountList.length > 0 && (
+        <div className="card-box" style={{ marginBottom: 16 }}>
+          <div className="card-box-title">📊 업체별 리뷰 수</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', fontSize: 13 }}>
+            {venueCountList.map((v) => (
+              <span key={v.key} style={{ color: 'var(--fg)' }}>
+                <strong>{v.venue}</strong>
+                <span style={{ color: 'var(--muted)', marginLeft: 4 }}>({REGION_SLUG_TO_NAME[v.region] ?? v.region} · {REVIEW_TYPE_TO_NAME[v.type] ?? v.type})</span>
+                <span style={{ marginLeft: 6, fontWeight: 600, color: 'var(--accent)' }}>{v.count}건</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="card-box">
         <div className="card-box-title">📋 등록된 리뷰</div>
         <div style={{ overflowX: 'auto' }}>
@@ -138,6 +182,7 @@ export default function AdminReviewsPage() {
                 <th>지역</th>
                 <th>업종</th>
                 <th>업소</th>
+                <th>리뷰수</th>
                 <th>제목</th>
                 <th>글자수</th>
                 <th>말투</th>
@@ -149,6 +194,8 @@ export default function AdminReviewsPage() {
             <tbody>
               {items.map((r) => {
                 const reviewUrl = `/${r.region}/${r.type}/${r.venue_slug}/${r.slug}`
+                const venueKey = `${r.region}|${r.type}|${r.venue_slug}`
+                const venueCount = venueCountMap.get(venueKey) ?? 0
                 const dateStr = r.published_at || r.created_at
                 const dateFormatted = dateStr
                   ? new Date(dateStr).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -161,6 +208,7 @@ export default function AdminReviewsPage() {
                     <td>{REGION_SLUG_TO_NAME[r.region] ?? r.region}</td>
                     <td>{REVIEW_TYPE_TO_NAME[r.type] ?? r.type}</td>
                     <td>{r.venue}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--accent)' }}>{venueCount}건</td>
                     <td style={{ maxWidth: 220 }}>
                       <Link href={reviewUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>
                         {r.title}

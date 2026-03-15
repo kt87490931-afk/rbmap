@@ -9,7 +9,7 @@ interface IntroItem {
   form_json: { name?: string; region?: string; type?: string }
   ai_tone: string
   period_days: number
-  intro_ai_json?: { content?: string; v2?: { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }; generated_at?: string; elapsed_ms?: number }
+  intro_ai_json?: { content?: string; v2?: { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }; generated_at?: string; elapsed_ms?: number; needs_review?: boolean }
   is_applied?: boolean
   is_public?: boolean
   created_at: string
@@ -280,6 +280,11 @@ export default function AdminVenueIntrosPage() {
                       {r.is_applied && (
                         <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'var(--accent)', color: '#fff', fontWeight: 600 }}>
                           적용됨
+                        </span>
+                      )}
+                      {r.intro_ai_json?.needs_review && (
+                        <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'var(--gold, #c8a84b)', color: '#fff', fontWeight: 600 }} title="분량 초과 또는 파싱 보조 저장 · 수정 후 적용 권장">
+                          검토 필요
                         </span>
                       )}
                       <span style={{ fontSize: 11, color: 'var(--muted)' }}>

@@ -154,7 +154,7 @@ export interface VenueIntroV2 {
  * format 'json' 시 v2 DOM 매핑용 구조화 JSON 반환
  */
 export type VenueIntroResult =
-  | { success: true; text: string; v2?: VenueIntroV2; elapsedMs?: number }
+  | { success: true; text: string; v2?: VenueIntroV2; elapsedMs?: number; needsReview?: boolean }
   | { success: false; message: string; httpStatus?: number; diag?: Record<string, unknown> }
 
 /** 생성 글에서 이모지 제거 (프롬프트 지시 외 안전장치) */
@@ -194,6 +194,7 @@ function getV2ContentLength(v: VenueIntroV2): number {
 }
 
 const MIN_CONTENT_LENGTH = 3000
+const REVIEW_THRESHOLD_LENGTH = 4000
 
 const INTRO_BAN_PATTERN =
   '[금지 오프닝] 다음과 같이 시작하지 마라: "업소명은 지역명에 위치한", "업소명은 지역명 OO에 자리한". 다른 업소 소개와 구분되는 독특한 오프닝을 써라.'
@@ -330,18 +331,11 @@ export async function generateVenueIntro(
             }
           }
           text = [v2.intro?.lead, v2.intro?.quote, ...(v2.intro?.body_paragraphs ?? [])].filter(Boolean).join('\n\n')
+          const needsReview = len > REVIEW_THRESHOLD_LENGTH
+          return { success: true, text, v2, elapsedMs, needsReview }
         } else {
           const trimmed = text.trim()
-          const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[') || /^\s*["']?\s*{/.test(trimmed)
-          if (looksLikeJson) {
-            return {
-              success: false,
-              message: 'AI 응답 JSON 파싱에 실패했습니다. 코드(JSON)가 그대로 노출되지 않도록 다시 생성해 주세요.',
-              diag: { rawPreview: text.slice(0, 300), parseError: 'JSON parse failed' },
-            }
-          }
-          const minFallbackLength = 200
-          if (trimmed.length >= minFallbackLength) {
+          if (trimmed.length >= 10) {
             v2 = {
               intro: {
                 label: 'ABOUT · 업소 소개',
@@ -350,12 +344,12 @@ export async function generateVenueIntro(
               },
             }
             text = trimmed
-          } else {
-            return {
-              success: false,
-              message: 'AI 응답 JSON 파싱에 실패했습니다. 다시 생성해 주세요.',
-              diag: { rawPreview: text.slice(0, 500), parseError: 'JSON parse failed' },
-            }
+            return { success: true, text, v2, elapsedMs, needsReview: true }
+          }
+          return {
+            success: false,
+            message: 'AI 응답이 비어 있거나 너무 짧습니다. 다시 생성해 주세요.',
+            diag: { rawPreview: text.slice(0, 300), parseError: 'JSON parse failed' },
           }
         }
       } else {

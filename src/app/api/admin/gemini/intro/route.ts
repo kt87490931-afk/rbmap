@@ -42,12 +42,13 @@ export async function POST(request: Request) {
 
   if (result.success) {
     // eslint-disable-next-line no-console
-    console.log('[gemini/intro] ok', { name: data.name, format: outFormat, elapsedMs: result.elapsedMs, len: result.text?.length, hasV2: !!result.v2 })
+    console.log('[gemini/intro] ok', { name: data.name, format: outFormat, elapsedMs: result.elapsedMs, len: result.text?.length, hasV2: !!result.v2, needsReview: result.needsReview })
     return NextResponse.json({
       success: true,
       text: result.text,
       v2: result.v2 ?? null,
       elapsedMs: result.elapsedMs,
+      needsReview: result.needsReview ?? false,
     })
   }
   // eslint-disable-next-line no-console

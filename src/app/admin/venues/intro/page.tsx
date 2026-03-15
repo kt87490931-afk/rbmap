@@ -289,6 +289,7 @@ export default function AdminVenueIntroPage() {
         elapsed_ms: data.elapsedMs ?? null,
       }
       if (v2) introJson.v2 = v2
+      if (data.needsReview) introJson.needs_review = true
 
       const payload: Record<string, unknown> = {
         partner_id: selectedPartnerId || null,
@@ -304,7 +305,7 @@ export default function AdminVenueIntroPage() {
       })
       const saveData = await saveRes.json()
       if (!saveRes.ok) throw new Error(saveData.error || '저장 실패')
-      showMsg(`AI 생성 완료 (${data.elapsedMs ?? 0}ms) · 리스트에 저장됨`)
+      showMsg(data.needsReview ? 'AI 생성 완료 (검토 필요로 저장됨) · 리스트에서 확인 후 수정·적용해 주세요.' : `AI 생성 완료 (${data.elapsedMs ?? 0}ms) · 리스트에 저장됨`)
       router.push('/admin/venues/intros')
     } catch (e) {
       console.error('[AI 생성]', e)

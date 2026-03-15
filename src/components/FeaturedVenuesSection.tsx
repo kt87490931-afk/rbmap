@@ -22,7 +22,7 @@ const DEFAULT_VENUES: VenueCard[] = [
 ];
 
 export default function FeaturedVenuesSection({ venues }: FeaturedVenuesSectionProps) {
-  const list = venues?.length ? venues.slice(0, 4) : DEFAULT_VENUES;
+  const list = venues?.length ? venues : DEFAULT_VENUES;
   return (
     <section className="section bg-deep" aria-label="추천 업소">
       <div className="section-inner">

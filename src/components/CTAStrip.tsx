@@ -11,7 +11,7 @@ const DEFAULT: CTAData = {
   title: "내 업소를 룸빵여지도에 등록하세요",
   desc: "전국 유흥 정보를 찾는 방문자에게 직접 노출됩니다",
   btn_text: "광고 및 등록 문의하기",
-  btn_href: "/contact",
+  btn_href: "https://t.me/rbbmap",
 };
 
 export default function CTAStrip({ data }: { data?: CTAData | null }) {
@@ -23,7 +23,7 @@ export default function CTAStrip({ data }: { data?: CTAData | null }) {
           <h2>{d.title}</h2>
           <p>{d.desc}</p>
         </div>
-        <Link href={d.btn_href ?? "/contact"} className="cta-btn btn-primary">{d.btn_text}</Link>
+        <Link href={d.btn_href ?? "https://t.me/rbbmap"} className="cta-btn btn-primary" target="_blank" rel="noopener noreferrer">{d.btn_text}</Link>
       </div>
     </div>
   );

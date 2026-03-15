@@ -78,12 +78,13 @@ export const SLUG_TO_TYPE: Record<string, string> = Object.fromEntries(
   Object.entries(TYPE_TO_SLUG).map(([k, v]) => [v, k])
 );
 
-export const REGION_SLUGS = ["gangnam", "suwon", "dongtan", "osan", "jeju"] as const;
+export const REGION_SLUGS = ["gangnam", "suwon", "dongtan", "osan", "garak", "jeju"] as const;
 export const REGION_SLUG_TO_NAME: Record<string, string> = {
   gangnam: "강남",
   suwon: "수원 인계동",
   dongtan: "동탄",
   osan: "오산",
+  garak: "가락",
   jeju: "제주",
 };
 
@@ -94,6 +95,7 @@ export const REGION_NAME_TO_SLUG: Record<string, string> = {
   "수원 인계동": "suwon",
   동탄: "dongtan",
   오산: "osan",
+  가락: "garak",
   제주: "jeju",
 };
 

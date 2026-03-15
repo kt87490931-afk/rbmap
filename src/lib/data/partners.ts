@@ -78,6 +78,7 @@ const REGION_NAME_TO_SLUG: Record<string, string> = {
   "수원 인계동": "suwon",
   동탄: "dongtan",
   오산: "osan",
+  가락: "garak",
   제주: "jeju",
 }
 const REGION_SLUG_TO_NAME: Record<string, string> = {
@@ -85,10 +86,11 @@ const REGION_SLUG_TO_NAME: Record<string, string> = {
   suwon: "수원 인계동",
   dongtan: "동탄",
   osan: "오산",
+  garak: "가락",
   jeju: "제주",
 }
 
-const REGION_ORDER = ["gangnam", "suwon", "dongtan", "osan", "jeju"]
+const REGION_ORDER = ["gangnam", "suwon", "dongtan", "osan", "garak", "jeju"]
 
 export async function getRegionsWithPartners(): Promise<{ slug: string; name: string }[]> {
   const all = await getPartners()

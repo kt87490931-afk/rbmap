@@ -195,7 +195,7 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
     title: '내 업소를 룸빵여지도에 등록하세요',
     desc: '전국 유흥 정보를 찾는 방문자에게 직접 노출됩니다',
     btn_text: '광고 및 등록 문의하기',
-    btn_href: '/contact',
+    btn_href: 'https://t.me/rbbmap',
   },
   footer: {
     desc: '믿을 수 있는 업소를 한눈에! 룸빵여지도에서 전국 유흥 정보를 확인하세요. 검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다. 6시간마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.',

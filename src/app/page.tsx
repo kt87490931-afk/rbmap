@@ -76,13 +76,13 @@ export default async function Home() {
   }
 
   const [partnersForWidgets, reviewPosts, reviewPostsByClick] = await Promise.all([
-    getPartners(50),
+    getPartners(),
     getReviewPostsList({ limit: feedLimit }),
     getReviewPostsListByClickCount(5),
   ]);
 
-  const REGION_NAME_TO_SLUG: Record<string, string> = { 강남: "gangnam", 수원: "suwon", "수원 인계동": "suwon", 동탄: "dongtan", 제주: "jeju" };
-  const venueCards = partnersForWidgets.slice(0, 4).map((p) => {
+  const REGION_NAME_TO_SLUG: Record<string, string> = { 강남: "gangnam", 수원: "suwon", "수원 인계동": "suwon", 동탄: "dongtan", 오산: "osan", 가락: "garak", 제주: "jeju" };
+  const venueCards = partnersForWidgets.map((p) => {
     const href = p.href?.startsWith("/") ? p.href : `/${(p.href ?? "").split("/")[1] ?? "gangnam"}/${TYPE_TO_SLUG[p.type] || "karaoke"}/${p.id}`;
     const regionName = REGION_SLUG_TO_NAME[(href?.split("/")[1] ?? "")] ?? p.region ?? "";
     const rawDesc = p.desc || "";

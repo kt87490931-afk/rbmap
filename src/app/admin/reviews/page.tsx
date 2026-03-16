@@ -75,6 +75,7 @@ export default function AdminReviewsPage() {
   const [manualRunLoading, setManualRunLoading] = useState(false)
   const [manualRunMsg, setManualRunMsg] = useState('')
   const [msg, setMsg] = useState('')
+  const [holdRestoreLoadingId, setHoldRestoreLoadingId] = useState<string | null>(null)
   const [editItem, setEditItem] = useState<ReviewItem | null>(null)
   const [editForm, setEditForm] = useState<{ title: string; star: number; sec_overview: string; sec_lineup: string; sec_price: string; sec_facility: string; sec_summary: string } | null>(null)
 
@@ -191,37 +192,49 @@ export default function AdminReviewsPage() {
     }
   }
 
-  /** 보류: 홈페이지에서 비공개. DB에는 유지되어 중복 제목 검사에 사용됨 */
+  /** 보류: 홈페이지에서 비공개. DB에는 유지되어 중복 제목 검사에 사용됨 (status=draft) */
   async function holdItem(r: ReviewItem) {
-    const res = await fetch(`/api/admin/reviews/${r.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ status: 'pending' }),
-    })
-    if (res.ok) {
-      setItems((prev) => prev.map((x) => (x.id === r.id ? { ...x, status: 'pending' } : x)))
-      showMsg('보류 처리됨. 홈페이지에서 비공개됩니다.')
-    } else {
-      const err = await res.json()
-      showMsg(`보류 실패: ${err?.error ?? res.statusText}`)
+    setHoldRestoreLoadingId(r.id)
+    try {
+      const res = await fetch(`/api/admin/reviews/${r.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'draft' }),
+      })
+      const data = res.ok ? await res.json().catch(() => null) : null
+      const errBody = res.ok ? null : await res.json().catch(() => ({ error: res.statusText }))
+      if (res.ok && data) {
+        setItems((prev) => prev.map((x) => (x.id === r.id ? { ...x, status: (data as ReviewItem).status ?? 'draft' } : x)))
+        showMsg('보류 처리됨. 홈페이지에서 비공개됩니다.')
+      } else {
+        showMsg(`보류 실패: ${(errBody as { error?: string })?.error ?? res.statusText}`)
+      }
+    } finally {
+      setHoldRestoreLoadingId(null)
     }
   }
 
   /** 복원: 보류 → 게시로 전환, 홈페이지에 다시 노출 */
   async function restoreItem(r: ReviewItem) {
-    const res = await fetch(`/api/admin/reviews/${r.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ status: 'published' }),
-    })
-    if (res.ok) {
-      setItems((prev) => prev.map((x) => (x.id === r.id ? { ...x, status: 'published' } : x)))
-      showMsg('복원됨. 홈페이지에 다시 노출됩니다.')
-    } else {
-      const err = await res.json()
-      showMsg(`복원 실패: ${err?.error ?? res.statusText}`)
+    setHoldRestoreLoadingId(r.id)
+    try {
+      const res = await fetch(`/api/admin/reviews/${r.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'published' }),
+      })
+      const data = res.ok ? await res.json().catch(() => null) : null
+      const errBody = res.ok ? null : await res.json().catch(() => ({ error: res.statusText }))
+      if (res.ok && data) {
+        setItems((prev) => prev.map((x) => (x.id === r.id ? { ...x, status: (data as ReviewItem).status ?? 'published' } : x)))
+        showMsg('복원됨. 홈페이지에 다시 노출됩니다.')
+      } else {
+        showMsg(`복원 실패: ${(errBody as { error?: string })?.error ?? res.statusText}`)
+      }
+    } finally {
+      setHoldRestoreLoadingId(null)
     }
   }
 
@@ -438,16 +451,16 @@ export default function AdminReviewsPage() {
                     <td style={{ fontSize: 11, maxWidth: 140 }} title={toneName}>{toneName !== '-' ? toneName : '-'}</td>
                     <td style={{ fontSize: 12 }}>{dateFormatted}</td>
                     <td>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: r.status === 'pending' ? 'var(--gold)' : 'var(--green)' }}>
-                        {r.status === 'pending' ? '보류' : '게시'}
+                      <span style={{ fontSize: 11, fontWeight: 600, color: r.status === 'draft' ? 'var(--gold)' : 'var(--green)' }}>
+                        {r.status === 'draft' ? '보류' : '게시'}
                       </span>
                     </td>
                     <td>{r.is_ai_written ? 'Y' : '-'}</td>
                     <td>
-                      {r.status === 'pending' ? (
-                        <button type="button" className="btn-save" style={{ padding: '4px 10px', fontSize: 11, marginRight: 6 }} onClick={() => restoreItem(r)}>복원</button>
+                      {r.status === 'draft' ? (
+                        <button type="button" className="btn-save" style={{ padding: '4px 10px', fontSize: 11, marginRight: 6 }} onClick={() => restoreItem(r)} disabled={holdRestoreLoadingId === r.id}>{holdRestoreLoadingId === r.id ? '처리 중…' : '복원'}</button>
                       ) : (
-                        <button type="button" className="btn-secondary" style={{ padding: '4px 10px', fontSize: 11, marginRight: 6 }} onClick={() => holdItem(r)}>보류</button>
+                        <button type="button" className="btn-secondary" style={{ padding: '4px 10px', fontSize: 11, marginRight: 6 }} onClick={() => holdItem(r)} disabled={holdRestoreLoadingId === r.id}>{holdRestoreLoadingId === r.id ? '처리 중…' : '보류'}</button>
                       )}
                       <button type="button" className="btn-secondary" style={{ padding: '4px 10px', fontSize: 11, marginRight: 6 }} onClick={() => openEdit(r)}>수정</button>
                       <button type="button" className="btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => deleteItem(r.id, r.title)}>삭제</button>

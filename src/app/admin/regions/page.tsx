@@ -34,6 +34,7 @@ export default function AdminRegionsPage() {
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState<'success' | 'error'>('success')
   const [adding, setAdding] = useState(false)
+  const [savingId, setSavingId] = useState<string | null>(null)
   const [form, setForm] = useState({ slug: '', name: '', short: '', thumb_class: 'default', tags: '', venues: 0, reviews: 0, badge: '', coming: false, map_x: '', map_y: '' })
   const [editingTags, setEditingTags] = useState<Record<string, string>>({})
   const [editing, setEditing] = useState<Record<string, Partial<RegionItem>>>({})
@@ -115,6 +116,44 @@ export default function AdminRegionsPage() {
     } catch {
       showMsg('저장 실패', 'error')
     }
+  }
+
+  /** 해당 행의 수정 중인 값(이름·short·태그·map 등)을 한 번에 저장 */
+  async function saveRow(id: string) {
+    const item = items.find((r) => r.id === id)
+    if (!item) return
+    const edit = editing[id]
+    const tagsStr = editingTags[id]
+    const tags =
+      tagsStr !== undefined
+        ? tagsStr.split(',').map((s) => s.trim()).filter(Boolean)
+        : item.tags ?? []
+    const payload: RegionItem = {
+      ...item,
+      ...edit,
+      tags,
+    }
+    setSavingId(id)
+    try {
+      const res = await fetch(`/api/admin/regions/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setItems((prev) => prev.map((r) => (r.id === id ? data : r)))
+        setEditing((p) => { const n = { ...p }; delete n[id]; return n })
+        setEditingTags((p) => { const n = { ...p }; delete n[id]; return n })
+        showMsg('저장 완료!')
+      } else {
+        showMsg(data.error || (res.status === 403 ? 'OTP 인증이 필요합니다.' : '저장 실패'), 'error')
+      }
+    } catch {
+      showMsg('저장 실패', 'error')
+    }
+    setSavingId(null)
   }
 
   async function deleteItem(id: string, name: string) {
@@ -242,11 +281,6 @@ export default function AdminRegionsPage() {
                       value={editingTags[r.id] ?? (r.tags || []).join(', ')}
                       onChange={(e) => setEditingTags((prev) => ({ ...prev, [r.id]: e.target.value }))}
                       onFocus={(e) => setEditingTags((prev) => ({ ...prev, [r.id]: (r.tags || []).join(', ') }))}
-                      onBlur={(e) => {
-                        const val = e.target.value.split(',').map((s) => s.trim()).filter(Boolean)
-                        updateItem(r.id, 'tags', val)
-                        setEditingTags((prev) => { const n = { ...prev }; delete n[r.id]; return n })
-                      }}
                     />
                   </td>
                   <td><input className="form-input" type="number" style={{ width: 60, padding: 6 }} value={editing[r.id]?.venues ?? r.venues} onChange={(e) => setEditing((p) => ({ ...p, [r.id]: { ...p[r.id], venues: parseInt(e.target.value, 10) || 0 } }))} onBlur={(e) => { updateItem(r.id, 'venues', parseInt(e.target.value, 10) || 0); setEditing((p) => { const n = { ...p }; delete n[r.id]; return n }) }} /></td>
@@ -259,7 +293,10 @@ export default function AdminRegionsPage() {
                     </select>
                   </td>
                   <td><input type="checkbox" checked={!!r.coming} onChange={(e) => updateItem(r.id, 'coming', e.target.checked)} /></td>
-                  <td><button className="btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => deleteItem(r.id, r.name)}>삭제</button></td>
+                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button className="btn-save" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => saveRow(r.id)} disabled={savingId === r.id}>{savingId === r.id ? '저장 중…' : '저장'}</button>
+                    <button className="btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => deleteItem(r.id, r.name)}>삭제</button>
+                  </td>
                 </tr>
               ))}
             </tbody>

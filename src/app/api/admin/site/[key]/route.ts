@@ -9,7 +9,7 @@ const VALID_KEYS = [
   'hero', 'ticker', 'header', 'about', 'region_guide', 'category_guide',
   'widgets_a', 'widgets_b', 'stats', 'cta', 'footer', 'region_preview',
   'partners_config', 'feed_config', 'review_config', 'region_sidebar', 'seo',
-  'visitor_config',
+  'visitor_config', 'cron_control',
 ] as const
 
 function isEmptyObj(obj: unknown): boolean {

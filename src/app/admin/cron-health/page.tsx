@@ -42,6 +42,8 @@ export default function AdminCronHealthPage() {
   const [running, setRunning] = useState(false)
   const [runMsg, setRunMsg] = useState('')
   const [runOk, setRunOk] = useState(true)
+  const [cronPaused, setCronPaused] = useState<boolean | null>(null)
+  const [cronPauseLoading, setCronPauseLoading] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -60,7 +62,33 @@ export default function AdminCronHealthPage() {
     } catch { setPartners([]) }
   }, [])
 
-  useEffect(() => { fetchData(); fetchPartners() }, [fetchData, fetchPartners])
+  const fetchCronControl = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/site/cron_control', { credentials: 'include' })
+      const json = await res.json()
+      setCronPaused(json?.review_cron_paused === true)
+    } catch { setCronPaused(false) }
+  }, [])
+
+  useEffect(() => { fetchData(); fetchPartners(); fetchCronControl() }, [fetchData, fetchPartners, fetchCronControl])
+
+  async function setCronPausedState(paused: boolean) {
+    setCronPauseLoading(true)
+    try {
+      const res = await fetch('/api/admin/site/cron_control', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ review_cron_paused: paused }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setCronPaused(json?.review_cron_paused === true)
+      }
+    } finally {
+      setCronPauseLoading(false)
+    }
+  }
 
   async function runManual() {
     if (selectedIds.size === 0) {
@@ -306,6 +334,30 @@ export default function AdminCronHealthPage() {
         (items) => renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as { name?: string }[]).some((x) => x.name)),
         () => (
           <div style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>
+                리뷰 생성 크론: {cronPaused === null ? '확인 중…' : cronPaused ? <span style={{ color: 'var(--gold)' }}>정지</span> : <span style={{ color: 'var(--green)' }}>동작 중</span>}
+              </span>
+              <button
+                type="button"
+                className="btn-danger"
+                style={{ padding: '6px 14px', fontSize: 12 }}
+                disabled={cronPauseLoading || cronPaused === true}
+                onClick={() => setCronPausedState(true)}
+              >
+                {cronPauseLoading ? '처리 중…' : '크론 정지'}
+              </button>
+              <button
+                type="button"
+                className="btn-save"
+                style={{ padding: '6px 14px', fontSize: 12 }}
+                disabled={cronPauseLoading || cronPaused === false}
+                onClick={() => setCronPausedState(false)}
+              >
+                {cronPauseLoading ? '처리 중…' : '크론 재개'}
+              </button>
+              {cronPaused === true && <span style={{ fontSize: 12, color: 'var(--muted)' }}>정지 시 서버 크론이 호출해도 리뷰가 생성되지 않습니다.</span>}
+            </div>
             <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>제휴업체를 선택한 뒤 수동 실행하면 즉시 리뷰가 생성됩니다.</p>
             {partners.length > 0 ? (
               <>

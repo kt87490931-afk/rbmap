@@ -92,23 +92,24 @@ export async function getNextReviewSchedules(): Promise<NextReviewScheduleItem[]
 
     const { data: todayRows } = await supabaseAdmin
       .from('review_posts')
-      .select('created_at')
+      .select('published_at')
       .eq('region', regionSlug)
       .eq('type', typeSlug)
       .eq('venue_slug', venueSlug)
-      .gte('created_at', todayRange.start)
-      .lt('created_at', todayRange.end)
+      .gte('published_at', todayRange.start)
+      .lt('published_at', todayRange.end)
     const todayCount = todayRows?.length ?? 0
 
     const { data: historyRows } = await supabaseAdmin
       .from('review_posts')
-      .select('created_at')
+      .select('published_at, created_at')
       .eq('region', regionSlug)
       .eq('type', typeSlug)
       .eq('venue_slug', venueSlug)
-      .order('created_at', { ascending: false })
+      .order('published_at', { ascending: false })
       .limit(1)
-    const lastReviewAt = historyRows?.[0]?.created_at ?? null
+    const lastRow = historyRows?.[0]
+    const lastReviewAt = (lastRow?.published_at ?? lastRow?.created_at) ?? null
     const presetId = (partner as { review_schedule_preset?: string }).review_schedule_preset ?? undefined
 
     const { nextAt, isTomorrow } = getNextReviewAtWithDailyCap(lastReviewAt, todayCount, presetId)

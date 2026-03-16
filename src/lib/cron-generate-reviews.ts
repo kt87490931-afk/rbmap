@@ -26,7 +26,7 @@ import { parseUrlSuffixFromHref } from './partner-url'
 import { canGenerateReview, getTodayKSTRangeUTC, getNextReviewAtWithDailyCap } from './review-schedule'
 import { pickTopicExcludingRecent } from './review-topics'
 
-/** 해당 업소의 현재 오늘 리뷰 수 + 마지막 리뷰 시각 (스케줄 재확인용, 최신 DB 반영) */
+/** 해당 업소의 현재 오늘 리뷰 수 + 마지막 리뷰 시각 (등록된 리뷰 날짜·시간 기준 = published_at 우선, 스케줄 호가인용) */
 async function getVenueScheduleState(
   regionSlug: string,
   typeSlug: string,
@@ -36,23 +36,24 @@ async function getVenueScheduleState(
   const [todayRes, historyRes] = await Promise.all([
     supabaseAdmin
       .from('review_posts')
-      .select('created_at')
+      .select('published_at')
       .eq('region', regionSlug)
       .eq('type', typeSlug)
       .eq('venue_slug', venueSlug)
-      .gte('created_at', todayRange.start)
-      .lt('created_at', todayRange.end),
+      .gte('published_at', todayRange.start)
+      .lt('published_at', todayRange.end),
     supabaseAdmin
       .from('review_posts')
-      .select('created_at')
+      .select('published_at, created_at')
       .eq('region', regionSlug)
       .eq('type', typeSlug)
       .eq('venue_slug', venueSlug)
-      .order('created_at', { ascending: false })
+      .order('published_at', { ascending: false })
       .limit(1),
   ])
   const todayCount = todayRes.data?.length ?? 0
-  const lastReviewAt = historyRes.data?.[0]?.created_at ?? null
+  const lastRow = historyRes.data?.[0]
+  const lastReviewAt = (lastRow?.published_at ?? lastRow?.created_at) ?? null
   return { todayCount, lastReviewAt }
 }
 
@@ -170,24 +171,25 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     const todayRange = getTodayKSTRangeUTC()
     const { data: todayRows } = await supabaseAdmin
       .from('review_posts')
-      .select('created_at')
+      .select('published_at')
       .eq('region', regionSlug)
       .eq('type', typeSlug)
       .eq('venue_slug', venueSlug)
-      .gte('created_at', todayRange.start)
-      .lt('created_at', todayRange.end)
+      .gte('published_at', todayRange.start)
+      .lt('published_at', todayRange.end)
     const todayCount = todayRows?.length ?? 0
 
     const { data: historyRows } = await supabaseAdmin
       .from('review_posts')
-      .select('scenario_used, created_at')
+      .select('scenario_used, published_at, created_at')
       .eq('region', regionSlug)
       .eq('type', typeSlug)
       .eq('venue_slug', venueSlug)
-      .order('created_at', { ascending: false })
+      .order('published_at', { ascending: false })
       .limit(10)
 
-    const lastReviewAt = historyRows?.[0]?.created_at ?? null
+    const lastRow = historyRows?.[0]
+    const lastReviewAt = (lastRow?.published_at ?? lastRow?.created_at) ?? null
     if (!canGenerateReview(lastReviewAt, todayCount, presetId)) {
       results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '간격/일 한도 미충족' })
       continue

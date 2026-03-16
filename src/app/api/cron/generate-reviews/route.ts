@@ -20,6 +20,22 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // 어드민 "크론 정지" 시 리뷰 생성 없이 즉시 반환 (비용·과다 생성 방지)
+  const { data: cronControl } = await supabaseAdmin
+    .from('site_sections')
+    .select('content')
+    .eq('section_key', 'cron_control')
+    .maybeSingle()
+  const paused = (cronControl?.content as { review_cron_paused?: boolean } | null)?.review_cron_paused === true
+  if (paused) {
+    return NextResponse.json({
+      ok: true,
+      paused: true,
+      message: '리뷰 생성 크론이 정지 상태입니다. 어드민에서 재개할 때까지 실행되지 않습니다.',
+      duration_ms: 0,
+    })
+  }
+
   const startAt = Date.now()
   let healthId: string | null = null
 

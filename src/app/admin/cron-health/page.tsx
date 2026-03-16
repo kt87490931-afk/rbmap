@@ -44,6 +44,7 @@ export default function AdminCronHealthPage() {
   const [runOk, setRunOk] = useState(true)
   const [cronPaused, setCronPaused] = useState<boolean | null>(null)
   const [cronPauseLoading, setCronPauseLoading] = useState(false)
+  const [diagnostic, setDiagnostic] = useState<{ activeCount: number; activeNames: string[] } | null>(null)
 
   const fetchData = useCallback(async () => {
     try {
@@ -70,7 +71,24 @@ export default function AdminCronHealthPage() {
     } catch { setCronPaused(false) }
   }, [])
 
-  useEffect(() => { fetchData(); fetchPartners(); fetchCronControl() }, [fetchData, fetchPartners, fetchCronControl])
+  const fetchDiagnostic = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/cron-health/diagnostic', { credentials: 'include' })
+      const json = await res.json()
+      if (json.error) return
+      setDiagnostic({
+        activeCount: json.activeCount ?? 0,
+        activeNames: Array.isArray(json.activeNames) ? json.activeNames : [],
+      })
+    } catch { setDiagnostic(null) }
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+    fetchPartners()
+    fetchCronControl()
+    fetchDiagnostic()
+  }, [fetchData, fetchPartners, fetchCronControl, fetchDiagnostic])
 
   async function setCronPausedState(paused: boolean) {
     setCronPauseLoading(true)
@@ -357,6 +375,25 @@ export default function AdminCronHealthPage() {
                 {cronPauseLoading ? '처리 중…' : '크론 재개'}
               </button>
               {cronPaused === true && <span style={{ fontSize: 12, color: 'var(--muted)' }}>정지 시 서버 크론이 호출해도 리뷰가 생성되지 않습니다.</span>}
+            </div>
+            {/* 크론이 실제로 조회하는 제휴 수 진단 (로그 "제휴 N개"와 동일 쿼리) */}
+            <div style={{ marginBottom: 12, padding: '10px 12px', background: 'var(--bg-soft)', borderRadius: 8, fontSize: 12 }}>
+              <strong>크론이 조회하는 활성 제휴업체 (is_active=true):</strong>{' '}
+              {diagnostic == null ? '확인 중…' : (
+                <>
+                  <span style={{ fontWeight: 600 }}>{diagnostic.activeCount}개</span>
+                  {diagnostic.activeNames.length > 0 && (
+                    <span style={{ color: 'var(--muted)', marginLeft: 6 }}>
+                      — {diagnostic.activeNames.join(', ')}
+                    </span>
+                  )}
+                  {diagnostic.activeCount > 0 && partners.length > 0 && diagnostic.activeCount !== partners.length && (
+                    <p style={{ marginTop: 6, marginBottom: 0, color: 'var(--gold)' }}>
+                      ※ 수동 실행용은 “적용된 소개글 있음”만 표시({partners.length}개). 크론 로그의 「제휴 N개」는 위 {diagnostic.activeCount}개 기준입니다. 9개인데 4개만 나오면 이 페이지가 크론과 같은 서버/DB를 쓰는지, 제휴업체 관리에서 is_active를 확인하세요.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
             <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>제휴업체를 선택한 뒤 수동 실행하면 즉시 리뷰가 생성됩니다.</p>
             {partners.length > 0 ? (

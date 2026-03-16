@@ -37,58 +37,9 @@ function stripEmoji(s: string): string {
   return s.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2300}-\u{23FF}]|[\u{2B50}]|[\u{2705}]|[\u{274C}]/gu, "").trim();
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<PageParams>;
-}): Promise<Metadata> {
-  const { region, category, venue } = await params;
-
-  if (!isValidRegion(region) || !isValidCategory(category)) {
-    return {};
-  }
-
-  const data = await getVenueDetail(region, category, venue);
-  if (!data) return {};
-
-  const regionName = REGION_SLUG_TO_NAME[region] ?? region;
-  const typeName = SLUG_TO_TYPE[category] ?? category;
-  const title = `${data.name} | ${regionName} ${typeName} - 룸빵여지도`;
-  const description = `${data.name} 상세 정보. ${regionName} ${typeName} 평점 ${data.rating}, 리뷰 ${data.reviewCount}개. 주소 ${data.location}, 연락처 ${data.contact}. 방문 전 예약 권장.`;
-  const keywords = [
-    data.name,
-    `${regionName} ${data.name}`,
-    `${regionName} ${typeName}`,
-    `${data.name} 가격`,
-    `${data.name} 후기`,
-    `${data.name} 위치`,
-  ].join(", ");
-
-  const canonicalUrl = `${SITE_URL}${data.url.startsWith("/") ? data.url : `/${region}/${category}/${venue}`}`;
-  const ogImage = `${SITE_URL}/og/og-home.png`;
-
-  return {
-    title,
-    description,
-    keywords,
-    metadataBase: new URL(SITE_URL),
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      url: canonicalUrl,
-      siteName: "룸빵여지도",
-      images: [{ url: ogImage, width: 1200, height: 630 }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
-    alternates: {
-      canonical: canonicalUrl,
-    },
-  };
+/** 업체소개글(업소 상세) 메타는 VenueMetaInHead에서만 주입. 중복 제거를 위해 여기서는 반환하지 않음. */
+export async function generateMetadata(): Promise<Metadata> {
+  return {};
 }
 
 export default async function VenueDetailPage({

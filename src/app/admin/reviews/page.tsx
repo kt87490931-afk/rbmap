@@ -37,6 +37,9 @@ interface NextScheduleItem {
   nextAtKST: string
   inText: string
   isTomorrow: boolean
+  canGenerateNow: boolean
+  statusLabel: string
+  nextCronKST: string
 }
 
 interface LatestCronRun {
@@ -260,7 +263,7 @@ export default function AdminReviewsPage() {
       <div className="card-box" style={{ marginBottom: 16 }}>
         <div className="card-box-title">⏱ 다음 리뷰 생성 예정 (스케줄)</div>
         <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-          각 제휴업체별 다음 리뷰 가능 시각·남은 시간 (분 단위 표기). <strong>「곧」</strong> = 이미 가능 시각이 지났거나 1분 이내(다음 Cron 실행 시 우선 처리). <strong>「곧 (경과 N분)」</strong> = 가능 시각이 N분 전에 지남(다음 Cron 실행 시 처리). Cron은 <strong>30분마다</strong> 실행되며, 다음 가능 시각이 가장 빠른 업체부터 최대 25건까지 처리합니다. (업체별 스케줄 예: 12시간 간격 → 01:04 다음은 01:30 전후 크론에서 처리)
+          각 제휴업체별 다음 리뷰 가능 시각·상태. <strong>「생성 가능」</strong> = 지금 시점에 크론 후보로 들어감(다음 크론 실행 시 처리 대상). <strong>「처리 대기 중」</strong> = 예정 시각이 이미 지나 다음 크론(20분 간격)에서 처리 예정. 「오늘 한도 소진」/「간격 미충족」은 이번 크론에 포함되지 않음. Cron은 <strong>20분마다</strong> 실행되며, <strong>생성 가능</strong>인 업체 중 다음 가능 시각이 빠른 순 최대 25건 처리.
         </p>
         {cronStatusLoading ? (
           <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>크론 상태 로딩 중...</p>
@@ -312,8 +315,9 @@ export default function AdminReviewsPage() {
                   <th>지역</th>
                   <th>업종</th>
                   <th>스케줄</th>
+                  <th>상태</th>
                   <th>다음 가능 시각 (KST)</th>
-                  <th>남은 시간</th>
+                  <th>남은 시간 / 비고</th>
                 </tr>
               </thead>
               <tbody>
@@ -323,8 +327,19 @@ export default function AdminReviewsPage() {
                     <td>{REGION_SLUG_TO_NAME[s.region] ?? s.region}</td>
                     <td>{REVIEW_TYPE_TO_NAME[s.type] ?? s.type}</td>
                     <td style={{ fontSize: 11, color: 'var(--muted)' }}>{s.presetLabel}</td>
+                    <td>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: s.canGenerateNow ? 'var(--green)' : 'var(--muted)',
+                        }}
+                      >
+                        {s.statusLabel}
+                      </span>
+                    </td>
                     <td style={{ fontSize: 12 }}>{s.nextAtKST}{s.isTomorrow ? ' (내일)' : ''}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--gold)' }}>{s.inText}</td>
+                    <td style={{ fontWeight: 500, color: s.canGenerateNow ? 'var(--gold)' : 'var(--muted)' }}>{s.inText}</td>
                   </tr>
                 ))}
               </tbody>

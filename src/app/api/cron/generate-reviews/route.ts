@@ -64,10 +64,17 @@ export async function GET(request: Request) {
       }
     } catch { /* cron_health 테이블 없으면 무시 */ }
 
-    const { results, durationMs, scheduleRecheckSkips = 0 } = await runGenerateReviews(null)
+    const {
+      results,
+      durationMs,
+      scheduleRecheckSkips = 0,
+      totalPartners = 0,
+      inDueListCount = 0,
+    } = await runGenerateReviews(null)
     const successCount = results.filter((r) => r.ok).length
     const recheckSuffix =
       scheduleRecheckSkips > 0 ? ` (스케줄재확인 스킵 ${scheduleRecheckSkips}건)` : ''
+    const summaryMsg = `완료: ${successCount}/${results.length}건 (제휴 ${totalPartners}개 중 후보 ${inDueListCount}건)${recheckSuffix}`
 
     if (healthId) {
       try {
@@ -76,7 +83,7 @@ export async function GET(request: Request) {
           .update({
             ended_at: new Date().toISOString(),
             ok: true,
-            msg: `완료: ${successCount}/${results.length}건${recheckSuffix}`,
+            msg: summaryMsg,
             processed: results.length,
             success_count: successCount,
             results,
@@ -91,6 +98,8 @@ export async function GET(request: Request) {
       duration_ms: durationMs,
       processed: results.length,
       success: successCount,
+      total_partners: totalPartners,
+      in_due_list_count: inDueListCount,
       schedule_recheck_skips: scheduleRecheckSkips,
       results,
     })

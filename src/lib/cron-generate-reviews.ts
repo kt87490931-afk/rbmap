@@ -99,6 +99,8 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
   results: GenerateReviewResult[]
   durationMs: number
   scheduleRecheckSkips: number
+  totalPartners: number
+  inDueListCount: number
 }> {
   const startAt = Date.now()
   const results: GenerateReviewResult[] = []
@@ -117,6 +119,8 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       results: [{ partnerId: '', name: '', ok: false, msg: partnersErr.message }],
       durationMs: Date.now() - startAt,
       scheduleRecheckSkips: 0,
+      totalPartners: 0,
+      inDueListCount: 0,
     }
   }
 
@@ -381,5 +385,11 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     (r) => r.msg && (r.msg.includes('스케줄 재확인: 간격') || r.msg.includes('스케줄 재확인: 삽입'))
   ).length
 
-  return { results, durationMs, scheduleRecheckSkips }
+  return {
+    results,
+    durationMs,
+    scheduleRecheckSkips,
+    totalPartners: list.length,
+    inDueListCount: dueList.length,
+  }
 }

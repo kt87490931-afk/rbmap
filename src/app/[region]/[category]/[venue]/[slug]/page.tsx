@@ -63,6 +63,7 @@ export async function generateMetadata({
       : `${post.venue} 이용 후기, ${post.venue} 리뷰, ${regionName} ${typeName}, 룸빵여지도`
 
   return {
+    metadataBase: new URL(SITE_URL),
     title,
     description: desc,
     keywords,

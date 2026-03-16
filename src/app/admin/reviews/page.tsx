@@ -476,6 +476,9 @@ export default function AdminReviewsPage() {
 
       {editItem && editForm && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="review-edit-title"
           style={{
             position: 'fixed',
             inset: 0,
@@ -485,7 +488,6 @@ export default function AdminReviewsPage() {
             justifyContent: 'center',
             zIndex: 9999,
           }}
-          onClick={() => { setEditItem(null); setEditForm(null) }}
         >
           <div
             className="admin-form-control"
@@ -500,9 +502,8 @@ export default function AdminReviewsPage() {
               overflow: 'auto',
               boxShadow: '0 8px 32px rgba(0,0,0,.3)',
             }}
-            onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ marginBottom: 16, color: '#111' }}>리뷰 수정</h3>
+            <h3 id="review-edit-title" style={{ marginBottom: 16, color: '#111' }}>리뷰 수정</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <label>
                 <span style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#333' }}>제목</span>

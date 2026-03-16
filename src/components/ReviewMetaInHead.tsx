@@ -34,18 +34,59 @@ function isReviewPath(segments: string[]): segments is [string, string, string, 
   )
 }
 
+function decodeSlug(s: string): string {
+  try {
+    return decodeURIComponent(s)
+  } catch {
+    return s
+  }
+}
+
+function getPathnameFromHeaders(headersList: Headers): string {
+  const fromMiddleware = headersList.get('x-pathname')?.trim()
+  if (fromMiddleware) return fromMiddleware
+  const referer = headersList.get('referer')?.trim()
+  if (referer) {
+    try {
+      const u = new URL(referer)
+      if (u.origin === SITE_URL || u.hostname === 'rbbmap.com') return u.pathname || ''
+    } catch {
+      /* ignore */
+    }
+  }
+  return ''
+}
+
 export async function ReviewMetaInHead() {
   const headersList = await headers()
-  const pathname = headersList.get('x-pathname') || ''
+  const pathname = getPathnameFromHeaders(headersList)
   const segments = pathname.split('/').filter(Boolean)
   if (!isReviewPath(segments)) return null
 
-  const [region, category, venue, slug] = segments
+  const [region, category, venue, slugRaw] = segments
+  const slug = decodeSlug(slugRaw)
   const [post, partnerMeta] = await Promise.all([
     getReviewPostBySlug(region, category, venue, slug),
     getPartnerMetaForVenue(region, category, venue),
   ])
-  if (!post) return null
+
+  const canonicalPath = `/${region}/${category}/${venue}/${slugRaw}`
+  const canonicalUrl = `${SITE_URL}${canonicalPath}`
+  const ogImage = `${SITE_URL}/og/og-home.png`
+
+  if (!post) {
+    return (
+      <>
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={ogImage} />
+        <link rel="canonical" href={canonicalUrl} />
+      </>
+    )
+  }
 
   const title = `${post.title} | 룸빵여지도`
   let desc =
@@ -58,9 +99,6 @@ export async function ReviewMetaInHead() {
   } else if (desc.length > META_DESC_MAX) {
     desc = desc.slice(0, META_DESC_MAX)
   }
-  const canonicalPath = `/${region}/${category}/${venue}/${slug}`
-  const canonicalUrl = `${SITE_URL}${canonicalPath}`
-  const ogImage = `${SITE_URL}/og/og-home.png`
 
   return (
     <>

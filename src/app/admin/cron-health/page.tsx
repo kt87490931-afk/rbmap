@@ -301,7 +301,7 @@ export default function AdminCronHealthPage() {
 
       {renderJobSection(
         '📌 리뷰 자동 생성',
-        'Cron은 30분마다 실행. 제휴업체별 스케줄(6h/4건, 8h/3건, 12h/2건, 24h/1건)에 따라 다음 가능 시각이 지난 업체부터 최대 25건 처리.',
+        'Cron은 20분마다 실행. 제휴업체별 스케줄(6h/4건, 8h/3건, 12h/2건, 24h/1건)에 따라 다음 가능 시각이 지난 업체부터 최대 25건 처리. 로그의 「제휴 N개」는 이번 크론이 조회한 활성(is_active=true) 제휴업체 수입니다. 9개인데 4개만 나온다면 [제휴업체 관리]에서 활성 여부를 확인하세요.',
         reviewsJob,
         (items) => renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as { name?: string }[]).some((x) => x.name)),
         () => (

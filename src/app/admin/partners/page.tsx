@@ -363,6 +363,9 @@ export default function AdminPartnersPage() {
 
       <div className="card-box">
         <div className="card-box-title">📋 등록된 제휴업체</div>
+        <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>
+          리뷰 자동 생성 크론은 <strong>활성화</strong>된 제휴업체만 조회합니다. 크론헬스/리뷰관리에서 「제휴 N개」가 예상보다 적다면 아래에서 활성 여부를 확인하세요.
+        </p>
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table">
             <thead>

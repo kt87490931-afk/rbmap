@@ -92,7 +92,7 @@ export async function generateReview(params: {
   const focus = pickReviewFocus(seed + 100)
 
   const topicBlock = params.topic
-    ? `[이번 리뷰 주제]\n${params.topic}\n\n위 주제에 맞춰 제목과 본문을 작성하라. 제목이 이 주제를 드러내야 한다.\n\n`
+    ? `[이번 리뷰 주제 — 반드시 준수]\n${params.topic}\n\n이 주제만 다루어라. 다른 주제로 바꾸거나 일반적인 표현으로 대체하지 마라. 제목은 이 주제를 한 줄로 드러내야 하고, 본문은 이 주제에 맞는 구체적 경험으로 작성하라.\n\n`
     : ''
 
   const systemPrompt =

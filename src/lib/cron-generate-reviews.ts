@@ -77,6 +77,11 @@ function slugify(s: string): string {
     .replace(/^-|-$/g, '') || 'review'
 }
 
+/** 제목 비교용 정규화 (공백 축소·trim) — 시드/인코딩 차이로 인한 동일 내용 중복 방지 */
+function normalizeTitleForCompare(title: string): string {
+  return (title || '').trim().replace(/\s+/g, ' ')
+}
+
 function extractIntroText(introJson: unknown): string {
   if (!introJson || typeof introJson !== 'object') return ''
   const v = introJson as {
@@ -197,7 +202,8 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
 
     const venueKey = `${partner.name}|${regionSlug}|${typeSlug}|${venueSlug}`
     const existingCount = (historyRows ?? []).length
-    const seed = reviewGenSeed(venueKey, existingCount)
+    // 실행 시각(분 단위)을 시드에 포함 → 같은 업소라도 실행마다 다른 주제/톤/시나리오
+    const seed = reviewGenSeed(venueKey, existingCount, startAt)
 
     const scenario = pickScenarioCombo(recentCombos, seed)
     const tone = pickTone(recentTones, seed + 10)
@@ -279,7 +285,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       .map((r) => (r.scenario_used as { topic?: string } | null)?.topic)
       .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
     const venueKey = `${partner.name}|${regionSlug}|${typeSlug}|${venueSlug}`
-    const seedForTopic = reviewGenSeed(venueKey, recentTopics.length)
+    const seedForTopic = reviewGenSeed(venueKey, recentTopics.length, startAt)
     const topic = pickTopicExcludingRecent(recentTopics, seedForTopic)
 
     const genResult = await generateReview({
@@ -312,17 +318,18 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       continue
     }
 
-    // 3번: 제목 중복 방지 — 동일 업체에 같은 제목 리뷰가 이미 있으면 삽입 스킵
-    const titleTrimmed = genResult.title.trim()
-    const { data: sameTitleRows } = await supabaseAdmin
+    // 3번: 제목 중복 방지 — 공백 정규화 후 동일 제목이 이미 있으면 삽입 스킵
+    const titleNorm = normalizeTitleForCompare(genResult.title)
+    const { data: existingTitles } = await supabaseAdmin
       .from('review_posts')
-      .select('id')
+      .select('title')
       .eq('region', regionSlug)
       .eq('type', typeSlug)
       .eq('venue_slug', venueSlug)
-      .eq('title', titleTrimmed)
-      .limit(1)
-    if (sameTitleRows && sameTitleRows.length > 0) {
+      .limit(200)
+    const hasSameTitle =
+      (existingTitles ?? []).some((r) => normalizeTitleForCompare((r as { title?: string }).title ?? '') === titleNorm)
+    if (hasSameTitle) {
       results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '동일 제목 리뷰 있음(중복 방지)' })
       continue
     }

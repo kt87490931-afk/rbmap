@@ -185,7 +185,14 @@ export function pickTone(recentTones: ReviewTone[], seed?: number): ReviewTone {
   return pickRandom(arr).id
 }
 
-/** 리뷰 생성용 시드 계산 (venue + 기존 리뷰 수 기반) */
-export function reviewGenSeed(venueKey: string, existingCount: number): number {
-  return hashSeed(`${venueKey}|${existingCount}`)
+/**
+ * 리뷰 생성용 시드 계산 (venue + 기존 리뷰 수 + 선택적 실행 시각).
+ * runTimeMs를 넣으면 크론 실행 시각마다 다른 주제/톤/시나리오가 나와 중복 감소.
+ */
+export function reviewGenSeed(venueKey: string, existingCount: number, runTimeMs?: number): number {
+  const base = `${venueKey}|${existingCount}`
+  if (runTimeMs != null && runTimeMs > 0) {
+    return hashSeed(`${base}|${Math.floor(runTimeMs / 60000)}`)
+  }
+  return hashSeed(base)
 }

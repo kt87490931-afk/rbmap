@@ -281,8 +281,15 @@ export default function AdminReviewsPage() {
             <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 8 }}>
               {new Date(latestCronRun.startedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
-            {latestCronRun.endedAt != null && !latestCronRun.ok && latestCronRun.msg && (
-              <div style={{ marginTop: 6, fontSize: 12, color: 'var(--red)' }}>실패 원인: {latestCronRun.msg}</div>
+            {latestCronRun.endedAt != null && latestCronRun.msg && (
+              <div style={{ marginTop: 6, fontSize: 12, color: latestCronRun.ok ? 'var(--muted)' : 'var(--red)' }}>
+                {latestCronRun.ok ? null : '실패 원인: '}{latestCronRun.msg}
+              </div>
+            )}
+            {latestCronRun.endedAt != null && (
+              <p style={{ marginTop: 6, fontSize: 11, color: 'var(--muted)' }}>
+                「제휴 N개」= 크론이 조회한 활성(is_active=true) 제휴업체 수. 예상보다 적으면 <Link href="/admin/partners" style={{ color: 'var(--accent)' }}>제휴업체 관리</Link>에서 활성 여부를 확인하세요.
+              </p>
             )}
             <div style={{ marginTop: 6, fontSize: 11, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <Link href="/admin/cron-health" style={{ color: 'var(--gold)' }}>전체 실행 이력 보기 (크론헬스) →</Link>

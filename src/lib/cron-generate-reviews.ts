@@ -2,6 +2,9 @@
  * 리뷰 자동 생성 공통 로직 (Cron API / 어드민 수동 실행 공용)
  * 제휴업체별 스케줄 프리셋(6h/4, 8h/3, 12h/2, 24h/1) 적용
  * 1회 실행당 최대 MAX_PER_RUN건만 처리 (제휴업체 증가 시 타임아웃·API 한도 방지)
+ *
+ * [인프라 권장] 크론/리뷰 생성용 Supabase 쿼리는 Primary 연결 사용 권장.
+ * 리드 레플리카 사용 시 스테일 리드로 간격·한도 재확인 전에 잘못 진입할 수 있어, 스케줄 재확인으로 완화하지만 Primary가 가장 안전함.
  */
 import { supabaseAdmin } from './supabase-server'
 
@@ -22,6 +25,36 @@ import { REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from './data/venues'
 import { parseUrlSuffixFromHref } from './partner-url'
 import { canGenerateReview, getTodayKSTRangeUTC, getNextReviewAtWithDailyCap } from './review-schedule'
 import { pickTopicExcludingRecent } from './review-topics'
+
+/** 해당 업소의 현재 오늘 리뷰 수 + 마지막 리뷰 시각 (스케줄 재확인용, 최신 DB 반영) */
+async function getVenueScheduleState(
+  regionSlug: string,
+  typeSlug: string,
+  venueSlug: string
+): Promise<{ todayCount: number; lastReviewAt: string | null }> {
+  const todayRange = getTodayKSTRangeUTC()
+  const [todayRes, historyRes] = await Promise.all([
+    supabaseAdmin
+      .from('review_posts')
+      .select('created_at')
+      .eq('region', regionSlug)
+      .eq('type', typeSlug)
+      .eq('venue_slug', venueSlug)
+      .gte('created_at', todayRange.start)
+      .lt('created_at', todayRange.end),
+    supabaseAdmin
+      .from('review_posts')
+      .select('created_at')
+      .eq('region', regionSlug)
+      .eq('type', typeSlug)
+      .eq('venue_slug', venueSlug)
+      .order('created_at', { ascending: false })
+      .limit(1),
+  ])
+  const todayCount = todayRes.data?.length ?? 0
+  const lastReviewAt = historyRes.data?.[0]?.created_at ?? null
+  return { todayCount, lastReviewAt }
+}
 
 export type GenerateReviewResult = { partnerId: string; name: string; ok: boolean; msg: string }
 
@@ -65,6 +98,7 @@ function extractIntroText(introJson: unknown): string {
 export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
   results: GenerateReviewResult[]
   durationMs: number
+  scheduleRecheckSkips: number
 }> {
   const startAt = Date.now()
   const results: GenerateReviewResult[] = []
@@ -82,6 +116,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     return {
       results: [{ partnerId: '', name: '', ok: false, msg: partnersErr.message }],
       durationMs: Date.now() - startAt,
+      scheduleRecheckSkips: 0,
     }
   }
 
@@ -213,6 +248,19 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       continue
     }
 
+    // [스케줄 재확인] API 호출 직전 최신 DB로 간격/일한도 재검사 — 스테일 리드·레플리카 지연 시 토큰 과다 사용 방지
+    const presetId = (partner as { review_schedule_preset?: string }).review_schedule_preset ?? undefined
+    const stateBeforeApi = await getVenueScheduleState(regionSlug, typeSlug, venueSlug)
+    if (!canGenerateReview(stateBeforeApi.lastReviewAt, stateBeforeApi.todayCount, presetId)) {
+      results.push({
+        partnerId: partner.id,
+        name: partner.name,
+        ok: false,
+        msg: '스케줄 재확인: 간격/한도 미충족(API 호출 방지)',
+      })
+      continue
+    }
+
     // 1번: 같은 업소 최근 주제 회피 — 최근 N건에서 사용한 주제는 제외하고 선택
     const RECENT_TOPICS_LIMIT = 15
     const { data: recentReviewsForTopic } = await supabaseAdmin
@@ -275,6 +323,18 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       continue
     }
 
+    // [스케줄 재확인] 삽입 직전 한 번 더 검사 — 동시 실행/지연 반영 시 중복 행 방지
+    const stateBeforeInsert = await getVenueScheduleState(regionSlug, typeSlug, venueSlug)
+    if (!canGenerateReview(stateBeforeInsert.lastReviewAt, stateBeforeInsert.todayCount, presetId)) {
+      results.push({
+        partnerId: partner.id,
+        name: partner.name,
+        ok: false,
+        msg: '스케줄 재확인: 삽입 직전 한도 초과(중복 방지)',
+      })
+      continue
+    }
+
     const reviewSlug = `${slugify(partner.name)}-${Date.now().toString(36)}`
     const insertRow = {
       region: regionSlug,
@@ -316,5 +376,10 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     }
   }
 
-  return { results, durationMs: Date.now() - startAt }
+  const durationMs = Date.now() - startAt
+  const scheduleRecheckSkips = results.filter(
+    (r) => r.msg && (r.msg.includes('스케줄 재확인: 간격') || r.msg.includes('스케줄 재확인: 삽입'))
+  ).length
+
+  return { results, durationMs, scheduleRecheckSkips }
 }

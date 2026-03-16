@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     sec_lineup: '',
     sec_price: '',
     sec_facility: '',
-    sec_summary: genResult.content.slice(0, 200),
+    sec_summary: genResult.content,
     good_tags: [],
     bad_tags: [],
     meta_description: genResult.content.slice(0, 150),
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
     venue_page_url: partner.href?.startsWith('/') ? partner.href : `/${regionSlug}/${typeSlug}/${venueSlug}`,
     sort_order: 0,
     partner_id: partner.id,
-    scenario_used: { ...scenario, tone },
+    scenario_used: { ...scenario, tone, core_keywords: genResult.core_keywords ?? [], purpose_label: genResult.purpose_label ?? '' },
   }
 
   const { data: inserted, error: insertErr } = await supabaseAdmin

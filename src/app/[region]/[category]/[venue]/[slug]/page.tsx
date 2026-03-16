@@ -119,7 +119,6 @@ export default async function ReviewReadPage({
                   })
                 : post.visit_date || ''}
             </span>
-            {post.is_ai_written && <span className="ah-ai">AI 작성</span>}
             <span className="ah-char">약 {totalChars}자</span>
           </div>
         </div>
@@ -128,7 +127,7 @@ export default async function ReviewReadPage({
       <div className="page-wrap">
         <div className="article-layout">
           <article className="art-body">
-            {(post.summary_rating || post.summary_price || post.summary_lineup || post.summary_price_type) && (
+            {(post.summary_rating || post.summary_price || post.summary_lineup || post.summary_price_type || (post.scenario_used?.core_keywords?.length ?? 0) > 0 || post.scenario_used?.purpose_label) && (
               <div className="summary-box">
                 <h4>✦ 핵심 요약</h4>
                 <div className="summary-grid">
@@ -157,6 +156,18 @@ export default async function ReviewReadPage({
                     </div>
                   )}
                 </div>
+                {(post.scenario_used?.core_keywords?.length ?? 0) > 0 && (
+                  <div className="summary-keywords" style={{ marginTop: 12 }}>
+                    {(post.scenario_used?.core_keywords ?? []).map((kw, i) => (
+                      <span key={i} className="eval-tag good" style={{ marginRight: 6, marginBottom: 6 }}>{kw}</span>
+                    ))}
+                  </div>
+                )}
+                {post.scenario_used?.purpose_label && (
+                  <div className="summary-purpose" style={{ marginTop: 8, fontSize: 13, color: 'var(--muted, #888)' }}>
+                    이 리뷰가 어울리는 목적: <strong style={{ color: 'inherit' }}>{post.scenario_used.purpose_label}</strong>
+                  </div>
+                )}
               </div>
             )}
 

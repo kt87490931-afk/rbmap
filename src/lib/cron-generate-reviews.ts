@@ -365,7 +365,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       sec_lineup: '',
       sec_price: '',
       sec_facility: '',
-      sec_summary: genResult.content.slice(0, 200),
+      sec_summary: genResult.content,
       good_tags: [],
       bad_tags: [],
       meta_description: genResult.content.slice(0, 150),
@@ -378,7 +378,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       venue_page_url: partner.href?.startsWith('/') ? partner.href : `/${regionSlug}/${typeSlug}/${venueSlug}`,
       sort_order: 0,
       partner_id: partner.id,
-      scenario_used: { ...scenario, tone, topic },
+      scenario_used: { ...scenario, tone, topic, core_keywords: genResult.core_keywords ?? [], purpose_label: genResult.purpose_label ?? '' },
     }
 
     const { error: insertErr } = await supabaseAdmin.from('review_posts').insert(insertRow)

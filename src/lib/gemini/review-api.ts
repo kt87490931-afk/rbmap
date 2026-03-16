@@ -42,7 +42,7 @@ function getApiKey(): string {
 }
 
 export type ReviewResult =
-  | { success: true; content: string; title: string; elapsedMs?: number }
+  | { success: true; content: string; title: string; elapsedMs?: number; core_keywords?: string[]; purpose_label?: string }
   | { success: false; message: string }
 
 const EMOJI_REGEX =
@@ -111,7 +111,9 @@ export async function generateReview(params: {
     `[업소 정보]\n업소명: ${params.venueName}\n지역: ${params.regionName}\n업종: ${params.typeName}\n\n` +
     '[업소 소개글]\n' +
     (params.introText.slice(0, 2500) || '업소 소개 정보 없음') +
-    '\n\n---\n위 시나리오와 톤에 맞춰 손님 입장의 이용 후기를 작성해라. 첫 줄에 제목을 쓰고, 그 다음 줄에 --- 를 넣은 뒤 본문을 써라.'
+    '\n\n[필수 — 본문 맨 마지막 두 줄]\n본문을 모두 쓴 뒤, 반드시 다음 두 줄을 한 줄씩 추가하라.\n' +
+    '핵심주제: (제휴업체명을 포함한 이 리뷰의 핵심 주제 2~3개만, 쉼표로 구분. 예: 가락룸싸롱 정찰제 운영, 추가 요금 없이 정해진 가격)\n' +
+    '이용목적: (회식/접대/친구모임/소규모모임 중 하나만)\n\n---\n위 시나리오와 톤에 맞춰 손님 입장의 이용 후기를 작성해라. 첫 줄에 제목을 쓰고, 그 다음 줄에 --- 를 넣은 뒤 본문을 써라. 본문 끝에 반드시 핵심주제: 와 이용목적: 두 줄을 붙여라.'
 
   const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`
   const url = `${baseUrl}?key=${encodeURIComponent(apiKey)}`
@@ -166,7 +168,28 @@ export async function generateReview(params: {
       content = content.slice(0, cut).trim() + (cut < content.length ? '…' : '')
     }
 
-    return { success: true, content, title, elapsedMs }
+    let core_keywords: string[] = []
+    let purpose_label = ''
+    const lines = content.split(/\r?\n/)
+    const tail: string[] = []
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i].trim()
+      if (line.startsWith('핵심주제:')) {
+        const raw = line.slice(5).trim()
+        core_keywords = raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : []
+        continue
+      }
+      if (line.startsWith('이용목적:')) {
+        purpose_label = line.slice(5).trim()
+        continue
+      }
+      tail.unshift(lines[i])
+    }
+    if (core_keywords.length > 0 || purpose_label) {
+      content = tail.join('\n').trim()
+    }
+
+    return { success: true, content, title, elapsedMs, core_keywords: core_keywords.length ? core_keywords : undefined, purpose_label: purpose_label || undefined }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'API 연결 오류'
     return { success: false, message: msg }

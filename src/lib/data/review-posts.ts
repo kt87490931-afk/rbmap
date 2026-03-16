@@ -54,6 +54,8 @@ export interface ReviewPost {
   sort_order: number
   created_at: string
   updated_at: string
+  /** AI 생성 시 저장: 핵심 주제(제휴업체명 포함), 이용 목적 */
+  scenario_used?: { core_keywords?: string[]; purpose_label?: string; [key: string]: unknown }
 }
 
 export function buildReviewUrl(region: string, type: string, venueSlug: string, slug: string): string {
@@ -306,5 +308,6 @@ function mapRow(r: Record<string, unknown>): ReviewPost {
     sort_order: (r.sort_order as number) ?? 0,
     created_at: (r.created_at as string) ?? '',
     updated_at: (r.updated_at as string) ?? '',
+    scenario_used: (r.scenario_used as ReviewPost['scenario_used']) ?? undefined,
   }
 }

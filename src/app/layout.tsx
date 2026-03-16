@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AuthProvider } from "@/components/layout/AuthProvider";
 import { VisitTracker } from "@/components/layout/VisitTracker";
 import { ReviewMetaInHead } from "@/components/ReviewMetaInHead";
+import { VenueMetaInHead } from "@/components/VenueMetaInHead";
 import { getSiteSection } from "@/lib/data/site";
 import "./globals.css";
 
@@ -67,8 +68,9 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        {/* 리뷰 상세 URL이면 여기서 title/og를 넣어 크롤러 초기 HTML에 반드시 포함됨 */}
+        {/* 리뷰 상세 / 업체소개글 URL이면 여기서 title/og를 넣어 크롤러 초기 HTML에 반드시 포함됨 */}
         <ReviewMetaInHead />
+        <VenueMetaInHead />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteSchema) }}

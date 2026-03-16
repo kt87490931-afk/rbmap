@@ -64,7 +64,8 @@ export async function generateMetadata({
     `${data.name} 위치`,
   ].join(", ");
 
-  const canonicalUrl = `${SITE_URL}${data.url}`;
+  const canonicalUrl = `${SITE_URL}${data.url.startsWith("/") ? data.url : `/${region}/${category}/${venue}`}`;
+  const ogImage = `${SITE_URL}/og/og-home.png`;
 
   return {
     title,
@@ -75,7 +76,9 @@ export async function generateMetadata({
       title,
       description,
       type: "website",
-      url: data.url,
+      url: canonicalUrl,
+      siteName: "룸빵여지도",
+      images: [{ url: ogImage, width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",

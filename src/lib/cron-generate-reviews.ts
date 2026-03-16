@@ -11,8 +11,8 @@ import { supabaseAdmin } from './supabase-server'
 /** 1회 cron 실행 시 처리할 최대 업체 수 (나머지는 다음 실행에서 처리) */
 const MAX_PER_RUN = 25
 
-/** 동일 업체 리뷰 중복 방지 윈도우(ms). 이 시간 이내 이미 리뷰가 있으면 AI 호출·삽입 모두 스킵 */
-export const DUPLICATE_WINDOW_MS = 30 * 60 * 1000
+/** 동일 업체 리뷰 중복 방지 윈도우(ms). 이 시간 이내 이미 리뷰가 있으면 AI 호출·삽입 모두 스킵. 최소 스케줄 6시간에 맞춤 */
+export const DUPLICATE_WINDOW_MS = 6 * 60 * 60 * 1000
 import { generateReview } from './gemini/review-api'
 import {
   pickScenarioCombo,
@@ -246,7 +246,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
   for (const item of toProcess) {
     const { partner, introText, regionSlug, typeSlug, venueSlug, scenario, tone, regionName, typeName } = item
 
-    // [1] AI 호출 전 중복 검사 — 최근 30분 이내 동일 업체 리뷰 있으면 API 호출하지 않음 (비용 절약)
+    // [1] AI 호출 전 중복 검사 — 최근 6시간 이내 동일 업체 리뷰 있으면 API 호출하지 않음 (비용·간격 보장)
     const windowStart = new Date(Date.now() - DUPLICATE_WINDOW_MS).toISOString()
     const { data: recentSameBefore } = await supabaseAdmin
       .from('review_posts')
@@ -257,7 +257,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       .gte('published_at', windowStart)
       .limit(1)
     if (recentSameBefore && recentSameBefore.length > 0) {
-      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '최근 30분 이내 동일 업체 리뷰 있음(중복·비용 방지)' })
+      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '최근 6시간 이내 동일 업체 리뷰 있음(중복·비용 방지)' })
       continue
     }
 

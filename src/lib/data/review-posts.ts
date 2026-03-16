@@ -60,6 +60,29 @@ export function buildReviewUrl(region: string, type: string, venueSlug: string, 
   return `/${region}/${type}/${venueSlug}/${slug}`
 }
 
+/** 리뷰 상세 메타(키워드·설명 보강)용 제휴업체 태그·설명. href가 /{region}/{type}/{venueSlug} 와 일치하는 1건 조회 */
+export async function getPartnerMetaForVenue(
+  region: string,
+  type: string,
+  venueSlug: string
+): Promise<{ tags: string[]; desc: string } | null> {
+  const path = `/${(region || '').replace(/^\/+|\/+$/g, '')}/${(type || '').replace(/^\/+|\/+$/g, '')}/${(venueSlug || '').replace(/^\/+|\/+$/g, '')}`.replace(/\/+/g, '/')
+  const { data, error } = await supabaseAdmin
+    .from('partners')
+    .select('tags, desc')
+    .in('href', [path, path + '/'])
+    .limit(1)
+    .maybeSingle()
+  if (error || !data) return null
+  const tags = Array.isArray((data as { tags?: unknown }).tags)
+    ? ((data as { tags: string[] }).tags).map((t) => String(t).trim()).filter(Boolean)
+    : typeof (data as { tags?: string }).tags === 'string'
+      ? (data as { tags: string }).tags.split(',').map((s) => s.trim()).filter(Boolean)
+      : []
+  const desc = typeof (data as { desc?: string }).desc === 'string' ? (data as { desc: string }).desc.trim() : ''
+  return { tags, desc }
+}
+
 /** path 정규화 (앞뒤 슬래시 제거) */
 function normalizePath(p: string): string {
   return (p || "").replace(/^\/+|\/+$/g, "") || "";

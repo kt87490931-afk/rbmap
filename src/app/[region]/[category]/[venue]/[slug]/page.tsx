@@ -12,6 +12,7 @@ import {
   getTypeName,
   formatStars,
   buildReviewUrl,
+  getPartnerMetaForVenue,
   REVIEW_TYPE_TO_NAME,
 } from '@/lib/data/review-posts'
 import { REGION_SLUG_TO_NAME, REGION_SLUGS } from '@/lib/data/venues'
@@ -25,22 +26,33 @@ function isValidRegion(r: string): r is (typeof REGION_SLUGS)[number] {
   return (REGION_SLUGS as readonly string[]).includes(r)
 }
 
+const META_DESC_MAX = 160
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<Params>
 }): Promise<Metadata> {
   const { region, category, venue, slug } = await params
-  const post = await getReviewPostBySlug(region, category, venue, slug)
+  const [post, partnerMeta] = await Promise.all([
+    getReviewPostBySlug(region, category, venue, slug),
+    getPartnerMetaForVenue(region, category, venue),
+  ])
   if (!post) return {}
 
   const title = `${post.title} | 룸빵여지도`
-  const desc = post.meta_description || post.sec_overview?.slice(0, 120) || `${post.venue} ${getTypeName(post.type)} 이용 후기`
+  let desc = post.meta_description || post.sec_overview?.slice(0, 120) || `${post.venue} ${getTypeName(post.type)} 이용 후기`
+  if (partnerMeta?.desc && desc.length < 100) {
+    const extra = partnerMeta.desc.slice(0, 80).trim()
+    if (extra) desc = (desc + ' ' + extra).slice(0, META_DESC_MAX)
+  } else if (desc.length > META_DESC_MAX) {
+    desc = desc.slice(0, META_DESC_MAX)
+  }
   const canonicalPath = buildReviewUrl(region, category, venue, slug)
   const canonicalUrl = `${SITE_URL}${canonicalPath}`
   const ogImage = `${SITE_URL}/og/og-home.png`
 
-  return {
+  const metadata: Metadata = {
     title,
     description: desc,
     openGraph: {
@@ -53,6 +65,10 @@ export async function generateMetadata({
     alternates: { canonical: canonicalUrl },
     robots: { index: true, follow: true },
   }
+  if (partnerMeta?.tags?.length) {
+    metadata.keywords = partnerMeta.tags.join(', ')
+  }
+  return metadata
 }
 
 export default async function ReviewReadPage({

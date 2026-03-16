@@ -488,55 +488,59 @@ export default function AdminReviewsPage() {
           onClick={() => { setEditItem(null); setEditForm(null) }}
         >
           <div
+            className="admin-form-control"
             style={{
-              background: 'var(--bg)',
+              background: '#fff',
+              color: '#111',
               borderRadius: 12,
               padding: 24,
               maxWidth: 560,
               width: '90%',
               maxHeight: '85vh',
               overflow: 'auto',
+              boxShadow: '0 8px 32px rgba(0,0,0,.3)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ marginBottom: 16 }}>리뷰 수정</h3>
+            <h3 style={{ marginBottom: 16, color: '#111' }}>리뷰 수정</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <label>
-                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>제목</span>
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#333' }}>제목</span>
                 <input
                   type="text"
+                  className="admin-form-control"
                   value={editForm.title}
                   onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                   style={{ width: '100%', padding: 8 }}
                 />
               </label>
               <label>
-                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>별점 (1~5)</span>
-                <select value={editForm.star} onChange={(e) => setEditForm({ ...editForm, star: Number(e.target.value) })} style={{ padding: 8 }}>
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#333' }}>별점 (1~5)</span>
+                <select className="admin-form-control" value={editForm.star} onChange={(e) => setEditForm({ ...editForm, star: Number(e.target.value) })} style={{ padding: 8, width: '100%' }}>
                   {[1, 2, 3, 4, 5].map((n) => (
                     <option key={n} value={n}>{n}점</option>
                   ))}
                 </select>
               </label>
               <label>
-                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>방문 개요</span>
-                <textarea value={editForm.sec_overview} onChange={(e) => setEditForm({ ...editForm, sec_overview: e.target.value })} rows={4} style={{ width: '100%', padding: 8 }} />
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#333' }}>방문 개요</span>
+                <textarea className="admin-form-control" value={editForm.sec_overview} onChange={(e) => setEditForm({ ...editForm, sec_overview: e.target.value })} rows={4} style={{ width: '100%', padding: 8 }} />
               </label>
               <label>
-                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>라인업 / 서비스</span>
-                <textarea value={editForm.sec_lineup} onChange={(e) => setEditForm({ ...editForm, sec_lineup: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#333' }}>라인업 / 서비스</span>
+                <textarea className="admin-form-control" value={editForm.sec_lineup} onChange={(e) => setEditForm({ ...editForm, sec_lineup: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
               </label>
               <label>
-                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>가격 분석</span>
-                <textarea value={editForm.sec_price} onChange={(e) => setEditForm({ ...editForm, sec_price: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#333' }}>가격 분석</span>
+                <textarea className="admin-form-control" value={editForm.sec_price} onChange={(e) => setEditForm({ ...editForm, sec_price: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
               </label>
               <label>
-                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>시설 / 분위기</span>
-                <textarea value={editForm.sec_facility} onChange={(e) => setEditForm({ ...editForm, sec_facility: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#333' }}>시설 / 분위기</span>
+                <textarea className="admin-form-control" value={editForm.sec_facility} onChange={(e) => setEditForm({ ...editForm, sec_facility: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
               </label>
               <label>
-                <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>종합 평가</span>
-                <textarea value={editForm.sec_summary} onChange={(e) => setEditForm({ ...editForm, sec_summary: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
+                <span style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#333' }}>종합 평가</span>
+                <textarea className="admin-form-control" value={editForm.sec_summary} onChange={(e) => setEditForm({ ...editForm, sec_summary: e.target.value })} rows={3} style={{ width: '100%', padding: 8 }} />
               </label>
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>

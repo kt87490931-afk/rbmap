@@ -93,6 +93,7 @@ export default function AdminDashboard() {
             <span>추가 인원 (24시 목표)</span>
             <input
               type="number"
+              className="admin-form-control"
               min={0}
               value={visitorOffset}
               onChange={(e) => setVisitorOffset(Number(e.target.value) || 0)}

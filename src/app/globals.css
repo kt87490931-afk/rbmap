@@ -3257,6 +3257,27 @@ footer {
 .form-input::placeholder {
   color: var(--muted);
 }
+/* 어드민 폼 가독성: 흰 배경 + 검정 텍스트 (모달·설정 폼용) */
+.admin-form-control,
+.admin-form-control input,
+.admin-form-control textarea,
+.admin-form-control select {
+  background: #fff !important;
+  color: #111 !important;
+  border: 1px solid #ddd !important;
+}
+input.admin-form-control,
+textarea.admin-form-control,
+select.admin-form-control {
+  background: #fff !important;
+  color: #111 !important;
+  border: 1px solid #ddd !important;
+}
+.admin-form-control::placeholder,
+.admin-form-control input::placeholder,
+.admin-form-control textarea::placeholder {
+  color: #666 !important;
+}
 .btn-save {
   cursor: pointer;
   background: var(--gold);

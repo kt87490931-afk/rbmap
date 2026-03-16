@@ -51,18 +51,25 @@ else
   echo "PM2 최초 시작 완료"
 fi
 
-# 6. Cron 설정 (리뷰 8시간 자동생성, KST 0,8,16시 = UTC 15,23,7시, 하루 3회)
+# 6. Cron 설정 (리뷰 생성 20분마다 — setup-cron-rbmap.sh와 동일 스케줄 유지)
 echo "[5/6] Cron 확인..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CRON_SCRIPT="${SCRIPT_DIR}/scripts/cron-generate-reviews.sh"
 if [ -f "$CRON_SCRIPT" ]; then
   chmod +x "$CRON_SCRIPT"
-  if ! crontab -l 2>/dev/null | grep -q "cron-generate-reviews"; then
-    (crontab -l 2>/dev/null; echo "0 7,15,23 * * * $CRON_SCRIPT") | crontab -
-    echo "Cron 추가됨: KST 0,8,16시 리뷰 생성 (8시간 간격 3회)"
+  CURRENT=$(crontab -l 2>/dev/null || true)
+  if echo "$CURRENT" | grep -q "cron-generate-reviews.sh"; then
+    # 기존 항목이 20분마다(0,20,40)가 아니면 20분마다로 교체
+    if ! echo "$CURRENT" | grep -q "0,20,40.*cron-generate-reviews.sh"; then
+      CURRENT=$(echo "$CURRENT" | grep -v "cron-generate-reviews.sh" | grep -v "^# rbmap 리뷰 자동생성" || true)
+      ( echo "$CURRENT"; echo "# rbmap 리뷰 자동생성 (20분마다)"; echo "0,20,40 * * * * $CRON_SCRIPT" ) | crontab -
+      echo "Cron 스케줄을 20분마다(0,20,40)로 갱신했습니다."
+    else
+      echo "Cron 이미 20분마다 설정됨."
+    fi
   else
-    crontab -l 2>/dev/null | sed 's|0 3,9,15,21|0 7,15,23|' | crontab -
-    echo "Cron 스케줄 업데이트: KST 0,8,16시 (8시간 간격)"
+    ( echo "$CURRENT"; echo "# rbmap 리뷰 자동생성 (20분마다)"; echo "0,20,40 * * * * $CRON_SCRIPT" ) | crontab -
+    echo "Cron 추가됨: 20분마다 리뷰 생성 (0,20,40분)"
   fi
 fi
 

@@ -24,6 +24,9 @@ RESP=$(curl -s -w "\n%{http_code}" --max-time 120 "https://rbbmap.com/api/cron/g
 HTTP_CODE=$(echo "$RESP" | tail -n1)
 BODY=$(echo "$RESP" | sed '$d')
 echo "[$TS] cron-generate-reviews end http=$HTTP_CODE" >> "$LOG_FILE" 2>/dev/null || true
+# 200이어도 정지 시 응답에 paused 포함되는지 확인용으로 본문 일부 로그
 if [ "$HTTP_CODE" != "200" ]; then
   echo "[$TS] response: ${BODY:0:200}" >> "$LOG_FILE" 2>/dev/null || true
+elif echo "$BODY" | grep -q '"paused":true'; then
+  echo "[$TS] response: 정지 상태로 스킵됨 (paused=true)" >> "$LOG_FILE" 2>/dev/null || true
 fi

@@ -115,6 +115,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     .from('partners')
     .select('id, name, href, region, type, review_schedule_preset')
     .eq('is_active', true)
+    .limit(100)
   if (partnerIds != null && partnerIds.length > 0) {
     q = q.in('id', partnerIds)
   }

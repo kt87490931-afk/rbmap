@@ -100,6 +100,39 @@ export async function GET(request: Request) {
       }
     } catch { /* cron_health 테이블 없으면 무시 */ }
 
+    // 정지 여부 한 번 더 확인 (배포 지연·캐시 등으로 첫 검사가 빠졌을 수 있음)
+    const { data: cronControlAgain } = await supabaseAdmin
+      .from('site_sections')
+      .select('content')
+      .eq('section_key', 'cron_control')
+      .maybeSingle()
+    const pausedAgain = (cronControlAgain?.content as { review_cron_paused?: boolean } | null)?.review_cron_paused === true
+    if (pausedAgain) {
+      const skipMsg = '정지 상태로 스킵 (리뷰 생성 없음)'
+      if (healthId) {
+        try {
+          await supabaseAdmin
+            .from('cron_health')
+            .update({
+              ended_at: new Date().toISOString(),
+              ok: true,
+              msg: skipMsg,
+              processed: 0,
+              success_count: 0,
+              results: [],
+              duration_ms: Date.now() - startAt,
+            })
+            .eq('id', healthId)
+        } catch { /* ignore */ }
+      }
+      return NextResponse.json({
+        ok: true,
+        paused: true,
+        message: '리뷰 생성 크론이 정지 상태입니다. 리뷰를 생성하지 않고 종료했습니다.',
+        duration_ms: Date.now() - startAt,
+      })
+    }
+
     const {
       results,
       durationMs,

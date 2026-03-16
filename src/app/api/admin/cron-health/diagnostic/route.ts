@@ -16,6 +16,7 @@ export async function GET() {
     .from('partners')
     .select('id, name, review_schedule_preset')
     .eq('is_active', true)
+    .limit(100)
 
   if (error) {
     return NextResponse.json(

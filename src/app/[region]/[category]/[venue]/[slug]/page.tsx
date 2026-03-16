@@ -65,8 +65,12 @@ export async function generateMetadata({
     alternates: { canonical: canonicalUrl },
     robots: { index: true, follow: true },
   }
+  const regionName = REGION_SLUG_TO_NAME[region] ?? region
+  const typeName = getTypeName(post.type)
   if (partnerMeta?.tags?.length) {
     metadata.keywords = partnerMeta.tags.join(', ')
+  } else {
+    metadata.keywords = `${post.venue} 이용 후기, ${post.venue} 리뷰, ${regionName} ${typeName}, 룸빵여지도`
   }
   return metadata
 }
@@ -111,7 +115,7 @@ export default async function ReviewReadPage({
     author: { '@type': 'Organization', name: '룸빵여지도' },
     reviewBody: post.sec_overview || post.sec_summary,
     reviewRating: { '@type': 'Rating', ratingValue: String(post.star), bestRating: '5' },
-    itemReviewed: { '@type': 'LocalBusiness', name: `${post.venue} ${typeName}` },
+    itemReviewed: { '@type': 'LocalBusiness', name: post.venue },
     datePublished: post.published_at || post.visit_date,
   }
 

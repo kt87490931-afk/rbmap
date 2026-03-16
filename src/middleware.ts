@@ -22,6 +22,8 @@ async function getBlockedIps(request: NextRequest): Promise<string[]> {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-pathname', pathname)
 
   // 1. IP 차단 검사 (env + DB blocked_ips)
   const blocked = await getBlockedIps(request)
@@ -36,10 +38,10 @@ export async function middleware(request: NextRequest) {
 
   // 2. /admin/* 접근 시 OTP 세션 쿠키 검사
   if (!pathname.startsWith('/admin')) {
-    return NextResponse.next()
+    return NextResponse.next({ request: { headers: requestHeaders } })
   }
   if (pathname.includes('/setup-otp') || pathname.includes('/verify-otp')) {
-    return NextResponse.next()
+    return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
   // 설정 모드 + 비프로덕션(로컬)이면 OTP 없이 통과
@@ -47,7 +49,7 @@ export async function middleware(request: NextRequest) {
     !process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET
   const isProduction = (process.env.NEXTAUTH_URL || '').includes('rbbmap.com')
   if (isSetupMode && !isProduction) {
-    return NextResponse.next()
+    return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
   const otpCookie = request.cookies.get('admin_otp_session')
@@ -63,7 +65,7 @@ export async function middleware(request: NextRequest) {
     }
     const key = new TextEncoder().encode(secret)
     await jwtVerify(otpCookie.value, key)
-    return NextResponse.next()
+    return NextResponse.next({ request: { headers: requestHeaders } })
   } catch {
     const response = NextResponse.redirect(new URL('/admin/verify-otp', request.url))
     response.cookies.delete('admin_otp_session')

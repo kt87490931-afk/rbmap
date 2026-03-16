@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/components/layout/AuthProvider";
 import { VisitTracker } from "@/components/layout/VisitTracker";
+import { ReviewMetaInHead } from "@/components/ReviewMetaInHead";
 import { getSiteSection } from "@/lib/data/site";
 import "./globals.css";
 
@@ -64,7 +65,8 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        {/* title, description, og, verification, icons는 generateMetadata(레이아웃+페이지 병합)에서만 주입. 중복 제거로 자식 페이지 메타가 확실히 반영되도록 함 */}
+        {/* 리뷰 상세 URL이면 여기서 title/og를 넣어 크롤러 초기 HTML에 반드시 포함됨 */}
+        <ReviewMetaInHead />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteSchema) }}

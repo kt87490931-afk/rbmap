@@ -28,6 +28,26 @@ export async function GET(request: Request) {
     .maybeSingle()
   const paused = (cronControl?.content as { review_cron_paused?: boolean } | null)?.review_cron_paused === true
   if (paused) {
+    // 정지 상태여도 실행 이력에 한 줄 남겨서 "5시20분 완료 성공"처럼 보이지 않게 함
+    const skipMsg = '정지 상태로 스킵 (리뷰 생성 없음)'
+    try {
+      const { data: healthRow } = await supabaseAdmin
+        .from('cron_health')
+        .insert({
+          job_name: 'generate-reviews',
+          started_at: new Date().toISOString(),
+          ended_at: new Date().toISOString(),
+          ok: true,
+          msg: skipMsg,
+          processed: 0,
+          success_count: 0,
+          results: [],
+          duration_ms: 0,
+        })
+        .select('id')
+        .single()
+      void healthRow
+    } catch { /* cron_health 없으면 무시 */ }
     return NextResponse.json({
       ok: true,
       paused: true,

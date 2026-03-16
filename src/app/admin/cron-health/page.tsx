@@ -247,6 +247,9 @@ export default function AdminCronHealthPage() {
     if (r.endedAt == null) {
       return { label: '진행 중', bg: 'rgba(230, 201, 110, .25)', color: 'var(--gold)' }
     }
+    if (r.ok && typeof r.msg === 'string' && r.msg.includes('정지 상태로 스킵')) {
+      return { label: '정지로 스킵', bg: 'rgba(230, 201, 110, .25)', color: 'var(--gold)' }
+    }
     if (r.ok) return { label: '완료 (성공)', bg: 'rgba(46,204,113,.2)', color: 'var(--green)' }
     return { label: '완료 (실패)', bg: 'rgba(255,71,87,.2)', color: 'var(--red)' }
   }
@@ -321,7 +324,7 @@ export default function AdminCronHealthPage() {
           </table>
         </div>
         <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
-          <strong>상태:</strong> 진행 중 = 아직 종료되지 않음(실행 중이거나 중단됨). 완료 (성공) = 정상 종료. 완료 (실패) = 오류로 종료(아래 실패 원인 확인).
+          <strong>상태:</strong> 진행 중 = 아직 종료되지 않음. 완료 (성공) = 리뷰 생성 정상 종료. <strong>정지로 스킵</strong> = 어드민에서 크론 정지한 상태에서 서버 크론이 호출된 경우(리뷰 생성 없음). 완료 (실패) = 오류로 종료. 아래 목록은 <strong>해당 실행 시 서버가 조회한 제휴업체만</strong> 표시됩니다. 위에서 9개인데 여기선 4개만 나오면 크론이 호출하는 URL·서버가 이 페이지와 같은지 확인하세요.
         </p>
         {items.length === 0 && (
           <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 24 }}>

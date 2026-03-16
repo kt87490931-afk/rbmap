@@ -107,12 +107,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <meta name="google-site-verification" content="-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY" />
-        <meta property="og:image" content={`${SITE_URL}/og/og-home.png`} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content="룸빵여지도 — 믿을 수 있는 업소를 한눈에" />
+        {/* title, description, og, verification, icons는 generateMetadata(레이아웃+페이지 병합)에서만 주입. 중복 제거로 자식 페이지 메타가 확실히 반영되도록 함 */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteSchema) }}

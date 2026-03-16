@@ -28,6 +28,9 @@ function isValidRegion(r: string): r is (typeof REGION_SLUGS)[number] {
 
 const META_DESC_MAX = 160
 
+/** 리뷰 페이지는 항상 서버에서 렌더링해 generateMetadata가 실제 params로 호출되도록 함 */
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata({
   params,
 }: {
@@ -52,27 +55,35 @@ export async function generateMetadata({
   const canonicalUrl = `${SITE_URL}${canonicalPath}`
   const ogImage = `${SITE_URL}/og/og-home.png`
 
-  const metadata: Metadata = {
+  const regionName = REGION_SLUG_TO_NAME[region] ?? region
+  const typeName = getTypeName(post.type)
+  const keywords =
+    partnerMeta?.tags?.length
+      ? partnerMeta.tags.join(', ')
+      : `${post.venue} 이용 후기, ${post.venue} 리뷰, ${regionName} ${typeName}, 룸빵여지도`
+
+  return {
     title,
     description: desc,
+    keywords,
     openGraph: {
       title: `${post.title} | 룸빵여지도`,
       description: desc,
       type: 'article',
       url: canonicalUrl,
+      siteName: '룸빵여지도',
+      locale: 'ko_KR',
       images: [{ url: ogImage, width: 1200, height: 630, alt: `${post.venue} 이용 후기 | 룸빵여지도` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${post.title} | 룸빵여지도`,
+      description: desc,
+      images: [ogImage],
     },
     alternates: { canonical: canonicalUrl },
     robots: { index: true, follow: true },
   }
-  const regionName = REGION_SLUG_TO_NAME[region] ?? region
-  const typeName = getTypeName(post.type)
-  if (partnerMeta?.tags?.length) {
-    metadata.keywords = partnerMeta.tags.join(', ')
-  } else {
-    metadata.keywords = `${post.venue} 이용 후기, ${post.venue} 리뷰, ${regionName} ${typeName}, 룸빵여지도`
-  }
-  return metadata
 }
 
 export default async function ReviewReadPage({

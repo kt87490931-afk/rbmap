@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminOrSetup } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { parseSearchQueryFromReferrer } from "@/lib/referrer-search";
 
 export const dynamic = "force-dynamic";
 
@@ -85,8 +86,14 @@ export async function GET(request: Request) {
     dailyStats[last7days[i]] = weekDayStats[i];
   }
 
+  const rawLogs = queryResult.data ?? [];
+  const logs = rawLogs.map((log: { referrer?: string | null; [k: string]: unknown }) => ({
+    ...log,
+    search_query: parseSearchQueryFromReferrer(log.referrer ?? null) ?? null,
+  }));
+
   return NextResponse.json({
-    logs: queryResult.data ?? [],
+    logs,
     todayCount: todayStats.total,
     todayBots: todayStats.bots,
     todayVisitors: todayStats.visitors,

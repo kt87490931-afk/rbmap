@@ -9,6 +9,8 @@ interface VisitLog {
   path: string;
   visitor_type: string;
   created_at: string;
+  referrer?: string | null;
+  search_query?: string | null;
 }
 
 interface DailyStat {
@@ -37,6 +39,16 @@ const BOT_NAMES: Record<string, string> = {
   gptbot: "🤖 GPTBot",
   "google-inspectiontool": "🔍 Google Inspect",
 };
+
+function referrerLabel(log: VisitLog): string {
+  if (log.search_query) return log.search_query;
+  if (!log.referrer) return "-";
+  try {
+    return new URL(log.referrer).hostname;
+  } catch {
+    return log.referrer.length > 40 ? log.referrer.slice(0, 40) + "…" : log.referrer;
+  }
+}
 
 function classifyUA(ua: string, visitorType?: string): { label: string; detail: string } {
   if (!ua) return { label: "❓ 알 수 없음", detail: "-" };
@@ -290,6 +302,7 @@ export default function AdminVisitLogsPage() {
                     <th style={{ textAlign: "left", padding: "8px 10px" }}>유형</th>
                     <th style={{ textAlign: "left", padding: "8px 10px" }}>IP</th>
                     <th style={{ textAlign: "left", padding: "8px 10px" }}>경로</th>
+                    <th style={{ textAlign: "left", padding: "8px 10px", minWidth: 120 }}>유입 검색어</th>
                     <th style={{ textAlign: "left", padding: "8px 10px", maxWidth: 200 }}>User-Agent</th>
                   </tr>
                 </thead>
@@ -319,6 +332,19 @@ export default function AdminVisitLogsPage() {
                           }}
                         >
                           {log.path || "/"}
+                        </td>
+                        <td
+                          style={{
+                            padding: "8px 10px",
+                            maxWidth: 180,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            color: log.search_query ? "var(--gold)" : "var(--muted)",
+                          }}
+                          title={log.search_query || log.referrer || undefined}
+                        >
+                          {referrerLabel(log)}
                         </td>
                         <td
                           style={{

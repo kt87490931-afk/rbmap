@@ -11,10 +11,11 @@ export function VisitTracker() {
     if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key, "1");
 
+    const referrer = typeof document !== "undefined" ? (document.referrer || "") : "";
     fetch("/api/visit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: pathname }),
+      body: JSON.stringify({ path: pathname, referrer }),
     }).catch(() => {});
   }, [pathname]);
 

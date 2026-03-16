@@ -43,6 +43,8 @@ export async function POST(request: Request) {
     const headersList = await headers();
     const body = await request.json().catch(() => ({}));
     const path = (body.path as string) || "/";
+    const rawReferrer = (body.referrer as string) || "";
+    const referrer = rawReferrer.length > 2000 ? rawReferrer.slice(0, 2000) : rawReferrer;
 
     const forwarded = headersList.get("x-forwarded-for");
     const realIp = headersList.get("x-real-ip");
@@ -58,6 +60,7 @@ export async function POST(request: Request) {
       user_agent: userAgent.substring(0, 500),
       path: path.substring(0, 500),
       visitor_type: visitorType,
+      referrer: referrer || null,
       created_at: new Date().toISOString(),
     });
 

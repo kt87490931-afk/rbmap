@@ -496,7 +496,7 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
                 <div style={{ fontSize: 18, marginBottom: 6 }}>✦</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)", marginBottom: 4 }}>{r.name} 업소 등록</div>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12, lineHeight: 1.6 }}>룸빵여지도에 업소를 등록하고<br />방문자에게 직접 노출하세요</div>
-                <Link href="/contact" className="btn-primary btn-sm" style={{ display: "block", textAlign: "center" }}>광고 문의하기</Link>
+                <Link href="https://t.me/rbbmap" target="_blank" rel="noopener noreferrer" className="btn-primary btn-sm" style={{ display: "block", textAlign: "center" }}>광고 문의하기</Link>
               </div>
             </div>
           </div>

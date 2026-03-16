@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import type { Metadata } from 'next'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import {
@@ -12,13 +11,10 @@ import {
   getTypeName,
   formatStars,
   buildReviewUrl,
-  getPartnerMetaForVenue,
   REVIEW_TYPE_TO_NAME,
 } from '@/lib/data/review-posts'
 import { REGION_SLUG_TO_NAME, REGION_SLUGS } from '@/lib/data/venues'
 import { getSiteSection } from '@/lib/data/site'
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
 
 type Params = { region: string; category: string; venue: string; slug: string }
 
@@ -26,66 +22,8 @@ function isValidRegion(r: string): r is (typeof REGION_SLUGS)[number] {
   return (REGION_SLUGS as readonly string[]).includes(r)
 }
 
-const META_DESC_MAX = 160
-
-/** 리뷰 페이지는 항상 서버에서 렌더링해 generateMetadata가 실제 params로 호출되도록 함 */
+/** 리뷰 페이지는 항상 서버에서 렌더링. 메타는 [slug]/layout.tsx에서 생성. */
 export const dynamic = 'force-dynamic'
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<Params>
-}): Promise<Metadata> {
-  const { region, category, venue, slug } = await params
-  const [post, partnerMeta] = await Promise.all([
-    getReviewPostBySlug(region, category, venue, slug),
-    getPartnerMetaForVenue(region, category, venue),
-  ])
-  if (!post) return {}
-
-  const title = `${post.title} | 룸빵여지도`
-  let desc = post.meta_description || post.sec_overview?.slice(0, 120) || `${post.venue} ${getTypeName(post.type)} 이용 후기`
-  if (partnerMeta?.desc && desc.length < 100) {
-    const extra = partnerMeta.desc.slice(0, 80).trim()
-    if (extra) desc = (desc + ' ' + extra).slice(0, META_DESC_MAX)
-  } else if (desc.length > META_DESC_MAX) {
-    desc = desc.slice(0, META_DESC_MAX)
-  }
-  const canonicalPath = buildReviewUrl(region, category, venue, slug)
-  const canonicalUrl = `${SITE_URL}${canonicalPath}`
-  const ogImage = `${SITE_URL}/og/og-home.png`
-
-  const regionName = REGION_SLUG_TO_NAME[region] ?? region
-  const typeName = getTypeName(post.type)
-  const keywords =
-    partnerMeta?.tags?.length
-      ? partnerMeta.tags.join(', ')
-      : `${post.venue} 이용 후기, ${post.venue} 리뷰, ${regionName} ${typeName}, 룸빵여지도`
-
-  return {
-    metadataBase: new URL(SITE_URL),
-    title,
-    description: desc,
-    keywords,
-    openGraph: {
-      title: `${post.title} | 룸빵여지도`,
-      description: desc,
-      type: 'article',
-      url: canonicalUrl,
-      siteName: '룸빵여지도',
-      locale: 'ko_KR',
-      images: [{ url: ogImage, width: 1200, height: 630, alt: `${post.venue} 이용 후기 | 룸빵여지도` }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `${post.title} | 룸빵여지도`,
-      description: desc,
-      images: [ogImage],
-    },
-    alternates: { canonical: canonicalUrl },
-    robots: { index: true, follow: true },
-  }
-}
 
 export default async function ReviewReadPage({
   params,

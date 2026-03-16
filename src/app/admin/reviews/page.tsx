@@ -191,6 +191,40 @@ export default function AdminReviewsPage() {
     }
   }
 
+  /** 보류: 홈페이지에서 비공개. DB에는 유지되어 중복 제목 검사에 사용됨 */
+  async function holdItem(r: ReviewItem) {
+    const res = await fetch(`/api/admin/reviews/${r.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ status: 'pending' }),
+    })
+    if (res.ok) {
+      setItems((prev) => prev.map((x) => (x.id === r.id ? { ...x, status: 'pending' } : x)))
+      showMsg('보류 처리됨. 홈페이지에서 비공개됩니다.')
+    } else {
+      const err = await res.json()
+      showMsg(`보류 실패: ${err?.error ?? res.statusText}`)
+    }
+  }
+
+  /** 복원: 보류 → 게시로 전환, 홈페이지에 다시 노출 */
+  async function restoreItem(r: ReviewItem) {
+    const res = await fetch(`/api/admin/reviews/${r.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ status: 'published' }),
+    })
+    if (res.ok) {
+      setItems((prev) => prev.map((x) => (x.id === r.id ? { ...x, status: 'published' } : x)))
+      showMsg('복원됨. 홈페이지에 다시 노출됩니다.')
+    } else {
+      const err = await res.json()
+      showMsg(`복원 실패: ${err?.error ?? res.statusText}`)
+    }
+  }
+
   function openEdit(r: ReviewItem) {
     setEditItem(r)
     setEditForm({
@@ -357,6 +391,9 @@ export default function AdminReviewsPage() {
 
       <div className="card-box">
         <div className="card-box-title">📋 등록된 리뷰</div>
+        <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>
+          <strong>보류</strong> = 홈페이지에서 비공개(노출 끔). DB에는 남아 있어 같은 제목 중복 생성 방지에 사용됩니다. <strong>복원</strong> 시 다시 게시됩니다.
+        </p>
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table">
             <thead>
@@ -369,6 +406,7 @@ export default function AdminReviewsPage() {
                 <th>글자수</th>
                 <th>말투</th>
                 <th>날짜</th>
+                <th>상태</th>
                 <th>AI</th>
                 <th>작업</th>
               </tr>
@@ -399,10 +437,20 @@ export default function AdminReviewsPage() {
                     <td style={{ fontSize: 12 }}>약 {charCount}자</td>
                     <td style={{ fontSize: 11, maxWidth: 140 }} title={toneName}>{toneName !== '-' ? toneName : '-'}</td>
                     <td style={{ fontSize: 12 }}>{dateFormatted}</td>
+                    <td>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: r.status === 'pending' ? 'var(--gold)' : 'var(--green)' }}>
+                        {r.status === 'pending' ? '보류' : '게시'}
+                      </span>
+                    </td>
                     <td>{r.is_ai_written ? 'Y' : '-'}</td>
                     <td>
-                      <button className="btn-secondary" style={{ padding: '4px 10px', fontSize: 11, marginRight: 6 }} onClick={() => openEdit(r)}>수정</button>
-                      <button className="btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => deleteItem(r.id, r.title)}>삭제</button>
+                      {r.status === 'pending' ? (
+                        <button type="button" className="btn-save" style={{ padding: '4px 10px', fontSize: 11, marginRight: 6 }} onClick={() => restoreItem(r)}>복원</button>
+                      ) : (
+                        <button type="button" className="btn-secondary" style={{ padding: '4px 10px', fontSize: 11, marginRight: 6 }} onClick={() => holdItem(r)}>보류</button>
+                      )}
+                      <button type="button" className="btn-secondary" style={{ padding: '4px 10px', fontSize: 11, marginRight: 6 }} onClick={() => openEdit(r)}>수정</button>
+                      <button type="button" className="btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => deleteItem(r.id, r.title)}>삭제</button>
                     </td>
                   </tr>
                 )

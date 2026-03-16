@@ -33,9 +33,64 @@ import { getDisplayVisitorCount } from "@/lib/visit-count";
 import { authOptions } from "@/lib/auth";
 import { hasDevAdminCookie } from "@/lib/admin-auth";
 import { verifyOtpSession } from "@/lib/otp";
+import type { Metadata } from "next";
 
 type FeedConfig = { display_limit?: number };
 type ReviewConfig = { display_limit?: number };
+
+const DEFAULT_TITLE = "룸빵여지도 | 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 정보";
+const DEFAULT_DESC =
+  "믿을 수 있는 업소를 한눈에! 룸빵여지도에서 전국 유흥 정보를 확인하세요. 검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다. 20분마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.";
+const SITE_URL = "https://rbbmap.com";
+
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const seo = await getSiteSection<{ title?: string; description?: string; ogImage?: string; siteUrl?: string }>("seo");
+    const title = seo?.title || DEFAULT_TITLE;
+    const description = seo?.description || DEFAULT_DESC;
+    const siteUrl = seo?.siteUrl || SITE_URL;
+    const ogImageAbs = (seo?.ogImage?.trim() || `${siteUrl}/og/og-home.png`).replace(/^\/+/, siteUrl + "/");
+    return {
+      title,
+      description,
+      openGraph: {
+        type: "website",
+        locale: "ko_KR",
+        url: siteUrl,
+        siteName: "룸빵여지도",
+        title,
+        description,
+        images: [{ url: ogImageAbs, width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description: "믿을 수 있는 업소를 한눈에!",
+        images: [ogImageAbs],
+      },
+    };
+  } catch {
+    return {
+      title: DEFAULT_TITLE,
+      description: DEFAULT_DESC,
+      openGraph: {
+        type: "website",
+        locale: "ko_KR",
+        url: SITE_URL,
+        siteName: "룸빵여지도",
+        title: DEFAULT_TITLE,
+        description: DEFAULT_DESC,
+        images: [{ url: `${SITE_URL}/og/og-home.png`, width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: DEFAULT_TITLE,
+        description: "믿을 수 있는 업소를 한눈에!",
+        images: [`${SITE_URL}/og/og-home.png`],
+      },
+    };
+  }
+}
 
 export default async function Home() {
   unstable_noStore();

@@ -4,23 +4,16 @@ import { VisitTracker } from "@/components/layout/VisitTracker";
 import { getSiteSection } from "@/lib/data/site";
 import "./globals.css";
 
-const DEFAULT_DESC =
-  "믿을 수 있는 업소를 한눈에! 룸빵여지도에서 전국 유흥 정보를 확인하세요. 검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다. 20분마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.";
-const DEFAULT_TITLE = "룸빵여지도 | 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 정보";
 const SITE_URL = "https://rbbmap.com";
 
+/** 루트 레이아웃은 title/description/og/twitter를 반환하지 않음. 각 페이지의 generateMetadata가 유일한 소스가 되어 리뷰 상세 등에서 기대값이 자동 반영됨 */
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const seo = await getSiteSection<{ title?: string; description?: string; ogImage?: string; siteUrl?: string; googleVerify?: string }>("seo");
-    const title = seo?.title || DEFAULT_TITLE;
-    const description = seo?.description || DEFAULT_DESC;
+    const seo = await getSiteSection<{ siteUrl?: string; googleVerify?: string }>("seo");
     const siteUrl = seo?.siteUrl || SITE_URL;
-    const ogImageAbs = (seo?.ogImage?.trim() || `${siteUrl}/og/og-home.png`).replace(/^\/+/, siteUrl + "/");
     const googleVerify = seo?.googleVerify || "-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY";
     return {
       metadataBase: new URL(siteUrl),
-      title,
-      description,
       icons: {
         icon: [
           { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
@@ -29,31 +22,12 @@ export async function generateMetadata(): Promise<Metadata> {
         ],
         apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
         shortcut: "/favicon.ico",
-      },
-      openGraph: {
-        type: "website",
-        locale: "ko_KR",
-        url: siteUrl,
-        siteName: "룸빵여지도",
-        title,
-        description,
-        images: [
-          { url: ogImageAbs, width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" },
-        ],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title,
-        description: "믿을 수 있는 업소를 한눈에!",
-        images: [ogImageAbs],
       },
       verification: { google: googleVerify },
     };
   } catch {
     return {
       metadataBase: new URL(SITE_URL),
-      title: DEFAULT_TITLE,
-      description: DEFAULT_DESC,
       icons: {
         icon: [
           { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
@@ -62,23 +36,6 @@ export async function generateMetadata(): Promise<Metadata> {
         ],
         apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
         shortcut: "/favicon.ico",
-      },
-      openGraph: {
-        type: "website",
-        locale: "ko_KR",
-        url: SITE_URL,
-        siteName: "룸빵여지도",
-        title: DEFAULT_TITLE,
-        description: DEFAULT_DESC,
-        images: [
-          { url: `${SITE_URL}/og/og-home.png`, width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" },
-        ],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: DEFAULT_TITLE,
-        description: "믿을 수 있는 업소를 한눈에!",
-        images: [`${SITE_URL}/og/og-home.png`],
       },
       verification: { google: "-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY" },
     };

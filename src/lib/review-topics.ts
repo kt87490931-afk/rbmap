@@ -220,13 +220,66 @@ export const REVIEW_TITLE_SITUATIONS: string[] = [
   '6시간마다 뜨는 최신 리뷰 덕분에 내상 피한',
 ]
 
-/** 썰 제목용 상황 선택 (제목예시 기반) */
+/** 썰 제목용 — 러브라인/비주얼 강화 (추가 주제.txt, 70% 선호 풀) */
+export const REVIEW_TITLE_SITUATIONS_LOVELINE: string[] = [
+  '문 열리자마자 아이브 장원영 닮은 그녀 보고 심정지 온',
+  '모델 지망생이라더니 기럭지랑 비율에 압도당해서 멍 때린',
+  '인계동 에이스 실물 보니 웬만한 여배우들 다 씹어먹는 비주얼',
+  '청순한 외모에 목소리는 섹시한 그녀 내 이상형 정조준한',
+  '조명 아래 비친 그녀 피부가 백옥 같아서 손대기도 아까웠던',
+  '블랙핑크 제니 느낌 나는 그녀의 도도한 매력에 완전 감긴',
+  '고급스러운 향기 풍기며 들어온 그녀 귀부인인 줄 알았던',
+  '웃을 때 반달눈 되는 그녀 때문에 복학생 가슴에 불 지른',
+  '뒤태 보고 한 번 앞모습 보고 두 번 반한 역대급 사이즈',
+  '인형이 걸어 들어오는 줄 비현실적인 그녀 비주얼 찬양',
+  '초면인데 내 어깨에 기대서 오빠 향기 좋다고 속삭인 그녀',
+  '술 마시는 내내 내 손 꼭 잡고 안 놔주던 그녀 이거 그린라이트',
+  '귓속말하려다 입술 닿을 뻔 심장 소리 들킬까 봐 조마조마했던',
+  '나 갈 때 오빠 가면 나 심심한데라며 옷소매 붙잡던 그녀',
+  '샴페인 한 잔에 얼굴 빨개져서 내 품에 쏙 안겨버린 그녀',
+  '노래 부르는 내내 나만 뚫어지게 쳐다보며 미소 짓던 그녀',
+  '나 오늘 오빠 지명 안 받으면 속상할 것 같아 직구 날린 그녀',
+  '화장실 다녀오니 문 앞에서 나 기다리다 안겨버린 그녀',
+  '내 넥타이 고쳐주며 눈 맞춤 하는데 숨 막혀 죽을 뻔한',
+  '처음 본 그녀와 듀엣 부르다 진짜 연인 된 것 같은 기분 느낀',
+  '복학생 패기로 그녀한테 내일 학교 가지 말고 나랑 놀자 드립 친',
+  '츤데레 스타일 그녀 꼬시려고 양주 세 병 깐 사연',
+  '너 보러 수원까지 1시간 달려왔어 멘트에 그녀가 감동한',
+  '섹시한 그녀 앞에서 명품 시계 찬 척하다가 정체 들통난',
+  '그녀 마음 얻으려고 노래 5곡 연달아 부르다 목 나간 복학생',
+  '차도녀 같은 그녀 웃기려고 아재 개그 던졌다가 대박 터진',
+  '그녀가 좋아하는 안주 기억했다가 다음 방에 미리 세팅해둔 센스',
+  '비싼 샴페인 시키고 너랑 마시는 거라 안 아까워 플러팅',
+  '그녀랑 눈싸움하다가 먼저 눈 피한 쫄보 복학생의 짝사랑',
+  '오빠 같은 사람 처음 봐 소리 듣고 입꼬리 귀에 걸린',
+  '계산하고 나가는데 그녀가 먼저 핸드폰 내밀며 번호 준',
+  '다음 주 쉬는 날에 영화 보러 가기로 약속 잡은 성공적',
+  '새벽에 집 가는데 그녀한테 잘 들어갔어 선톡 온 리얼',
+  '한 달 내내 공들인 끝에 그녀와 사적인 만남 성사시킨 복학생',
+  '오빠는 손님 같지 않아 소리 듣고 김칫국 마시는 중인',
+  '아침 해 뜰 때까지 그녀랑 해장국 먹으며 비밀 이야기 나눈',
+  '지명 1순위 그녀가 나한테만 알려준 개인 연락처',
+  '술기운에 고백했는데 그녀가 부끄러워하며 고개 끄덕인',
+  '이제는 업소가 아니라 밖에서 데이트하는 사이 된',
+  '연예인 뺨치는 그녀가 나를 오빠라고 부르며 기다리는',
+  '실시간 리뷰 보고 고른 에이스 내 인생 최고의 연인 만난',
+  '지도 보고 찾아간 구석진 곳에 보석 같은 예쁜 여자가 있었던',
+  '룸빵여지도 덕분에 내상 안 입고 천사 같은 그녀만 만난',
+  '후기에 마인드 대박이라고 적힌 애 찾았더니 진짜 여신이었던',
+  '룸빵여지도에서 배운 멘트 쳤더니 예쁜 여자 반응 폭발한',
+]
+
+/** 썰 제목용 상황 선택 (70% 러브라인 풀, 30% 기존 풀) */
 export function pickTitleSituation(recentSituations: string[], seed: number): string {
   const used = new Set(recentSituations.map((t) => t.trim()).filter(Boolean))
-  const available = REVIEW_TITLE_SITUATIONS.filter((t) => !used.has(t.trim()))
-  const pool = available.length > 0 ? available : REVIEW_TITLE_SITUATIONS
-  const idx = Math.abs(seed) % pool.length
-  return pool[idx] ?? REVIEW_TITLE_SITUATIONS[0]!
+  const availableLoveline = REVIEW_TITLE_SITUATIONS_LOVELINE.filter((t) => !used.has(t.trim()))
+  const availableOriginal = REVIEW_TITLE_SITUATIONS.filter((t) => !used.has(t.trim()))
+  const lovelinePool = availableLoveline.length > 0 ? availableLoveline : REVIEW_TITLE_SITUATIONS_LOVELINE
+  const originalPool = availableOriginal.length > 0 ? availableOriginal : REVIEW_TITLE_SITUATIONS
+  const useLoveline = Math.abs(seed) % 10 < 7
+  const pool = useLoveline ? lovelinePool : originalPool
+  const idx = Math.abs(seed >> 1) % pool.length
+  return pool[idx] ?? (useLoveline ? REVIEW_TITLE_SITUATIONS_LOVELINE[0]! : REVIEW_TITLE_SITUATIONS[0]!)
 }
 
 /** 최근 이 업소에서 사용한 주제는 피하고, 시드로 주제 하나 선택 */

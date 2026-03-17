@@ -72,14 +72,17 @@ function extractContactHours(data: { contact?: string; info_cards?: { label?: st
   return { contact, hours }
 }
 
-/** 리뷰 상세 "업소 정보"용. name(업소명)은 매칭 시 항상 반환. contact/hours는 연락처 있을 때만. 어드민에서 업소명 변경 시 즉시 반영됨. */
+/** 리뷰 상세 "업소 정보"용. 모든 지역(gangnam, suwon, dongtan, osan, garak, jeju) 동일 로직. */
 export async function getPartnerForVenue(
   region: string,
   type: string,
   venueSlug: string,
   venueName?: string
 ): Promise<{ name: string; contact?: string; hours?: string } | null> {
-  const path = `/${(region || '').replace(/^\/+|\/+$/g, '')}/${(type || '').replace(/^\/+|\/+$/g, '')}/${(venueSlug || '').replace(/^\/+|\/+$/g, '')}`.replace(/\/+/g, '/')
+  const r = (region || '').trim().toLowerCase()
+  const t = (type || '').replace(/^\/+|\/+$/g, '')
+  const v = (venueSlug || '').replace(/^\/+|\/+$/g, '')
+  const path = `/${r}/${t}/${v}`.replace(/\/+/g, '/')
 
   const { data, error } = await supabaseAdmin
     .from('partners')
@@ -97,29 +100,31 @@ export async function getPartnerForVenue(
     }
   }
 
-  if (!venueName) return null
+  if (!venueName && !venueSlug) return null
 
   const { data: list } = await supabaseAdmin
     .from('partners')
     .select('contact, info_cards, name, href')
-    .ilike('href', `%/${region}/%`)
-    .limit(50)
+    .ilike('href', `%/${r}/%`)
+    .limit(100)
 
   const norm = (s: string) => (s ?? '').replace(/\s+/g, '').toLowerCase()
-  const vNorm = norm(venueName)
+  const vNorm = venueName ? norm(venueName) : ''
   const rows = (list ?? []) as { contact?: string; info_cards?: { label?: string; val?: string }[]; name?: string; href?: string }[]
-  let match = rows.find((p) => {
-    const n = (p.name ?? '').trim()
-    if (!n) return false
-    if (n === venueName || n.includes(venueName) || venueName.includes(n)) return true
-    if (norm(n) === vNorm || norm(n).includes(vNorm) || vNorm.includes(norm(n))) return true
-    return false
-  })
+  let match = venueName
+    ? rows.find((p) => {
+        const n = (p.name ?? '').trim()
+        if (!n) return false
+        if (n === venueName || n.includes(venueName) || venueName.includes(n)) return true
+        if (norm(n) === vNorm || norm(n).includes(vNorm) || vNorm.includes(norm(n))) return true
+        return false
+      })
+    : null
   if (!match && venueSlug) {
     match = rows.find((p) => (p.href ?? '').toLowerCase().includes(`/${venueSlug}`) || (p.href ?? '').toLowerCase().endsWith(`/${venueSlug}`))
   }
   if (match) {
-    const name = (match.name ?? '').trim() || venueName
+    const name = (((match.name ?? '').trim() || venueName) ?? '').trim()
     if (name) {
       const ch = extractContactHours(match)
       return ch ? { name, contact: ch.contact, hours: ch.hours } : { name }

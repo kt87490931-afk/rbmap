@@ -252,6 +252,92 @@ export async function getReviewPostsList(filters?: {
   return (data ?? []).map(mapRow)
 }
 
+/** 리뷰 목록 필터 적용 (select 이후 체인용). from().select(...) 뒤에 eq 적용한 빌더 반환 */
+function applyListFilters(
+  q: ReturnType<ReturnType<typeof supabaseAdmin.from>['select']>,
+  filters: { region?: string; type?: string; star?: string }
+) {
+  let out = q.eq('status', 'published')
+  if (filters?.region) out = out.eq('region', filters.region)
+  if (filters?.type) out = out.eq('type', filters.type)
+  if (filters?.star) out = out.eq('star', parseInt(filters.star, 10))
+  return out
+}
+
+const POPULAR_SORT_CAP = 2000
+
+/**
+ * /reviews 페이지용: 페이지네이션 + 정렬(최신순/인기순)
+ * - sort: 'latest' | 'popular'
+ * - page: 1부터 시작
+ * - perPage: 한 페이지당 개수 (기본 50)
+ */
+export async function getReviewPostsListPaginated(filters: {
+  region?: string
+  type?: string
+  star?: string
+  sort?: 'latest' | 'popular'
+  page?: number
+  perPage?: number
+}): Promise<{ posts: ReviewPost[]; total: number }> {
+  const page = Math.max(1, filters.page ?? 1)
+  const perPage = Math.min(100, Math.max(1, filters.perPage ?? 50))
+  const sort = filters.sort === 'popular' ? 'popular' : 'latest'
+  const region = filters.region && filters.region !== 'all' ? filters.region : undefined
+  const type = filters.type && filters.type !== 'all' ? filters.type : undefined
+  const star = filters.star && filters.star !== 'all' ? filters.star : undefined
+
+  if (sort === 'latest') {
+    const countQ = applyListFilters(
+      supabaseAdmin.from('review_posts').select('*', { count: 'exact', head: true }),
+      { region, type, star }
+    )
+    const { count: total, error: countError } = await countQ
+    if (countError) return { posts: [], total: 0 }
+    const offset = (page - 1) * perPage
+    const listQ = applyListFilters(supabaseAdmin.from('review_posts').select('*'), { region, type, star })
+      .order('published_at', { ascending: false })
+      .range(offset, offset + perPage - 1)
+    const { data, error } = await listQ
+    if (error) return { posts: [], total: total ?? 0 }
+    const rows = (data ?? []) as Record<string, unknown>[]
+    return { posts: rows.map(mapRow), total: total ?? 0 }
+  }
+
+  // 인기순: 동일 필터로 최대 POPULAR_SORT_CAP건 조회 후 visit_logs로 정렬, 해당 페이지만 반환
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const startISO = thirtyDaysAgo.toISOString()
+
+  const listForPopular = applyListFilters(supabaseAdmin.from('review_posts').select('*'), { region, type, star })
+    .order('published_at', { ascending: false })
+    .limit(POPULAR_SORT_CAP)
+  const [postsRes, visitsRes] = await Promise.all([
+    listForPopular,
+    supabaseAdmin.from('visit_logs').select('path').gte('created_at', startISO),
+  ])
+
+  const posts = ((postsRes.data ?? []) as Record<string, unknown>[]).map(mapRow)
+  const visits = visitsRes.data ?? []
+
+  const pathCount: Record<string, number> = {}
+  for (const v of visits) {
+    const key = normalizePath((v as { path?: string }).path ?? '')
+    if (key) pathCount[key] = (pathCount[key] ?? 0) + 1
+  }
+
+  const withCount = posts.map((p) => {
+    const path = normalizePath(buildReviewUrl(p.region, p.type, p.venue_slug, p.slug))
+    return { post: p, count: pathCount[path] ?? 0 }
+  })
+  withCount.sort((a, b) => b.count - a.count || (b.post.published_at || '').localeCompare(a.post.published_at || ''))
+
+  const total = withCount.length
+  const start = (page - 1) * perPage
+  const pagePosts = withCount.slice(start, start + perPage).map((w) => w.post)
+  return { posts: pagePosts, total }
+}
+
 /** 지역별 published 리뷰 수 (지도·지역별정보 리뷰 수 연동용) */
 export async function getReviewCountsByRegion(): Promise<Record<string, number>> {
   const { data } = await supabaseAdmin

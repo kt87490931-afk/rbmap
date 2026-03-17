@@ -10,8 +10,8 @@ import { getSiteSection } from '@/lib/data/site'
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
 
 export const metadata: Metadata = {
-  title: '전체 리뷰 | 강남·수원·동탄·제주 가라오케·하이퍼블릭 이용 후기 | 룸빵여지도',
-  description: '강남·수원·동탄·제주 가라오케·하이퍼블릭·쩜오 이용 후기 모음. AI가 20분마다 최신 리뷰를 업데이트합니다.',
+  title: '전체 후기 | 썰로 읽는 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 | 룸빵여지도',
+  description: '썰로 읽는 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 후기 모음. 20분마다 최신 리뷰를 자동 업데이트합니다.',
   alternates: { canonical: `${SITE_URL}/reviews` },
 }
 
@@ -78,7 +78,7 @@ export default async function ReviewsListPage({
             <div className="ph-label">ALL REVIEWS · AI 자동 업데이트</div>
             <h1 className="ph-title">전체 <em>이용 후기</em></h1>
             <p className="ph-desc">
-              검증된 전국 1종 및 2종 업소와 실제 이용 후기가 당신의 선택을 돕습니다.<br />
+              썰로 읽는 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 후기<br />
               20분마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.
             </p>
           </div>

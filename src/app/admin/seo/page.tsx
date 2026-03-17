@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 interface SeoData {
   title: string;
   description: string;
+  keywords: string;
   ogImage: string;
   siteUrl: string;
   googleVerify: string;
@@ -14,6 +15,7 @@ export default function AdminSeoPage() {
   const [seo, setSeo] = useState<SeoData>({
     title: "",
     description: "",
+    keywords: "",
     ogImage: "",
     siteUrl: "",
     googleVerify: "",
@@ -30,6 +32,7 @@ export default function AdminSeoPage() {
           setSeo({
             title: data.title ?? "",
             description: data.description ?? "",
+            keywords: data.keywords ?? "",
             ogImage: data.ogImage ?? "",
             siteUrl: data.siteUrl ?? "",
             googleVerify: data.googleVerify ?? "",
@@ -116,6 +119,21 @@ export default function AdminSeoPage() {
             onChange={(e) => setSeo({ ...seo, description: e.target.value })}
           />
         </div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>
+            메타 키워드
+          </label>
+          <textarea
+            className="form-input"
+            style={{ minHeight: 72, resize: "vertical" }}
+            value={seo.keywords}
+            onChange={(e) => setSeo({ ...seo, keywords: e.target.value })}
+            placeholder="예: 룸빵여지도, 강남 가라오케, 동탄 가라오케, 하이퍼블릭"
+          />
+          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+            쉼표(,)로 구분해 입력하세요.
+          </div>
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>
@@ -170,6 +188,9 @@ export default function AdminSeoPage() {
             {seo.title || "제목 미입력"}
           </div>
           <div style={{ fontSize: 13, color: "var(--muted)" }}>{seo.description || "설명 미입력"}</div>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
+            키워드: {seo.keywords || "미입력"}
+          </div>
         </div>
       </div>
 

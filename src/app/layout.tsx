@@ -12,11 +12,15 @@ const SITE_URL = "https://rbbmap.com";
 /** 루트 레이아웃은 title/description/og/twitter를 반환하지 않음. 각 페이지의 generateMetadata가 유일한 소스가 되어 리뷰 상세 등에서 기대값이 자동 반영됨 */
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const seo = await getSiteSection<{ siteUrl?: string; googleVerify?: string }>("seo");
+    const seo = await getSiteSection<{ siteUrl?: string; googleVerify?: string; keywords?: string }>("seo");
     const siteUrl = seo?.siteUrl || SITE_URL;
     const googleVerify = seo?.googleVerify || "-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY";
+    const keywords =
+      seo?.keywords ||
+      "룸빵여지도, 강남 가라오케, 수원 가라오케, 동탄 가라오케, 제주 가라오케, 룸싸롱, 하이퍼블릭, 셔츠룸, 쩜오, 퍼블릭";
     return {
       metadataBase: new URL(siteUrl),
+      keywords,
       icons: {
         icon: [
           { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
@@ -32,6 +36,7 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch {
     return {
       metadataBase: new URL(SITE_URL),
+      keywords: "룸빵여지도, 강남 가라오케, 수원 가라오케, 동탄 가라오케, 제주 가라오케, 룸싸롱, 하이퍼블릭, 셔츠룸, 쩜오, 퍼블릭",
       icons: {
         icon: [
           { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },

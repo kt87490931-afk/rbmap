@@ -41,18 +41,22 @@ type ReviewConfig = { display_limit?: number };
 const DEFAULT_TITLE = "룸빵여지도 | 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 정보";
 const DEFAULT_DESC =
   "믿을 수 있는 업소를 한눈에! 룸빵여지도에서 전국 유흥 정보를 확인하세요. 검증된 업소와 실제 이용 후기가 당신의 선택을 돕습니다. 20분마다 자동으로 업데이트되는 최신 정보로 실패 없는 밤을 약속합니다.";
+const DEFAULT_KEYWORDS =
+  "룸빵여지도, 강남 가라오케, 수원 가라오케, 동탄 가라오케, 제주 가라오케, 룸싸롱, 하이퍼블릭, 셔츠룸, 쩜오, 퍼블릭";
 const SITE_URL = "https://rbbmap.com";
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const seo = await getSiteSection<{ title?: string; description?: string; ogImage?: string; siteUrl?: string }>("seo");
+    const seo = await getSiteSection<{ title?: string; description?: string; keywords?: string; ogImage?: string; siteUrl?: string }>("seo");
     const title = seo?.title || DEFAULT_TITLE;
     const description = seo?.description || DEFAULT_DESC;
+    const keywords = seo?.keywords || DEFAULT_KEYWORDS;
     const siteUrl = seo?.siteUrl || SITE_URL;
     const ogImageAbs = (seo?.ogImage?.trim() || `${siteUrl}/og/og-home.png`).replace(/^\/+/, siteUrl + "/");
     return {
       title,
       description,
+      keywords,
       openGraph: {
         type: "website",
         locale: "ko_KR",
@@ -73,6 +77,7 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: DEFAULT_TITLE,
       description: DEFAULT_DESC,
+      keywords: DEFAULT_KEYWORDS,
       openGraph: {
         type: "website",
         locale: "ko_KR",

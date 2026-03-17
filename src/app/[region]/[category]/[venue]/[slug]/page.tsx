@@ -7,14 +7,13 @@ import {
   getReviewPostsByVenue,
   getReviewPostsByRegion,
   getPrevNextReviews,
-  getPartnerForVenue,
   getRegionName,
   getTypeName,
   formatStars,
   buildReviewUrl,
   REVIEW_TYPE_TO_NAME,
 } from '@/lib/data/review-posts'
-import { REGION_SLUG_TO_NAME, REGION_SLUGS } from '@/lib/data/venues'
+import { REGION_SLUG_TO_NAME, REGION_SLUGS, getVenueDetail } from '@/lib/data/venues'
 import { getSiteSection } from '@/lib/data/site'
 import { CallTrackLink } from '@/components/venue/CallTrackLink'
 
@@ -42,16 +41,17 @@ export default async function ReviewReadPage({
   const post = await getReviewPostBySlug(region, category, venue, slugDecoded)
   if (!post) notFound()
 
-  const [sameVenueReviews, sameRegionReviews, prevNext, partner, header, footer] = await Promise.all([
+  const [sameVenueReviews, sameRegionReviews, prevNext, venueData, header, footer] = await Promise.all([
     getReviewPostsByVenue(region, venue, post.id, 5),
     getReviewPostsByRegion(region, category, venue, 5),
     post.published_at ? getPrevNextReviews(post.published_at, post.id) : Promise.resolve({ prev: null, next: null }),
-    getPartnerForVenue(region, category, venue, post.venue),
+    getVenueDetail(region, category, venue),
     getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>('header'),
     getSiteSection<{ desc?: string; copyright?: string }>('footer'),
   ])
 
-  const venueDisplayName = (partner?.name ?? post.venue).trim() || post.venue
+  const venueDisplayName = (venueData?.name ?? post.venue).trim() || post.venue
+  const contact = (venueData?.contact ?? '').trim()
 
   const regionName = getRegionName(region)
   const typeName = getTypeName(category)
@@ -278,18 +278,18 @@ export default async function ReviewReadPage({
                     <span className="vm-val">{typeName}</span>
                   </div>
                 </div>
-                {partner?.contact && (() => {
-                  const isPhone = (partner.contact ?? '').replace(/\D/g, '').length >= 10
+                {contact && (() => {
+                  const isPhone = contact.replace(/\D/g, '').length >= 10
                   if (isPhone) {
                     return (
                       <div className="hb-phone-banner sw-phone-banner">
                         <div className="hb-phone-left">
                           <div className="hb-phone-label">예약 · 문의 전화</div>
-                          <div className="hb-phone-num">{partner.contact}</div>
-                          <div className="hb-phone-sub">{partner.hours ?? '영업시간 문의'} · 전화·문자 예약 가능</div>
+                          <div className="hb-phone-num">{contact}</div>
+                          <div className="hb-phone-sub">{venueData?.hours ?? '영업시간 문의'} · 전화·문자 예약 가능</div>
                         </div>
                         <div className="hb-phone-right">
-                          <CallTrackLink href={`tel:${(partner.contact ?? '').replace(/\D/g, '')}`} path={venueUrl} className="btn-call-hero">
+                          <CallTrackLink href={`tel:${contact.replace(/\D/g, '')}`} path={venueUrl} className="btn-call-hero">
                             <span>📞</span> 전화 예약
                           </CallTrackLink>
                         </div>
@@ -300,7 +300,7 @@ export default async function ReviewReadPage({
                     <div className="hb-phone-banner sw-phone-banner">
                       <div className="hb-phone-left">
                         <div className="hb-phone-label">광고 · 문의</div>
-                        <div className="hb-phone-num">{partner.contact}</div>
+                        <div className="hb-phone-num">{contact}</div>
                         <div className="hb-phone-sub">텔레그램으로 문의하세요</div>
                       </div>
                       <div className="hb-phone-right">

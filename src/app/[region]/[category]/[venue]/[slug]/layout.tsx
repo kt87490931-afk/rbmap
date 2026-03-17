@@ -2,10 +2,10 @@ import type { Metadata } from 'next'
 import {
   getReviewPostBySlug,
   getPartnerMetaForVenue,
-  getPartnerForVenue,
   buildReviewUrl,
   getTypeName,
 } from '@/lib/data/review-posts'
+import { getVenueDetail } from '@/lib/data/venues'
 import { REGION_SLUG_TO_NAME } from '@/lib/data/venues'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
@@ -24,13 +24,13 @@ export async function generateMetadata({
   params: Promise<Params>
 }): Promise<Metadata> {
   const { region, category, venue, slug } = await params
-  const [post, partnerMeta] = await Promise.all([
+  const [post, partnerMeta, venueData] = await Promise.all([
     getReviewPostBySlug(region, category, venue, slug),
     getPartnerMetaForVenue(region, category, venue),
+    getVenueDetail(region, category, venue),
   ])
   if (!post) return {}
-  const partner = await getPartnerForVenue(region, category, venue, post.venue)
-  const venueDisplayName = (partner?.name ?? post.venue).trim() || post.venue
+  const venueDisplayName = (venueData?.name ?? post.venue).trim() || post.venue
   const title = `${post.title} | 룸빵여지도`
   let desc =
     post.meta_description ||

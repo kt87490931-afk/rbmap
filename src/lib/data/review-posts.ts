@@ -97,15 +97,23 @@ export async function getPartnerContactForVenue(
 
   const { data: list } = await supabaseAdmin
     .from('partners')
-    .select('contact, info_cards, name')
+    .select('contact, info_cards, name, href')
     .ilike('href', `%/${region}/%`)
     .limit(50)
 
-  const rows = (list ?? []) as { contact?: string; info_cards?: { label?: string; val?: string }[]; name?: string }[]
-  const match = rows.find((p) => {
+  const norm = (s: string) => (s ?? '').replace(/\s+/g, '').toLowerCase()
+  const vNorm = norm(venueName)
+  const rows = (list ?? []) as { contact?: string; info_cards?: { label?: string; val?: string }[]; name?: string; href?: string }[]
+  let match = rows.find((p) => {
     const n = (p.name ?? '').trim()
-    return n === venueName || n.includes(venueName) || venueName.includes(n)
+    if (!n) return false
+    if (n === venueName || n.includes(venueName) || venueName.includes(n)) return true
+    if (norm(n) === vNorm || norm(n).includes(vNorm) || vNorm.includes(norm(n))) return true
+    return false
   })
+  if (!match && venueSlug) {
+    match = rows.find((p) => (p.href ?? '').toLowerCase().includes(`/${venueSlug}`) || (p.href ?? '').toLowerCase().endsWith(`/${venueSlug}`))
+  }
   if (match) {
     const out = extractContactHours(match)
     if (out) return out

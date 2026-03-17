@@ -92,7 +92,7 @@ export async function generateReview(params: {
   const focus = pickReviewFocus(seed + 100)
 
   const topicBlock = params.topic
-    ? `[이번 리뷰 주제 — 반드시 준수]\n${params.topic}\n\n이 주제(상황/에피소드)만 다루어라. 다른 주제로 바꾸지 마라. 본문은 이 주제에 맞는 구체적 경험을 "썰" 스타일로 작성하라. 객관적 리뷰보다 내 생각·감정·반응을 충분히 담아라.\n\n`
+    ? `[이번 리뷰 주제 — 반드시 준수, 본문의 80% 이상]\n${params.topic}\n\n이 주제가 본문의 80% 이상을 차지해야 한다. 다른 주제로 바꾸지 마라. 이 주제(상황/에피소드)에 맞는 구체적 경험을 "썰" 스타일로 작성하라. 객관적 리뷰보다 내 생각·감정·반응을 충분히 담아라. 독자 궁금증을 유발해 클릭과 읽기를 이끌어라.\n\n`
     : ''
 
   const titleFormatBlock =

@@ -74,6 +74,22 @@ jobs:
               echo "Cron 추가됨: 일일 리포트 (00시)"
             fi
 
+            # Cron: Cloudflare 봇 로그 동기화 (10분마다)
+            chmod +x /var/www/rbmap/scripts/cron-cloudflare-bot-sync.sh 2>/dev/null || true
+            CRON_CURRENT_BOT=$(crontab -l 2>/dev/null || true)
+            if echo "$CRON_CURRENT_BOT" | grep -q "cron-cloudflare-bot-sync.sh"; then
+              if ! echo "$CRON_CURRENT_BOT" | grep -q "\\*/10 \\* \\* \\* \\* .*cron-cloudflare-bot-sync.sh"; then
+                CRON_CURRENT_BOT=$(echo "$CRON_CURRENT_BOT" | grep -v "cron-cloudflare-bot-sync.sh" || true)
+                ( echo "$CRON_CURRENT_BOT"; echo "*/10 * * * * /var/www/rbmap/scripts/cron-cloudflare-bot-sync.sh" ) | crontab -
+                echo "Cron 스케줄 갱신: Cloudflare 봇 로그 동기화 10분마다"
+              else
+                echo "Cron 이미 10분마다 설정됨: Cloudflare 봇 로그 동기화"
+              fi
+            else
+              ( echo "$CRON_CURRENT_BOT"; echo "*/10 * * * * /var/www/rbmap/scripts/cron-cloudflare-bot-sync.sh" ) | crontab -
+              echo "Cron 추가됨: Cloudflare 봇 로그 동기화 10분마다"
+            fi
+
             # Cron: 구글 사이트맵 Ping (매일 06시 KST)
             chmod +x /var/www/rbmap/scripts/cron-sitemap-ping.sh 2>/dev/null || true
             if ! crontab -l 2>/dev/null | grep -q "cron-sitemap-ping"; then

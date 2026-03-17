@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CRON_SCRIPT="${PROJECT_DIR}/scripts/cron-generate-reviews.sh"
 LOG_FILE="${PROJECT_DIR}/logs/cron-generate-reviews.log"
+BOT_SYNC_CRON_SCRIPT="${PROJECT_DIR}/scripts/cron-cloudflare-bot-sync.sh"
 
 echo "=== rbmap 리뷰 생성 크론 점검 ==="
 echo ""
@@ -55,4 +56,23 @@ echo ""
 echo "5) 다음 20분 단위 실행 시각 (서버 로컬 기준)"
 echo "   매시 0, 20, 40분에 실행됩니다. 현재 서버 시각: $(date '+%Y-%m-%d %H:%M:%S %Z')."
 echo ""
+
+echo "6) Cloudflare 봇 로그 동기화 크론"
+if crontab -l 2>/dev/null | grep -q "cron-cloudflare-bot-sync"; then
+  crontab -l 2>/dev/null | grep "cron-cloudflare-bot-sync"
+  if crontab -l 2>/dev/null | grep -q "\*/10 .*cron-cloudflare-bot-sync"; then
+    echo "   -> 10분마다 설정됨."
+  else
+    echo "   -> 경고: 10분마다가 아님."
+  fi
+else
+  echo "   -> 없음. 배포 후 자동 등록되거나 수동 추가 필요."
+fi
+if [ -x "$BOT_SYNC_CRON_SCRIPT" ]; then
+  echo "   $BOT_SYNC_CRON_SCRIPT (실행 가능)"
+else
+  echo "   $BOT_SYNC_CRON_SCRIPT (없거나 실행 불가)"
+fi
+echo ""
+
 echo "점검 완료."

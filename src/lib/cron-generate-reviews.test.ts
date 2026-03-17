@@ -3,11 +3,11 @@ import { DUPLICATE_WINDOW_MS } from './cron-generate-reviews'
 import { canGenerateReview } from './review-schedule'
 
 describe('cron-generate-reviews 중복 방지', () => {
-  it('DUPLICATE_WINDOW_MS는 12시간(ms)이다', () => {
-    expect(DUPLICATE_WINDOW_MS).toBe(12 * 60 * 60 * 1000)
+  it('DUPLICATE_WINDOW_MS는 8시간(ms)이다', () => {
+    expect(DUPLICATE_WINDOW_MS).toBe(8 * 60 * 60 * 1000)
   })
 
-  it('12시간 윈도우로 동일 업체 중복 방지', () => {
+  it('8시간 윈도우로 동일 업체 중복 방지', () => {
     expect(DUPLICATE_WINDOW_MS).toBeGreaterThanOrEqual(20 * 60 * 1000)
   })
 })

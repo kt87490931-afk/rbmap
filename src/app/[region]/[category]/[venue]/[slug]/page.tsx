@@ -17,6 +17,8 @@ import { REGION_SLUG_TO_NAME, REGION_SLUGS, getVenueDetail } from '@/lib/data/ve
 import { getSiteSection } from '@/lib/data/site'
 import { CallTrackLink } from '@/components/venue/CallTrackLink'
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
+
 type Params = { region: string; category: string; venue: string; slug: string }
 
 function isValidRegion(r: string): r is (typeof REGION_SLUGS)[number] {
@@ -63,15 +65,21 @@ export default async function ReviewReadPage({
     post.sec_facility.length +
     post.sec_summary.length
 
+  const reviewPath = buildReviewUrl(region, category, venue, slug ?? '')
+  const canonicalUrl = `${SITE_URL}${reviewPath}`
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Review',
     name: post.title,
-    author: { '@type': 'Organization', name: '룸빵여지도' },
+    url: canonicalUrl,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
+    author: { '@type': 'Organization', name: '룸빵여지도', url: SITE_URL },
+    publisher: { '@type': 'Organization', name: '룸빵여지도', url: SITE_URL },
     reviewBody: post.sec_overview || post.sec_summary,
     reviewRating: { '@type': 'Rating', ratingValue: String(post.star), bestRating: '5' },
     itemReviewed: { '@type': 'LocalBusiness', name: venueDisplayName },
     datePublished: post.published_at || post.visit_date,
+    dateModified: post.updated_at || post.published_at || post.visit_date,
   }
 
   const { prev, next } = prevNext

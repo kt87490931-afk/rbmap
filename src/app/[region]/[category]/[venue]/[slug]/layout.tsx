@@ -64,6 +64,9 @@ export async function generateMetadata({
       url: canonicalUrl,
       siteName: '룸빵여지도',
       locale: 'ko_KR',
+      publishedTime: post.published_at ?? post.visit_date ?? undefined,
+      modifiedTime: post.updated_at ?? post.published_at ?? post.visit_date ?? undefined,
+      authors: ['룸빵여지도'],
       images: [
         {
           url: ogImage,

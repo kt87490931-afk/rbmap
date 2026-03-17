@@ -3,6 +3,30 @@
  * 재미니다양한예시.txt 기반, 10개 카테고리 약 150+ 주제
  */
 
+/** 제휴 지역(강남, 수원 인계동, 동탄, 오산, 가락동, 제주) 제외 지역명 — 이 지명이 포함된 주제는 선택 시 제외 */
+const NON_PARTNER_REGION_NAMES = [
+  '평택', '고덕', '송탄', '안중', '부천', '상동', '중동', '소사', '일산', '라페스타', '웨스턴돔', '마두', '주엽',
+  '시흥', '배곧', '정왕', '거북섬', '김포', '구래동', '장기동', '운양', '화성', '병점', '향남', '봉담',
+  '안산', '상록수', '한대앞', '의정부', '민락', '금오', '파주', '야당', '운정', '금촌',
+  '광교', '상현', '앨리웨이', '판교', '백현', '삼평', '미금', '야탑', '용인', '수지', '기흥', '처인',
+  '남양주', '별내', '구리', '돌다리', '하남', '미사', '옥정',
+  '분당', '정자', '서현', '송파', '방이동', '석촌', '가든파이브', '문정',
+  '신림', '마포', '상암', '공덕', '영등포', '신길', '강동', '천호', '암사',
+  '수원역', '매산로', '비전', '로데오', '교대', '타임스퀘어',
+] as const
+
+/** 주제에 비제휴 지역명이 포함되어 있으면 true (선택 대상에서 제외) */
+function containsNonPartnerRegion(text: string): boolean {
+  const t = text.trim()
+  if (!t) return false
+  return NON_PARTNER_REGION_NAMES.some((name) => t.includes(name))
+}
+
+/** 비제휴 지역명이 없는 주제만 필터링 */
+function filterPartnerRegionsOnly<T extends string>(arr: T[]): T[] {
+  return arr.filter((t) => !containsNonPartnerRegion(t))
+}
+
 export const REVIEW_TOPICS: string[] = [
   // 1. 비즈니스 및 접대
   '중요한 계약 성사 후 팀원들과 들른 곳',
@@ -76,7 +100,7 @@ export const REVIEW_TOPICS: string[] = [
   '주식 익절하고 기쁜 마음에 골든벨 울릴 뻔한 후기',
   '조용한 재즈 음악과 함께 즐긴 분위기 있는 1인 혼술',
   '명절 연휴, 고향 친구들과 모여 회포 풀기 좋았던 곳',
-  '결혼기념일은 아니지만 와이프 몰래(?) 즐긴 자유시간',
+  '결혼기념일은 아니지만 와이프 몰래 즐긴 자유시간',
   '월급날 와이프한테 허락받고 당당하게 입성한 사연',
   '중요한 면접 합격 후 나 자신에게 주는 최고의 보상',
   '아무 이유 없이 그냥 술 마시고 싶을 때 생각나는 1순위',
@@ -114,7 +138,7 @@ export const REVIEW_TOPICS: string[] = [
   '비즈니스 룸의 정석, 조용하고 품위 있는 대화의 장',
   '가라오케 최신곡 반주가 너무 빵빵해서 콘서트장인 줄',
   '셔츠 교체 후 분위기 반전, 그때부터 진짜 파티 시작',
-  '하이퍼블릭만의 독보적인 텐션에 영혼까지 탈탈 털림(긍정적)',
+  '하이퍼블릭만의 독보적인 텐션에 영혼까지 탈탈 털림',
   '퍼블릭 가격으로 럭셔리한 대우받고 온 가성비 갑 후기',
   '시스템 설명 친절하게 해줘서 어버버 안 하고 잘 놀다 옴',
   '셔츠룸 처음 가본 친구가 입을 다물지 못했던 사연',
@@ -163,7 +187,7 @@ export const REVIEW_TOPICS: string[] = [
   '가격이 저렴한 건 아니지만 그 이상의 가치를 충분히 함',
   '리뷰 보고 기대 많이 했는데 기대치를 뛰어넘는 퀄리티',
   '다음번엔 멤버 더 모아서 대형룸 정복하러 오겠습니다',
-  '"성공해서 다시 오겠다" 다짐하게 만드는 동기부여(?) 맛집',
+  '성공해서 다시 오겠다 다짐하게 만드는 동기부여 맛집',
 ]
 
 /** 썰 제목용 상황/에피소드 풀 (제목예시.txt 기반, 반드시 "썰"로 끝나도록 조합) */
@@ -216,7 +240,7 @@ export const REVIEW_TITLE_SITUATIONS: string[] = [
   '연예인 닮은 꼴 그녀 실물 보고 심장 멎을 뻔한',
   '하이퍼급 마인드 가진 예쁜 여자 만난',
   '룸빵여지도 보고 찾아간 업소 후기랑 똑같아서 놀란',
-  '실시간 업데이트 믿고 갔다가 득템(?)한',
+  '실시간 업데이트 믿고 갔다가 득템한',
   '6시간마다 뜨는 최신 리뷰 덕분에 내상 피한',
 ]
 
@@ -310,8 +334,6 @@ export const REVIEW_TITLE_SITUATIONS_LOVELINE: string[] = [
   '고덕 출장 갔다가 번호 따고 온 입술 섹시한 그녀 편',
   '웃을 때 입술 모양이 하트인',
   '에이스 누나가 내 볼에 기습 뽀뽀하고 도망간',
-  '배곧 신도시에서 만난 팜므파탈 그녀의 치명적 입술',
-  '구래동에서 만난 인형 비주얼 그녀와 썸 탄',
   '병점 에이스랑 단둘이 룸에서 대화하다 입술 닿을 뻔한',
   '입술 피어싱이 ㄹㅇ 킬포였던',
   '동기들이랑 갔다가 나만 지명받고 입술 미인이랑 논',
@@ -418,25 +440,73 @@ export const REVIEW_TITLE_SITUATIONS_LOVELINE: string[] = [
   '사이트 지도 보고 찾은 아지트 입술 예쁜 그녀와 단골 된',
   '룸빵여지도 후기 믿고 갔다가 인생 입술 그녀 만나 썸 탄',
   '룸빵여지도 덕분에 내상 없이 입술 섹시한 그녀랑 잘 논',
+  // 설레이는주제.txt — [] 괄호 없이 추가
+  '초이스 하려는데 고등학교 때 내 첫사랑이랑 똑닮은 애가 들어온 썰',
+  '노래방 점수 내기했는데 그녀가 지면 나랑 사귀기 조건 건 썰',
+  '술 취해서 뻗었는데 그녀가 내 손에 숙취해소제 쥐어주고 간 썰',
+  '군대 전역하자마자 처음 본 여자가 내 이상형 100% 일치한 썰',
+  '초보인 거 티 났는지 그녀가 오빠 내가 지켜줄게라며 챙겨준 썰',
+  '그녀가 부른 아이유 금요일에 만나요 듣고 진짜 금요일에 만나기로 한 썰',
+  '나갈 때 내 겉옷 주머니에 자기 연락처 적힌 영수증 넣어둔 그녀 썰',
+  '실장님이 오늘 에이스 기분 좋다더니 나랑만 귓속말하며 논 썰',
+  '계산하려는데 그녀가 슬쩍 자기 포인트로 할인해주려던 썰',
+  '오빠 사실 나 오늘 첫 출근이야라며 수줍게 웃던 그녀에게 감긴 썰',
+  '위스키 잔에 묻은 립스틱 자국 보고 나도 모르게 멍 때리다 들킨 썰',
+  '좁은 룸 안에서 그녀 숨소리가 내 귓가에 바로 들릴 때 전율 돋은 썰',
+  '오빠 손 왜 이렇게 커라며 자기 손이랑 맞대보던 그녀 썰',
+  '내 무릎 위에 살짝 앉아서 안주 먹여주는데 심장 소리 밖으로 들린 썰',
+  '그녀가 내 넥타이 똑바로 매주며 오빠 나만 봐라고 한 썰',
+  '셔츠 갈아입고 온 그녀 향수 냄새가 너무 좋아서 정신 혼미해진 썰',
+  '입술 피어싱 한 그녀가 아랫입술 살짝 깨물며 나 유혹한 썰',
+  '나 오늘 오빠 집에 안 보내고 싶은데 어떡해 직구 날린 그녀 썰',
+  '정전된 척 장난치다 어둠 속에서 그녀랑 입술 닿을 뻔한 썰',
+  '내 술잔에 자기 입술 도장 찍고 이거 마시면 우리 썸 타는 거다 썰',
+  '집 가는 택시 안에서 오빠 자 벌써 보고 싶어 문자 받은 썰',
+  '다음 날 해장국 먹으러 나오라고 먼저 연락 온 에이스 그녀 썰',
+  '오빠 나 내일 쉬는데 뭐 해 은근슬쩍 데이트 신청받은 썰',
+  '인스타 아이디 알려달라더니 내 사진에 좋아요 테러한 그녀 썰',
+  '복학생이라고 했더니 자기 대학교 과잠 빌려 입고 데이트한 썰',
+  '명품 백 선물보다 내 진심 담긴 편지에 울어버린 순수한 그녀 썰',
+  '지명 손님 많은데 나 온다니까 예약 다 취소하고 기다린 그녀 썰',
+  '그녀가 직접 구운 쿠키 싸 들고 와서 나한테만 몰래 준 썰',
+  '이제는 가게가 아니라 카페에서 아메리카노 마시는 사이 된 썰',
+  '오빠 나 이제 이 일 그만둬라며 나한테 제일 먼저 말해준 썰',
+  '돈 많은 형님들 제치고 에이스 그녀가 내 옆자리 사수한 썰',
+  '복학생 찌질함도 매력이라며 귀엽다고 볼 꼬집어준 그녀 썰',
+  '군대 무용담 듣고 오빠 진짜 멋있다며 눈 반짝이던 그녀 썰',
+  '내가 부른 서툰 노래에 감동해서 눈시울 붉어진 그녀 보고 울컥한 썰',
+  '실장님도 놀란 그녀의 애정 공세 나 오늘 로또 맞은 건가 썰',
+  '다른 테이블에서 부르는데 나 오빠랑 더 있을래라며 튕긴 그녀 썰',
+  '그녀가 직접 타준 칵테일 마시고 세상에서 제일 행복한 복학생 된 썰',
+  '내 초라한 옷차림 신경 안 쓰고 오빠 눈빛이 제일 좋아 해준 그녀 썰',
+  '오빠 같은 사람 처음 봐 소리 듣고 입꼬리 귀에 걸려 내려올 줄 모른 썰',
+  '나갈 때 문 앞까지 따라와서 손 흔들어주던 그녀의 마지막 미소 썰',
+  '그녀의 촉촉한 입술이 내 귓볼에 닿아 전신이 마비된 썰',
+  '오빠 나랑 사귈래 농담 속에 진심 섞인 것 같아 밤샌 썰',
+  '화이트데이 때 사탕 한 봉지 사갔는데 세상 다 가진 듯 기뻐한 그녀 썰',
+  '나 오늘 생일인데 오빠가 와줘서 너무 좋아라며 안긴 그녀 썰',
+  '비 오는 날 그녀랑 창밖 보면서 양주 마시다 묘한 기류 흐른 썰',
 ]
 
-/** 썰 제목용 상황 선택 — 새 주제(러브라인/비주얼) 75% 이상, 기존 리뷰 주제 25% 이하 */
+/** 썰 제목용 상황 선택 — 새 주제(러브라인/비주얼) 80% 이상, 기존 리뷰 주제 20% 이하. 비제휴 지역명 포함 주제는 선택 시 제외 */
 export function pickTitleSituation(recentSituations: string[], seed: number): string {
   const used = new Set(recentSituations.map((t) => t.trim()).filter(Boolean))
-  const availableLoveline = REVIEW_TITLE_SITUATIONS_LOVELINE.filter((t) => !used.has(t.trim()))
-  const availableOriginal = REVIEW_TITLE_SITUATIONS.filter((t) => !used.has(t.trim()))
-  const lovelinePool = availableLoveline.length > 0 ? availableLoveline : REVIEW_TITLE_SITUATIONS_LOVELINE
-  const originalPool = availableOriginal.length > 0 ? availableOriginal : REVIEW_TITLE_SITUATIONS
-  const useLoveline = Math.abs(seed) % 100 < 75
+  const lovelineAll = filterPartnerRegionsOnly(REVIEW_TITLE_SITUATIONS_LOVELINE)
+  const originalAll = filterPartnerRegionsOnly(REVIEW_TITLE_SITUATIONS)
+  const availableLoveline = lovelineAll.filter((t) => !used.has(t.trim()))
+  const availableOriginal = originalAll.filter((t) => !used.has(t.trim()))
+  const lovelinePool = availableLoveline.length > 0 ? availableLoveline : lovelineAll
+  const originalPool = availableOriginal.length > 0 ? availableOriginal : originalAll
+  const useLoveline = Math.abs(seed) % 100 < 80
   const pool = useLoveline ? lovelinePool : originalPool
   const idx = Math.abs((seed >> 1) ^ (seed * 31)) % pool.length
-  return pool[idx] ?? (useLoveline ? REVIEW_TITLE_SITUATIONS_LOVELINE[0]! : REVIEW_TITLE_SITUATIONS[0]!)
+  return pool[idx] ?? (lovelineAll[0] ?? originalAll[0] ?? REVIEW_TITLE_SITUATIONS_LOVELINE[0] ?? REVIEW_TITLE_SITUATIONS[0]!)
 }
 
-/** 최근 이 업소에서 사용한 주제는 피하고, 시드로 주제 하나 선택 */
+/** 최근 이 업소에서 사용한 주제는 피하고, 시드로 주제 하나 선택. 비제휴 지역명 포함 주제는 선택 시 제외 */
 export function pickTopicExcludingRecent(recentTopicStrings: string[], seed: number): string {
   const used = new Set(recentTopicStrings.map((t) => t.trim()).filter(Boolean))
-  const combined = [...REVIEW_TOPICS, ...REVIEW_TITLE_SITUATIONS]
+  const combined = filterPartnerRegionsOnly([...REVIEW_TOPICS, ...REVIEW_TITLE_SITUATIONS])
   const available = combined.filter((t) => !used.has(t.trim()))
   const pool = available.length > 0 ? available : combined
   const idx = Math.abs(seed) % pool.length

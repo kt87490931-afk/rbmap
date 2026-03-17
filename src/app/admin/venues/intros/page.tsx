@@ -15,19 +15,28 @@ interface IntroItem {
   created_at: string
 }
 
-/** JSON 블록처럼 보이는 문자열에서 intro 본문만 추출 */
+const PLACEHOLDER_JSON_MSG = '[JSON 형식으로 저장된 항목입니다. 수정 버튼으로 편집 후 적용해 주세요.]'
+
+/** JSON 블록처럼 보이는 문자열에서 intro 본문만 추출 (trailing comma 등 허용) */
 function extractTextFromJsonLike(str: string): string | null {
   const trimmed = str.trim()
-  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null
+  const first = trimmed.indexOf('{')
+  if (first < 0) return null
   try {
-    const cleaned = trimmed.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?\s*```\s*$/i, '').trim()
-    const first = cleaned.indexOf('{')
+    const slice = trimmed.slice(first)
+    const cleaned = slice
+      .replace(/^```(?:json)?\s*\n?/i, '')
+      .replace(/\n?\s*```\s*$/i, '')
+      .replace(/,[\s\n]*([}\]])/g, '$1')
+      .trim()
     const last = cleaned.lastIndexOf('}')
-    if (first >= 0 && last > first) {
-      const parsed = JSON.parse(cleaned.slice(first, last + 1)) as { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }
+    if (last > 0) {
+      const jsonStr = cleaned.slice(0, last + 1)
+      const parsed = JSON.parse(jsonStr) as { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }
       if (parsed?.intro) {
         const parts = [parsed.intro.lead, parsed.intro.quote, ...(parsed.intro.body_paragraphs ?? [])].filter(Boolean)
-        return parts.join('\n\n')
+        const out = parts.join('\n\n')
+        return out.length > 0 ? out : null
       }
     }
   } catch { /* ignore */ }
@@ -44,7 +53,7 @@ function contentToDisplayText(item: IntroItem): string {
     if (joined.startsWith('{') || joined.includes('"tagline"') || joined.includes('"intro"')) {
       const extracted = extractTextFromJsonLike(joined)
       if (extracted) return extracted
-      return '[JSON 형식으로 저장된 항목입니다. 수정 버튼으로 편집 후 적용해 주세요.]'
+      return PLACEHOLDER_JSON_MSG
     }
     return joined
   }
@@ -53,14 +62,14 @@ function contentToDisplayText(item: IntroItem): string {
     const extracted = extractTextFromJsonLike(trimmed)
     if (extracted) return extracted
     try {
-      const cleaned = trimmed.replace(/^```json?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+      const cleaned = trimmed.replace(/^```json?\s*/i, '').replace(/\s*```\s*$/, '').replace(/,[\s\n]*([}\]])/g, '$1').trim()
       const parsed = JSON.parse(cleaned) as { intro?: { lead?: string; quote?: string; body_paragraphs?: string[] } }
       if (parsed?.intro) {
         const parts = [parsed.intro.lead, parsed.intro.quote, ...(parsed.intro.body_paragraphs ?? [])].filter(Boolean)
         return parts.join('\n\n')
       }
     } catch { /* fallthrough */ }
-    return '[JSON 형식으로 저장된 항목입니다. 수정 버튼으로 편집 후 적용해 주세요.]'
+    return PLACEHOLDER_JSON_MSG
   }
   return raw
 }
@@ -393,7 +402,17 @@ export default function AdminVenueIntrosPage() {
                   </div>
                   {hasAi && (
                     <div style={{ padding: '6px 14px', fontSize: 11, color: 'var(--muted)', borderTop: '1px solid var(--border)' }}>
-                      {displayContent.length}자
+                      {displayContent === PLACEHOLDER_JSON_MSG ? (
+                        (() => {
+                          const rawLen = rawContent.length
+                          const v2 = r.intro_ai_json?.v2?.intro
+                          const v2Len = v2 ? [v2.lead, v2.quote, ...(v2.body_paragraphs ?? [])].filter(Boolean).join('').length : 0
+                          const approx = rawLen || v2Len
+                          return <>원문 저장됨 · 수정에서 본문 확인{approx > 0 ? ` (약 ${approx}자)` : ''}</>
+                        })()
+                      ) : (
+                        `${displayContent.length}자`
+                      )}
                     </div>
                   )}
                 </div>

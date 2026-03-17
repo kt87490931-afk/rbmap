@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server'
 import { requireAdminOrSetup } from '@/lib/admin-auth'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { REVIEW_TONES } from '@/lib/review-scenarios'
-import { canGenerateReview, getNextReviewAt, getTodayKSTRangeUTC } from '@/lib/review-schedule'
+import { getNextReviewAt } from '@/lib/review-schedule'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,8 +43,6 @@ export async function GET() {
     reviewSchedulePreset: string
   }[] = []
 
-  const todayRange = getTodayKSTRangeUTC()
-
   for (const p of partners ?? []) {
     const { regionSlug, typeSlug, venueSlug } = parseHref(p.href)
     const presetId = (p as { review_schedule_preset?: string }).review_schedule_preset ?? undefined
@@ -68,17 +66,7 @@ export async function GET() {
       .limit(1)
       .single()
 
-    const { data: todayRows } = await supabaseAdmin
-      .from('review_posts')
-      .select('created_at')
-      .eq('region', regionSlug)
-      .eq('type', typeSlug)
-      .eq('venue_slug', venueSlug)
-      .gte('created_at', todayRange.start)
-      .lt('created_at', todayRange.end)
-
     const lastReviewAt = lastReview?.created_at ?? null
-    const todayCount = todayRows?.length ?? 0
     const lastCharCount = lastReview?.sec_overview ? lastReview.sec_overview.length : null
     const scenario = lastReview?.scenario_used as { tone?: string } | null
     const lastTone = scenario?.tone ?? null
@@ -86,7 +74,8 @@ export async function GET() {
 
     const next = getNextReviewAt(lastReviewAt, presetId)
     const nextReviewAt = next.getTime() > 0 ? next.toISOString() : new Date().toISOString()
-    const canGenerate = hasIntro && canGenerateReview(lastReviewAt, todayCount, presetId)
+    // 수동 생성: 스케줄 무관, 소개글만 있으면 항상 생성 가능 (자동/Cron은 별도 canGenerateReview 적용)
+    const canGenerate = hasIntro
 
     items.push({
       partnerId: p.id,

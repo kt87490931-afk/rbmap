@@ -279,34 +279,22 @@ export default async function ReviewReadPage({
                   </div>
                 </div>
                 {contact && (() => {
-                  const isPhone = contact.replace(/\D/g, '').length >= 10
-                  if (isPhone) {
-                    return (
-                      <div className="hb-phone-banner sw-phone-banner">
-                        <div className="hb-phone-left">
-                          <div className="hb-phone-label">예약 · 문의 전화</div>
-                          <div className="hb-phone-num">{contact}</div>
-                          <div className="hb-phone-sub">{venueData?.hours ?? '영업시간 문의'} · 전화·문자 예약 가능</div>
-                        </div>
-                        <div className="hb-phone-right">
-                          <CallTrackLink href={`tel:${contact.replace(/\D/g, '')}`} path={venueUrl} className="btn-call-hero">
-                            <span>📞</span> 전화 예약
-                          </CallTrackLink>
-                        </div>
-                      </div>
-                    )
-                  }
+                  const digits = contact.replace(/\D/g, '')
+                  const isPhone = digits.length >= 10
                   return (
                     <div className="hb-phone-banner sw-phone-banner">
                       <div className="hb-phone-left">
-                        <div className="hb-phone-label">광고 · 문의</div>
-                        <div className="hb-phone-num">{contact}</div>
-                        <div className="hb-phone-sub">텔레그램으로 문의하세요</div>
-                      </div>
-                      <div className="hb-phone-right">
-                        <Link href="https://t.me/rbbmap" target="_blank" rel="noopener noreferrer" className="btn-call-hero">
-                          <span>📱</span> 문의하기
-                        </Link>
+                        <div className="hb-phone-label">{isPhone ? '예약 · 문의 전화' : '광고 · 문의'}</div>
+                        {isPhone ? (
+                          <CallTrackLink href={`tel:${digits}`} path={venueUrl} className="hb-phone-num">
+                            {contact}
+                          </CallTrackLink>
+                        ) : (
+                          <div className="hb-phone-num">{contact}</div>
+                        )}
+                        <div className="hb-phone-sub">
+                          {isPhone ? `${venueData?.hours ?? '영업시간 문의'} · 전화·문자 예약 가능` : '텔레그램으로 문의하세요'}
+                        </div>
                       </div>
                     </div>
                   )

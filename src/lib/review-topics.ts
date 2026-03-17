@@ -267,18 +267,44 @@ export const REVIEW_TITLE_SITUATIONS_LOVELINE: string[] = [
   '룸빵여지도 덕분에 내상 안 입고 천사 같은 그녀만 만난',
   '후기에 마인드 대박이라고 적힌 애 찾았더니 진짜 여신이었던',
   '룸빵여지도에서 배운 멘트 쳤더니 예쁜 여자 반응 폭발한',
+  '레드립이 너무 잘 어울리는 그녀 입술만 보느라 대화 망친',
+  '오빠 내 입술 어때 물어보며 다가온 그녀 때문에 심멎한',
+  '앵두 같은 입술로 위스키 마시는 그녀 모습에 넋 나간',
+  '도톰한 입술이 매력적인 그녀 덧니에 입덕한',
+  '입술에 묻은 거 닦아주려다 손끝 떨려서 망신당한 복학생',
+  '오빠 입술은 왜 이렇게 말랐어라며 립밤 발라준 그녀',
+  '말할 때마다 입술 산이 너무 섹시해서 나도 모르게 쳐다본',
+  '그녀의 촉촉한 입술이 내 볼에 살짝 닿았을 때 세상 멈춘',
+  '오빠랑 키스하면 어떤 느낌일까 도발적인 그녀 멘트에 당황한',
+  '실물 영접하고 다리 풀린 썰 ㄹㅇ 현역 아이돌인 줄 알았음',
+  '고양이상 눈빛에 홀려서 나도 모르게 골든벨 울릴 뻔한',
+  '슬렌더 몸매의 정석 청바지 핏이 너무 예술인 그녀와 한잔한',
+  '긴 생머리 휘날리며 들어온 그녀 샴푸 향기에 정신 못 차린',
+  '베이글녀의 정석 얼굴은 애기인데 몸매는 반전인 그녀',
+  '나 갈 때 오빠 벌써 가면 나 누구랑 놀아라며 눈물 고인 그녀',
+  '귓속말로 오빠 향수 뭐야 오늘 집에 가지 마 소리 들은',
+  '술 취한 척 내 어깨에 머리 기댄 그녀 심장 박동 공유한',
+  '손깍지 끼고 오빠 손 따뜻하다며 안 놔주던 그녀',
+  '오빠 같은 손님은 처음이야 소리에 진심으로 설렌 복학생',
+  '룸 안에서 단둘이 내 귀에 캔디 부르다 진짜 캔디 된',
+  '다음엔 밖에서 소주 마시자 약속하고 번호 따기 성공한',
+  '예약 전쟁 뚫고 만난 에이스 그녀 왜 1등인지 바로 이해한',
+  '다른 방 다 거절하고 나한테만 와준 그녀 감동의 도가니',
+  '오빠 온대서 나 오늘 풀 메이크업했어 소리 들은',
+  '룸빵여지도 지도 보고 찾아간 입술 섹시한 그녀랑 썸 탄',
+  '6시간 업데이트 리뷰 믿고 갔다가 내 인생 최고의 에이스 만난',
 ]
 
-/** 썰 제목용 상황 선택 (70% 러브라인 풀, 30% 기존 풀) */
+/** 썰 제목용 상황 선택 — 새 주제(러브라인/비주얼) 75% 이상, 기존 리뷰 주제 25% 이하 */
 export function pickTitleSituation(recentSituations: string[], seed: number): string {
   const used = new Set(recentSituations.map((t) => t.trim()).filter(Boolean))
   const availableLoveline = REVIEW_TITLE_SITUATIONS_LOVELINE.filter((t) => !used.has(t.trim()))
   const availableOriginal = REVIEW_TITLE_SITUATIONS.filter((t) => !used.has(t.trim()))
   const lovelinePool = availableLoveline.length > 0 ? availableLoveline : REVIEW_TITLE_SITUATIONS_LOVELINE
   const originalPool = availableOriginal.length > 0 ? availableOriginal : REVIEW_TITLE_SITUATIONS
-  const useLoveline = Math.abs(seed) % 10 < 7
+  const useLoveline = Math.abs(seed) % 100 < 75
   const pool = useLoveline ? lovelinePool : originalPool
-  const idx = Math.abs(seed >> 1) % pool.length
+  const idx = Math.abs((seed >> 1) ^ (seed * 31)) % pool.length
   return pool[idx] ?? (useLoveline ? REVIEW_TITLE_SITUATIONS_LOVELINE[0]! : REVIEW_TITLE_SITUATIONS[0]!)
 }
 

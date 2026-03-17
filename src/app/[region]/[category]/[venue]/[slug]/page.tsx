@@ -7,6 +7,7 @@ import {
   getReviewPostsByVenue,
   getReviewPostsByRegion,
   getPrevNextReviews,
+  getPartnerContactForVenue,
   getRegionName,
   getTypeName,
   formatStars,
@@ -15,6 +16,7 @@ import {
 } from '@/lib/data/review-posts'
 import { REGION_SLUG_TO_NAME, REGION_SLUGS } from '@/lib/data/venues'
 import { getSiteSection } from '@/lib/data/site'
+import { CallTrackLink } from '@/components/venue/CallTrackLink'
 
 type Params = { region: string; category: string; venue: string; slug: string }
 
@@ -40,10 +42,11 @@ export default async function ReviewReadPage({
   const post = await getReviewPostBySlug(region, category, venue, slugDecoded)
   if (!post) notFound()
 
-  const [sameVenueReviews, sameRegionReviews, prevNext, header, footer] = await Promise.all([
+  const [sameVenueReviews, sameRegionReviews, prevNext, partnerContact, header, footer] = await Promise.all([
     getReviewPostsByVenue(region, venue, post.id, 5),
     getReviewPostsByRegion(region, category, venue, 5),
     post.published_at ? getPrevNextReviews(post.published_at, post.id) : Promise.resolve({ prev: null, next: null }),
+    getPartnerContactForVenue(region, category, venue),
     getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>('header'),
     getSiteSection<{ desc?: string; copyright?: string }>('footer'),
   ])
@@ -273,6 +276,39 @@ export default async function ReviewReadPage({
                     <span className="vm-val">{typeName}</span>
                   </div>
                 </div>
+                {partnerContact && (() => {
+                  const isPhone = (partnerContact.contact ?? '').replace(/\D/g, '').length >= 10
+                  if (isPhone) {
+                    return (
+                      <div className="hb-phone-banner sw-phone-banner">
+                        <div className="hb-phone-left">
+                          <div className="hb-phone-label">예약 · 문의 전화</div>
+                          <div className="hb-phone-num">{partnerContact.contact}</div>
+                          <div className="hb-phone-sub">{partnerContact.hours ?? '영업시간 문의'} · 전화·문자 예약 가능</div>
+                        </div>
+                        <div className="hb-phone-right">
+                          <CallTrackLink href={`tel:${(partnerContact.contact ?? '').replace(/\D/g, '')}`} path={venueUrl} className="btn-call-hero">
+                            <span>📞</span> 전화 예약
+                          </CallTrackLink>
+                        </div>
+                      </div>
+                    )
+                  }
+                  return (
+                    <div className="hb-phone-banner sw-phone-banner">
+                      <div className="hb-phone-left">
+                        <div className="hb-phone-label">광고 · 문의</div>
+                        <div className="hb-phone-num">{partnerContact.contact}</div>
+                        <div className="hb-phone-sub">텔레그램으로 문의하세요</div>
+                      </div>
+                      <div className="hb-phone-right">
+                        <Link href="https://t.me/rbbmap" target="_blank" rel="noopener noreferrer" className="btn-call-hero">
+                          <span>📱</span> 문의하기
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })()}
                 <Link href={venueUrl} className="vm-btn">업소 상세 페이지 →</Link>
               </div>
             </div>

@@ -62,6 +62,28 @@ export function buildReviewUrl(region: string, type: string, venueSlug: string, 
   return `/${region}/${type}/${venueSlug}/${slug}`
 }
 
+/** 리뷰 상세 "업소 정보" 연락처 배너용. href가 /{region}/{type}/{venueSlug} 와 일치하는 1건 조회 */
+export async function getPartnerContactForVenue(
+  region: string,
+  type: string,
+  venueSlug: string
+): Promise<{ contact: string; hours?: string } | null> {
+  const path = `/${(region || '').replace(/^\/+|\/+$/g, '')}/${(type || '').replace(/^\/+|\/+$/g, '')}/${(venueSlug || '').replace(/^\/+|\/+$/g, '')}`.replace(/\/+/g, '/')
+  const { data, error } = await supabaseAdmin
+    .from('partners')
+    .select('contact, info_cards')
+    .in('href', [path, path + '/'])
+    .limit(1)
+    .maybeSingle()
+  if (error || !data) return null
+  const contact = typeof (data as { contact?: string }).contact === 'string' ? (data as { contact: string }).contact.trim() : ''
+  if (!contact) return null
+  const infoCards = (data as { info_cards?: { label?: string; val?: string }[] }).info_cards
+  const hoursCard = Array.isArray(infoCards) ? infoCards.find((c) => /영업|시간|hours/i.test(c?.label ?? '')) : undefined
+  const hours = hoursCard?.val ?? '영업시간 문의'
+  return { contact, hours }
+}
+
 /** 리뷰 상세 메타(키워드·설명 보강)용 제휴업체 태그·설명. href가 /{region}/{type}/{venueSlug} 와 일치하는 1건 조회 */
 export async function getPartnerMetaForVenue(
   region: string,

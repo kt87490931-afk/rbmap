@@ -72,25 +72,29 @@ function extractContactHours(data: { contact?: string; info_cards?: { label?: st
   return { contact, hours }
 }
 
-/** 리뷰 상세 "업소 정보" 연락처 배너용. href 정확 매칭 후 실패 시 venueName으로 폴백 */
-export async function getPartnerContactForVenue(
+/** 리뷰 상세 "업소 정보"용. name(업소명)은 매칭 시 항상 반환. contact/hours는 연락처 있을 때만. 어드민에서 업소명 변경 시 즉시 반영됨. */
+export async function getPartnerForVenue(
   region: string,
   type: string,
   venueSlug: string,
   venueName?: string
-): Promise<{ contact: string; hours?: string } | null> {
+): Promise<{ name: string; contact?: string; hours?: string } | null> {
   const path = `/${(region || '').replace(/^\/+|\/+$/g, '')}/${(type || '').replace(/^\/+|\/+$/g, '')}/${(venueSlug || '').replace(/^\/+|\/+$/g, '')}`.replace(/\/+/g, '/')
 
   const { data, error } = await supabaseAdmin
     .from('partners')
-    .select('contact, info_cards')
+    .select('contact, info_cards, name')
     .in('href', [path, path + '/'])
     .limit(1)
     .maybeSingle()
 
   if (!error && data) {
-    const out = extractContactHours(data as { contact?: string; info_cards?: { label?: string; val?: string }[] })
-    if (out) return out
+    const d = data as { contact?: string; info_cards?: { label?: string; val?: string }[]; name?: string }
+    const name = (d.name ?? venueName ?? '').trim() || venueName
+    if (name) {
+      const ch = extractContactHours(d)
+      return ch ? { name, contact: ch.contact, hours: ch.hours } : { name }
+    }
   }
 
   if (!venueName) return null
@@ -115,10 +119,24 @@ export async function getPartnerContactForVenue(
     match = rows.find((p) => (p.href ?? '').toLowerCase().includes(`/${venueSlug}`) || (p.href ?? '').toLowerCase().endsWith(`/${venueSlug}`))
   }
   if (match) {
-    const out = extractContactHours(match)
-    if (out) return out
+    const name = (match.name ?? '').trim() || venueName
+    if (name) {
+      const ch = extractContactHours(match)
+      return ch ? { name, contact: ch.contact, hours: ch.hours } : { name }
+    }
   }
   return null
+}
+
+/** @deprecated getPartnerForVenue 사용 권장. 연락처만 필요할 때 하위 호환용 */
+export async function getPartnerContactForVenue(
+  region: string,
+  type: string,
+  venueSlug: string,
+  venueName?: string
+): Promise<{ contact: string; hours?: string } | null> {
+  const p = await getPartnerForVenue(region, type, venueSlug, venueName)
+  return p?.contact ? { contact: p.contact, hours: p.hours } : null
 }
 
 /** 리뷰 상세 메타(키워드·설명 보강)용 제휴업체 태그·설명. href가 /{region}/{type}/{venueSlug} 와 일치하는 1건 조회 */

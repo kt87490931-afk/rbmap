@@ -7,7 +7,7 @@ import {
   getReviewPostsByVenue,
   getReviewPostsByRegion,
   getPrevNextReviews,
-  getPartnerContactForVenue,
+  getPartnerForVenue,
   getRegionName,
   getTypeName,
   formatStars,
@@ -42,14 +42,16 @@ export default async function ReviewReadPage({
   const post = await getReviewPostBySlug(region, category, venue, slugDecoded)
   if (!post) notFound()
 
-  const [sameVenueReviews, sameRegionReviews, prevNext, partnerContact, header, footer] = await Promise.all([
+  const [sameVenueReviews, sameRegionReviews, prevNext, partner, header, footer] = await Promise.all([
     getReviewPostsByVenue(region, venue, post.id, 5),
     getReviewPostsByRegion(region, category, venue, 5),
     post.published_at ? getPrevNextReviews(post.published_at, post.id) : Promise.resolve({ prev: null, next: null }),
-    getPartnerContactForVenue(region, category, venue, post.venue),
+    getPartnerForVenue(region, category, venue, post.venue),
     getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>('header'),
     getSiteSection<{ desc?: string; copyright?: string }>('footer'),
   ])
+
+  const venueDisplayName = (partner?.name ?? post.venue).trim() || post.venue
 
   const regionName = getRegionName(region)
   const typeName = getTypeName(category)
@@ -68,7 +70,7 @@ export default async function ReviewReadPage({
     author: { '@type': 'Organization', name: '룸빵여지도' },
     reviewBody: post.sec_overview || post.sec_summary,
     reviewRating: { '@type': 'Rating', ratingValue: String(post.star), bestRating: '5' },
-    itemReviewed: { '@type': 'LocalBusiness', name: post.venue },
+    itemReviewed: { '@type': 'LocalBusiness', name: venueDisplayName },
     datePublished: post.published_at || post.visit_date,
   }
 
@@ -90,7 +92,7 @@ export default async function ReviewReadPage({
           <span className="breadcrumb-sep">›</span>
           <Link href={`/${region}/${category}`}>{typeName}</Link>
           <span className="breadcrumb-sep">›</span>
-          <Link href={venueUrl}>{post.venue}</Link>
+          <Link href={venueUrl}>{venueDisplayName}</Link>
           <span className="breadcrumb-sep">›</span>
           <span className="breadcrumb-current">{post.title}</span>
         </div>
@@ -104,7 +106,7 @@ export default async function ReviewReadPage({
             <span className="ah-region">{regionName}</span>
             <span className="ah-type">{typeName}</span>
             <Link href={venueUrl} className="ah-vtag">
-              {post.venue}
+              {venueDisplayName}
             </Link>
           </div>
           <h1 className="ah-title">{post.title}</h1>
@@ -178,7 +180,7 @@ export default async function ReviewReadPage({
               <span className="vlc-icon">🎤</span>
               <div className="vlc-info">
                 <div className="vlc-label">이 리뷰의 업소</div>
-                <div className="vlc-name">{post.venue}</div>
+                <div className="vlc-name">{venueDisplayName}</div>
                 <div className="vlc-sub">{regionName} · {typeName}</div>
               </div>
               <span className="vlc-arrow">›</span>
@@ -263,7 +265,7 @@ export default async function ReviewReadPage({
               <div className="sw-head">🎤 업소 정보</div>
               <div className="sw-body">
                 <Link href={venueUrl} className="venue-mini">
-                  <div className="vm-name">{post.venue}</div>
+                  <div className="vm-name">{venueDisplayName}</div>
                   <div className="vm-stars">{formatStars(post.star)} {post.star}.0</div>
                 </Link>
                 <div className="vm-list">
@@ -276,18 +278,18 @@ export default async function ReviewReadPage({
                     <span className="vm-val">{typeName}</span>
                   </div>
                 </div>
-                {partnerContact && (() => {
-                  const isPhone = (partnerContact.contact ?? '').replace(/\D/g, '').length >= 10
+                {partner?.contact && (() => {
+                  const isPhone = (partner.contact ?? '').replace(/\D/g, '').length >= 10
                   if (isPhone) {
                     return (
                       <div className="hb-phone-banner sw-phone-banner">
                         <div className="hb-phone-left">
                           <div className="hb-phone-label">예약 · 문의 전화</div>
-                          <div className="hb-phone-num">{partnerContact.contact}</div>
-                          <div className="hb-phone-sub">{partnerContact.hours ?? '영업시간 문의'} · 전화·문자 예약 가능</div>
+                          <div className="hb-phone-num">{partner.contact}</div>
+                          <div className="hb-phone-sub">{partner.hours ?? '영업시간 문의'} · 전화·문자 예약 가능</div>
                         </div>
                         <div className="hb-phone-right">
-                          <CallTrackLink href={`tel:${(partnerContact.contact ?? '').replace(/\D/g, '')}`} path={venueUrl} className="btn-call-hero">
+                          <CallTrackLink href={`tel:${(partner.contact ?? '').replace(/\D/g, '')}`} path={venueUrl} className="btn-call-hero">
                             <span>📞</span> 전화 예약
                           </CallTrackLink>
                         </div>
@@ -298,7 +300,7 @@ export default async function ReviewReadPage({
                     <div className="hb-phone-banner sw-phone-banner">
                       <div className="hb-phone-left">
                         <div className="hb-phone-label">광고 · 문의</div>
-                        <div className="hb-phone-num">{partnerContact.contact}</div>
+                        <div className="hb-phone-num">{partner.contact}</div>
                         <div className="hb-phone-sub">텔레그램으로 문의하세요</div>
                       </div>
                       <div className="hb-phone-right">
@@ -315,7 +317,7 @@ export default async function ReviewReadPage({
 
             {sameVenueReviews.length > 0 && (
               <div className="sw">
-                <div className="sw-head">📋 {post.venue} 다른 리뷰</div>
+                <div className="sw-head">📋 {venueDisplayName} 다른 리뷰</div>
                 <div className="sw-body" style={{ padding: '0 16px' }}>
                   <div className="rel-list">
                     {sameVenueReviews.map((r) => (

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import {
   getReviewPostBySlug,
   getPartnerMetaForVenue,
+  getPartnerForVenue,
   buildReviewUrl,
   getTypeName,
 } from '@/lib/data/review-posts'
@@ -28,12 +29,13 @@ export async function generateMetadata({
     getPartnerMetaForVenue(region, category, venue),
   ])
   if (!post) return {}
-
+  const partner = await getPartnerForVenue(region, category, venue, post.venue)
+  const venueDisplayName = (partner?.name ?? post.venue).trim() || post.venue
   const title = `${post.title} | 룸빵여지도`
   let desc =
     post.meta_description ||
     post.sec_overview?.slice(0, 120) ||
-    `${post.venue} ${getTypeName(post.type)} 이용 후기`
+    `${venueDisplayName} ${getTypeName(post.type)} 이용 후기`
   if (partnerMeta?.desc && desc.length < 100) {
     const extra = partnerMeta.desc.slice(0, 80).trim()
     if (extra) desc = (desc + ' ' + extra).slice(0, META_DESC_MAX)
@@ -48,7 +50,7 @@ export async function generateMetadata({
   const typeName = getTypeName(post.type)
   const keywords = partnerMeta?.tags?.length
     ? partnerMeta.tags.join(', ')
-    : `${post.venue} 이용 후기, ${post.venue} 리뷰, ${regionName} ${typeName}, 룸빵여지도`
+    : `${venueDisplayName} 이용 후기, ${venueDisplayName} 리뷰, ${regionName} ${typeName}, 룸빵여지도`
 
   return {
     metadataBase: new URL(SITE_URL),
@@ -67,7 +69,7 @@ export async function generateMetadata({
           url: ogImage,
           width: 1200,
           height: 630,
-          alt: `${post.venue} 이용 후기 | 룸빵여지도`,
+          alt: `${venueDisplayName} 이용 후기 | 룸빵여지도`,
         },
       ],
     },

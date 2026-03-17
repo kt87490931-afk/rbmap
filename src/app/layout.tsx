@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/components/layout/AuthProvider";
 import { VisitTracker } from "@/components/layout/VisitTracker";
+import { RightClickGuard } from "@/components/layout/RightClickGuard";
 import { ReviewMetaInHead } from "@/components/ReviewMetaInHead";
 import { VenueMetaInHead } from "@/components/VenueMetaInHead";
 import { getSiteSection } from "@/lib/data/site";
@@ -79,6 +80,7 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <VisitTracker />
+          <RightClickGuard />
           {children}
         </AuthProvider>
       </body>

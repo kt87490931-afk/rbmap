@@ -46,7 +46,7 @@ export default async function ReviewReadPage({
     getReviewPostsByVenue(region, venue, post.id, 5),
     getReviewPostsByRegion(region, category, venue, 5),
     post.published_at ? getPrevNextReviews(post.published_at, post.id) : Promise.resolve({ prev: null, next: null }),
-    getPartnerContactForVenue(region, category, venue),
+    getPartnerContactForVenue(region, category, venue, post.venue),
     getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>('header'),
     getSiteSection<{ desc?: string; copyright?: string }>('footer'),
   ])

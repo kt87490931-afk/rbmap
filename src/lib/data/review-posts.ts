@@ -3,6 +3,7 @@
  * URL: /{region}/{type}/{venue_slug}/{slug}
  */
 
+import { unstable_noStore } from 'next/cache'
 import { supabaseAdmin } from '../supabase-server'
 import { REGION_SLUG_TO_NAME } from './venues'
 
@@ -79,24 +80,33 @@ export async function getPartnerForVenue(
   venueSlug: string,
   venueName?: string
 ): Promise<{ name: string; contact?: string; hours?: string } | null> {
+  unstable_noStore()
   const r = (region || '').trim().toLowerCase()
   const t = (type || '').replace(/^\/+|\/+$/g, '')
   const v = (venueSlug || '').replace(/^\/+|\/+$/g, '')
   const path = `/${r}/${t}/${v}`.replace(/\/+/g, '/')
 
-  const { data, error } = await supabaseAdmin
-    .from('partners')
-    .select('contact, info_cards, name')
-    .in('href', [path, path + '/'])
-    .limit(1)
-    .maybeSingle()
+  type PartnerRow = { contact?: string; info_cards?: { label?: string; val?: string }[]; name?: string }
+  let data: PartnerRow | null = null
 
-  if (!error && data) {
-    const d = data as { contact?: string; info_cards?: { label?: string; val?: string }[]; name?: string }
-    const name = (d.name ?? venueName ?? '').trim() || venueName
+  let res = await supabaseAdmin.from('partners').select('contact, info_cards, name').eq('href', path).limit(1).maybeSingle()
+  if (res.data) {
+    data = res.data as PartnerRow
+  } else if (!res.error) {
+    res = await supabaseAdmin.from('partners').select('contact, info_cards, name').eq('href', path + '/').limit(1).maybeSingle()
+    if (res.data) data = res.data as PartnerRow
+    if (!data) {
+      res = await supabaseAdmin.from('partners').select('contact, info_cards, name').ilike('href', path).limit(1).maybeSingle()
+      if (res.data) data = res.data as PartnerRow
+    }
+  }
+
+  if (data) {
+    const name = (data.name ?? venueName ?? '').trim() || venueName
     if (name) {
-      const ch = extractContactHours(d)
-      return ch ? { name, contact: ch.contact, hours: ch.hours } : { name }
+      const ch = extractContactHours(data)
+      if (ch) return { name, contact: ch.contact, hours: ch.hours }
+      return { name }
     }
   }
 

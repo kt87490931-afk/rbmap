@@ -48,8 +48,23 @@ export type ReviewResult =
 const EMOJI_REGEX =
   /[\u{1F300}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2300}-\u{23FF}]|[\u{2B50}\u{2705}\u{274C}\u{2728}\u{2764}\u{2763}\u{FE0F}]/gu
 
+const FORBIDDEN_REVIEW_TERMS = [/룸빵여지도/gi, /rbbmap\.com/gi, /\brbbmap\b/gi] as const
+
 function stripEmoji(s: string): string {
   return s.replace(EMOJI_REGEX, '').trim()
+}
+
+function sanitizeForbiddenMentions(text: string): string {
+  let sanitized = text
+  for (const pattern of FORBIDDEN_REVIEW_TERMS) {
+    sanitized = sanitized.replace(pattern, '')
+  }
+  return sanitized
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 }
 
 /** 업체소개글 텍스트 추출 */
@@ -110,6 +125,7 @@ export async function generateReview(params: {
     '- 분량: 800자 이상 1000자 이하 (한글 기준)\n' +
     '- 이모지 사용 금지. 텍스트만.\n' +
     '- 실제 방문 경험처럼 구체적으로. 과장 없이.\n' +
+    '- 본문/제목 어디에도 "룸빵여지도", "rbbmap", "rbbmap.com" 같은 사이트/브랜드/도메인 언급을 절대 쓰지 마라.\n' +
     titleFormatBlock +
     '- 제목 1줄 + 본문 형태로 작성. 제목은 --- 로 구분.\n' +
     `[오프닝 지시] ${openingHook.instruction}\n` +
@@ -151,7 +167,7 @@ export async function generateReview(params: {
       return { success: false, message: `생성 실패: ${errMsg}` }
     }
 
-    let text = stripEmoji(rawText.trim())
+    let text = sanitizeForbiddenMentions(stripEmoji(rawText.trim()))
     let title = ''
     let content = text
 
@@ -164,6 +180,7 @@ export async function generateReview(params: {
     if (params.topic) {
       title = `${params.regionName} ${params.typeName}에서 ${params.topic} 썰`
     }
+    title = sanitizeForbiddenMentions(title)
 
     const len = content.length
     if (len < 700) {
@@ -179,6 +196,7 @@ export async function generateReview(params: {
       const cut = lastEnd > 0 ? lastEnd + 2 : lastDot > 0 ? lastDot + 1 : at
       content = content.slice(0, cut).trim() + (cut < content.length ? '…' : '')
     }
+    content = sanitizeForbiddenMentions(content)
 
     let core_keywords: string[] = []
     let purpose_label = ''

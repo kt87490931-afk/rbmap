@@ -22,9 +22,18 @@ function containsNonPartnerRegion(text: string): boolean {
   return NON_PARTNER_REGION_NAMES.some((name) => t.includes(name))
 }
 
+/** 리뷰 본문/제목에서 금지할 브랜드/도메인 언급 */
+const FORBIDDEN_BRAND_TERMS = ['룸빵여지도', 'rbbmap.com', 'rbbmap'] as const
+
+function containsForbiddenBrandTerm(text: string): boolean {
+  const t = text.trim().toLowerCase()
+  if (!t) return false
+  return FORBIDDEN_BRAND_TERMS.some((term) => t.includes(term.toLowerCase()))
+}
+
 /** 비제휴 지역명이 없는 주제만 필터링 */
 function filterPartnerRegionsOnly<T extends string>(arr: T[]): T[] {
-  return arr.filter((t) => !containsNonPartnerRegion(t))
+  return arr.filter((t) => !containsNonPartnerRegion(t) && !containsForbiddenBrandTerm(t))
 }
 
 export const REVIEW_TOPICS: string[] = [

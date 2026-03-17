@@ -92,7 +92,7 @@ export interface ScenarioCombo {
   service: ScenarioService
 }
 
-/** 9종 리뷰 톤 (20대초~50대 + 솔직·감성) */
+/** 13종 리뷰 톤 (20대초~50대 + 솔직·감성 + 썰 4종) */
 export const REVIEW_TONES = [
   { id: 'young_20s', name: '20대 초반 (MZ 새내기 톤)', charTarget: 800 },
   { id: 'mid_20s', name: '20대 중후반 (트렌디 힙스터 톤)', charTarget: 900 },
@@ -103,6 +103,10 @@ export const REVIEW_TONES = [
   { id: 'senior_50s', name: '50대 이상 (여유로운 회장님 톤)', charTarget: 1000 },
   { id: 'honest_compare', name: '솔직·비교 톤', charTarget: 900 },
   { id: 'story_emotion', name: '감성·스토리 톤', charTarget: 900 },
+  { id: 'returned_student', name: '복학생 톤', charTarget: 900 },
+  { id: 'middle_aged', name: '아재 톤', charTarget: 1000 },
+  { id: 'naive_20s', name: '순진한 20대 톤', charTarget: 900 },
+  { id: 'rich_30s_playboy', name: '돈 많은 30대 날라리 톤', charTarget: 900 },
 ] as const
 
 export type ReviewTone = (typeof REVIEW_TONES)[number]['id']

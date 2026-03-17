@@ -622,7 +622,7 @@ async function enrichVenueWithReviewPosts(
     if (posts.length === 0) return venue;
     const reviews = posts.map((p) => {
       const body = (p.sec_overview || p.sec_summary || "").trim();
-      const totalChars = p.sec_overview.length + p.sec_lineup.length + p.sec_price.length + p.sec_facility.length + p.sec_summary.length;
+      const totalChars = (p.sec_overview || '').length + (p.sec_lineup || '').length + (p.sec_price || '').length + (p.sec_facility || '').length + ((p.sec_summary && p.sec_summary !== p.sec_overview) ? (p.sec_summary || '').length : 0);
       return {
         id: p.id,
         href: buildReviewUrl(regionSlug, p.type, venueSlug, p.slug),

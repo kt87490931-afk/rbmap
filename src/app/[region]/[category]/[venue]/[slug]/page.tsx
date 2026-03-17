@@ -226,14 +226,6 @@ export default async function ReviewReadPage({
                 ))}
               </>
             )}
-            {post.sec_summary && (
-              <>
-                <h2>종합 평가</h2>
-                {post.sec_summary.split('\n').map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
-              </>
-            )}
 
             {(post.good_tags.length > 0 || post.bad_tags.length > 0) && (
               <div className="eval-tags">

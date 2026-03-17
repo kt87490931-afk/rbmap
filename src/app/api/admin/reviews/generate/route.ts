@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     sec_lineup: '',
     sec_price: '',
     sec_facility: '',
-    sec_summary: genResult.content,
+    sec_summary: '',
     good_tags: [],
     bad_tags: [],
     meta_description: genResult.content.slice(0, 150),

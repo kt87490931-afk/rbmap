@@ -92,16 +92,24 @@ export async function generateReview(params: {
   const focus = pickReviewFocus(seed + 100)
 
   const topicBlock = params.topic
-    ? `[이번 리뷰 주제 — 반드시 준수]\n${params.topic}\n\n이 주제만 다루어라. 다른 주제로 바꾸거나 일반적인 표현으로 대체하지 마라. 제목은 이 주제를 한 줄로 드러내야 하고, 본문은 이 주제에 맞는 구체적 경험으로 작성하라.\n\n`
+    ? `[이번 리뷰 주제 — 반드시 준수]\n${params.topic}\n\n이 주제(상황/에피소드)만 다루어라. 다른 주제로 바꾸지 마라. 본문은 이 주제에 맞는 구체적 경험을 "썰" 스타일로 작성하라. 객관적 리뷰보다 내 생각·감정·반응을 충분히 담아라.\n\n`
     : ''
 
+  const titleFormatBlock =
+    '[제목 형식 — 필수]\n' +
+    '- 제목은 반드시 "썰"로 끝나야 한다. "이용 후기", "리뷰" 같은 단어는 쓰지 말고 오직 "썰"로만 끝내라.\n' +
+    (params.topic
+      ? `- 제목 예시: "${params.regionName} ${params.typeName}에서 ${params.topic} 썰" 형식으로 작성하라.\n`
+      : '- 형식: [지역] [업종]에서 [상황/에피소드] 썰\n')
+
   const systemPrompt =
-    '너는 실제로 해당 업소를 방문한 손님이다. 아래 [업소 소개글]을 참고하여, [시나리오]에 맞는 자연스러운 이용 후기를 작성해라.\n\n' +
+    '너는 실제로 해당 업소를 방문한 손님이다. 아래 [업소 소개글]을 참고하여, [시나리오]에 맞는 "썰"(경험담)을 작성해라. 리뷰보다 썰 느낌이 강하게 — 본인 생각·감정이 많이 담긴 글로.\n\n' +
     toneConfig.prompt +
     '\n[필수]\n' +
     '- 분량: 800자 이상 1000자 이하 (한글 기준)\n' +
     '- 이모지 사용 금지. 텍스트만.\n' +
     '- 실제 방문 경험처럼 구체적으로. 과장 없이.\n' +
+    titleFormatBlock +
     '- 제목 1줄 + 본문 형태로 작성. 제목은 --- 로 구분.\n' +
     `[오프닝 지시] ${openingHook.instruction}\n` +
     `[포커스 지시] ${focus.instruction}\n` +
@@ -152,6 +160,9 @@ export async function generateReview(params: {
       content = text.slice(sep + 3).trim()
     }
     if (!title) title = `${params.venueName} 이용 후기`
+    if (params.topic) {
+      title = `${params.regionName} ${params.typeName}에서 ${params.topic} 썰`
+    }
 
     const len = content.length
     if (len < 700) {

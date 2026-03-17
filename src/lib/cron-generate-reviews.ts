@@ -24,7 +24,7 @@ import {
 import { REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from './data/venues'
 import { parseUrlSuffixFromHref } from './partner-url'
 import { canGenerateReview, getTodayKSTRangeUTC, getNextReviewAtWithDailyCap } from './review-schedule'
-import { pickTopicExcludingRecent } from './review-topics'
+import { pickTitleSituation } from './review-topics'
 
 /** 해당 업소의 현재 오늘 리뷰 수 + 마지막 리뷰 시각 (등록된 리뷰 날짜·시간 기준 = published_at 우선, 스케줄 호가인용) */
 async function getVenueScheduleState(
@@ -284,12 +284,12 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       .eq('venue_slug', venueSlug)
       .order('published_at', { ascending: false })
       .limit(RECENT_TOPICS_LIMIT)
-    const recentTopics = (recentReviewsForTopic ?? [])
+    const recentSituations = (recentReviewsForTopic ?? [])
       .map((r) => (r.scenario_used as { topic?: string } | null)?.topic)
       .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
     const venueKey = `${partner.name}|${regionSlug}|${typeSlug}|${venueSlug}`
-    const seedForTopic = reviewGenSeed(venueKey, recentTopics.length, startAt)
-    const topic = pickTopicExcludingRecent(recentTopics, seedForTopic)
+    const seedForTopic = reviewGenSeed(venueKey, recentSituations.length, startAt)
+    const topic = pickTitleSituation(recentSituations, seedForTopic)
 
     const genResult = await generateReview({
       venueName: partner.name,
@@ -365,7 +365,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       sec_lineup: '',
       sec_price: '',
       sec_facility: '',
-      sec_summary: genResult.content,
+      sec_summary: '',
       good_tags: [],
       bad_tags: [],
       meta_description: genResult.content.slice(0, 150),

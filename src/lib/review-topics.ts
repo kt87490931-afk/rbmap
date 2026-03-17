@@ -166,11 +166,75 @@ export const REVIEW_TOPICS: string[] = [
   '"성공해서 다시 오겠다" 다짐하게 만드는 동기부여(?) 맛집',
 ]
 
+/** 썰 제목용 상황/에피소드 풀 (제목예시.txt 기반, 반드시 "썰"로 끝나도록 조합) */
+export const REVIEW_TITLE_SITUATIONS: string[] = [
+  '연예인 연습생급 그녀 만난',
+  '인생 몸매 섹시한 여자 본',
+  '실장님 추천 믿고 갔다가 대성공한',
+  '혼자 갔는데도 대접받고 온',
+  '모델 지망생 그녀와 노래 부른',
+  '마인드 천사 같은 여자 때문에 단골 된',
+  '회식 갔다가 분위기 장악하고 온',
+  '첫 방문에 인생 에이스 만난',
+  '역대급 비주얼 그녀',
+  '가성비 따지다 의외의 섹시한 여자 발견한',
+  '노래방인 줄 알았는데 수질 대박이었던 룸',
+  '대학생 느낌 청순한 그녀 만난',
+  '화끈한 성격의 섹시한 여자와 달린',
+  '비즈니스 접대 갔다가 내가 더 신난',
+  '외국인 모델급 그녀가 들어온',
+  '세련된 차도녀 스타일 그녀',
+  '롯데타워 야경 보며 섹시한 여자와 한잔한',
+  '혼술 하러 갔다가 예쁜 여자랑 절친 된',
+  '천사 같은 여자 만나서 내상 치료한',
+  '쩜오급 수질을 하이퍼블릭 가격으로 즐기고 온',
+  '불야성 속에서 찾은 보석 같은 그녀',
+  '삼성맨들 사이에서 에이스 차지한',
+  '새벽에 혼자 다녀온',
+  '출장 갔다가 인생 예쁜 여자 만난',
+  '섹시한 여자들 라인업 보고 놀란',
+  '가성비로 갔다가 수질에 감동한',
+  '모델급 기럭지 그녀와 춤춘',
+  '세련미 넘치는 섹시한 여자 만난',
+  '조용하게 즐기려다 텐션 폭발한',
+  '실장님 케어 덕분에 계약 성사한',
+  '화끈한 스타일 그녀 덕분에 스트레스 풀린',
+  '신도시 수질이 이 정도일 줄 몰랐던',
+  '청순미 폭발하는 예쁜 여자와 대화한',
+  '밤새도록 노래 부르며 그녀와 논',
+  '퇴근길에 들렀다가 인생 에이스 영접한',
+  '여행 마지막 밤 예쁜 여자와 보낸',
+  '바다 보며 섹시한 여자와 위스키 마신',
+  '부산 누님 스타일 화끈한 그녀 만난',
+  '미스코리아급 비주얼 그녀와 한잔한',
+  '온천 후 즐기는 섹시한 여자와의 힐링',
+  '무뚝뚝한 나를 애교로 무장해제 시킨 섹시한 여자',
+  '술 한 방울 안 마시고 그녀 대화 매너에 취하고 온',
+  '만난 그녀 알고 보니 내 이상형이었던',
+  '내상 입고 우울했는데 천사 같은 그녀가 위로해 준',
+  '처음 본 그녀와 듀엣곡 부르다 묘한 기류 흐른',
+  '연예인 닮은 꼴 그녀 실물 보고 심장 멎을 뻔한',
+  '하이퍼급 마인드 가진 예쁜 여자 만난',
+  '룸빵여지도 보고 찾아간 업소 후기랑 똑같아서 놀란',
+  '실시간 업데이트 믿고 갔다가 득템(?)한',
+  '6시간마다 뜨는 최신 리뷰 덕분에 내상 피한',
+]
+
+/** 썰 제목용 상황 선택 (제목예시 기반) */
+export function pickTitleSituation(recentSituations: string[], seed: number): string {
+  const used = new Set(recentSituations.map((t) => t.trim()).filter(Boolean))
+  const available = REVIEW_TITLE_SITUATIONS.filter((t) => !used.has(t.trim()))
+  const pool = available.length > 0 ? available : REVIEW_TITLE_SITUATIONS
+  const idx = Math.abs(seed) % pool.length
+  return pool[idx] ?? REVIEW_TITLE_SITUATIONS[0]!
+}
+
 /** 최근 이 업소에서 사용한 주제는 피하고, 시드로 주제 하나 선택 */
 export function pickTopicExcludingRecent(recentTopicStrings: string[], seed: number): string {
   const used = new Set(recentTopicStrings.map((t) => t.trim()).filter(Boolean))
-  const available = REVIEW_TOPICS.filter((t) => !used.has(t.trim()))
-  const pool = available.length > 0 ? available : REVIEW_TOPICS
+  const combined = [...REVIEW_TOPICS, ...REVIEW_TITLE_SITUATIONS]
+  const available = combined.filter((t) => !used.has(t.trim()))
+  const pool = available.length > 0 ? available : combined
   const idx = Math.abs(seed) % pool.length
   return pool[idx] ?? REVIEW_TOPICS[0]!
 }

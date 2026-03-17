@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   if (authErr) return authErr
 
   const body = await request.json()
+  const normalizedType = (body.type === '기타' ? '가라오케' : body.type) ?? ''
   const days = Number(body.period_days) || 30
   const periodEnd = new Date()
   periodEnd.setDate(periodEnd.getDate() + days)
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
       href: body.href,
       icon: body.icon ?? '🎤',
       region: body.region,
-      type: body.type,
+      type: normalizedType,
       type_class: body.type_class ?? '',
       type_style: body.type_style ?? {},
       name: body.name,

@@ -40,7 +40,6 @@ const TYPE_OPTIONS = [
   { label: '하이퍼블릭', slug: 'highpublic' },
   { label: '셔츠룸', slug: 'shirtroom' },
   { label: '쩜오', slug: 'jjomoh' },
-  { label: '기타', slug: 'karaoke' },
 ]
 
 export default function AdminPartnersPage() {

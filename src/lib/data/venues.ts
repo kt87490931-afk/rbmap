@@ -70,13 +70,20 @@ export const TYPE_TO_SLUG: Record<string, string> = {
   퍼블릭: "public",
   셔츠룸: "shirtroom",
   바: "bar",
+  // 레거시 데이터 호환용: 기존 기타 저장값은 가라오케 slug로 취급
   기타: "karaoke",
 };
 
 /** URL slug → 종목(업종) 매핑 */
-export const SLUG_TO_TYPE: Record<string, string> = Object.fromEntries(
-  Object.entries(TYPE_TO_SLUG).map(([k, v]) => [v, k])
-);
+export const SLUG_TO_TYPE: Record<string, string> = {
+  karaoke: "가라오케",
+  "room-salon": "룸싸롱",
+  highpublic: "하이퍼블릭",
+  jjomoh: "쩜오",
+  public: "퍼블릭",
+  shirtroom: "셔츠룸",
+  bar: "바",
+};
 
 export const REGION_SLUGS = ["gangnam", "suwon", "dongtan", "osan", "garak", "jeju"] as const;
 export const REGION_SLUG_TO_NAME: Record<string, string> = {

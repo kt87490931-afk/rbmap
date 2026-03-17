@@ -17,7 +17,13 @@ export async function PATCH(
   const update: Record<string, unknown> = {}
   const keys = ['href', 'icon', 'region', 'type', 'type_class', 'type_style', 'name', 'stars', 'contact', 'tags', 'location', 'desc', 'char_count', 'sort_order', 'period_days', 'period_end', 'is_active', 'review_schedule_preset']
   for (const k of keys) {
-    if (body[k] !== undefined) update[k] = body[k]
+    if (body[k] !== undefined) {
+      if (k === 'type') {
+        update[k] = body[k] === '기타' ? '가라오케' : body[k]
+      } else {
+        update[k] = body[k]
+      }
+    }
   }
   if (body.period_days !== undefined) {
     const days = Number(body.period_days) || 30

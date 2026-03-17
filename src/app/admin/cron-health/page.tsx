@@ -19,6 +19,14 @@ interface CronLogItem {
 interface CronJobData {
   items: CronLogItem[]
   summary: { lastSuccess: string | null; lastFailure: string | null; totalRuns: number }
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+    hasPrev: boolean
+    hasNext: boolean
+  }
 }
 
 interface CronHealthResponse {
@@ -36,8 +44,12 @@ interface PartnerOption {
 }
 
 export default function AdminCronHealthPage() {
+  const PAGE_SIZE = 20
   const [data, setData] = useState<CronHealthResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'generate-reviews' | 'sitemap-ping'>('generate-reviews')
+  const [reviewPage, setReviewPage] = useState(1)
+  const [sitemapPage, setSitemapPage] = useState(1)
   const [partners, setPartners] = useState<PartnerOption[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [running, setRunning] = useState(false)
@@ -48,13 +60,15 @@ export default function AdminCronHealthPage() {
   const [diagnostic, setDiagnostic] = useState<{ activeCount: number; activeNames: string[] } | null>(null)
 
   const fetchData = useCallback(async () => {
+    setLoading(true)
     try {
-      const res = await fetch('/api/admin/cron-health?job=all', { credentials: 'include' })
+      const currentPage = activeTab === 'generate-reviews' ? reviewPage : sitemapPage
+      const res = await fetch(`/api/admin/cron-health?job=${activeTab}&limit=${PAGE_SIZE}&page=${currentPage}`, { credentials: 'include' })
       const json = await res.json()
       setData(json)
     } catch { setData({ jobs: {} }) }
     setLoading(false)
-  }, [])
+  }, [activeTab, reviewPage, sitemapPage])
 
   const fetchPartners = useCallback(async () => {
     try {
@@ -85,11 +99,14 @@ export default function AdminCronHealthPage() {
   }, [])
 
   useEffect(() => {
-    fetchData()
     fetchPartners()
     fetchCronControl()
     fetchDiagnostic()
-  }, [fetchData, fetchPartners, fetchCronControl, fetchDiagnostic])
+  }, [fetchPartners, fetchCronControl, fetchDiagnostic])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   async function setCronPausedState(paused: boolean) {
     setCronPauseLoading(true)
@@ -191,10 +208,31 @@ export default function AdminCronHealthPage() {
   if (loading) return <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
 
   const jobs = data?.jobs ?? {}
-  const reviewsJob = jobs['generate-reviews'] ?? { items: [], summary: { lastSuccess: null, lastFailure: null, totalRuns: 0 } }
-  const sitemapJob = jobs['sitemap-ping'] ?? { items: [], summary: { lastSuccess: null, lastFailure: null, totalRuns: 0 } }
+  const emptyJob: CronJobData = { items: [], summary: { lastSuccess: null, lastFailure: null, totalRuns: 0 }, pagination: { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1, hasPrev: false, hasNext: false } }
+  const reviewsJob = jobs['generate-reviews'] ?? emptyJob
+  const sitemapJob = jobs['sitemap-ping'] ?? emptyJob
   const hasError = !!data?.error
   const partnerNameMap = new Map(partners.map((p) => [p.id, p.name]))
+
+  function renderPagination(jobData: CronJobData, onPrev: () => void, onNext: () => void) {
+    const pg = jobData.pagination
+    if (!pg) return null
+    return (
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 12 }}>
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+          페이지 {pg.page}/{pg.totalPages} · 총 {pg.total}건
+        </span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" className="btn-secondary" style={{ padding: '6px 12px', fontSize: 12 }} onClick={onPrev} disabled={!pg.hasPrev || loading}>
+            이전
+          </button>
+          <button type="button" className="btn-secondary" style={{ padding: '6px 12px', fontSize: 12 }} onClick={onNext} disabled={!pg.hasNext || loading}>
+            다음
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   function renderJobSection(
     title: string,
@@ -387,11 +425,45 @@ export default function AdminCronHealthPage() {
         </div>
       )}
 
-      {renderJobSection(
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+        <button
+          type="button"
+          className="btn-save"
+          style={{ opacity: activeTab === 'generate-reviews' ? 1 : 0.4 }}
+          onClick={() => {
+            setActiveTab('generate-reviews')
+            setReviewPage(1)
+          }}
+        >
+          📌 크론실행이력
+        </button>
+        <button
+          type="button"
+          className="btn-save"
+          style={{ opacity: activeTab === 'sitemap-ping' ? 1 : 0.4 }}
+          onClick={() => {
+            setActiveTab('sitemap-ping')
+            setSitemapPage(1)
+          }}
+        >
+          🗺️ 사이트맵
+        </button>
+      </div>
+
+      {activeTab === 'generate-reviews' && renderJobSection(
         '📌 리뷰 자동 생성',
         'Cron은 20분마다 실행. 제휴업체별 스케줄(6h/4건, 8h/3건, 12h/2건, 24h/1건)에 따라 다음 가능 시각이 지난 업체부터 최대 25건 처리. 로그의 「제휴 N개」는 이번 크론이 조회한 활성(is_active=true) 제휴업체 수입니다. 9개인데 4개만 나온다면 [제휴업체 관리]에서 활성 여부를 확인하세요.',
         reviewsJob,
-        (items) => renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as { name?: string }[]).some((x) => x.name)),
+        (items) => (
+          <>
+            {renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as { name?: string }[]).some((x) => x.name))}
+            {renderPagination(
+              reviewsJob,
+              () => setReviewPage((p) => Math.max(1, p - 1)),
+              () => setReviewPage((p) => p + 1)
+            )}
+          </>
+        ),
         () => (
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
@@ -477,11 +549,20 @@ export default function AdminCronHealthPage() {
         )
       )}
 
-      {renderJobSection(
+      {activeTab === 'sitemap-ping' && renderJobSection(
         '🗺️ 사이트맵 Ping',
         '매일 KST 06시 실행. sitemap 생성 로직 직접 검증 (URL 개수 확인). Google Search Console에서 사이트맵 제출 권장.',
         sitemapJob,
-        (items) => renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as unknown[]).length > 0),
+        (items) => (
+          <>
+            {renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as unknown[]).length > 0)}
+            {renderPagination(
+              sitemapJob,
+              () => setSitemapPage((p) => Math.max(1, p - 1)),
+              () => setSitemapPage((p) => p + 1)
+            )}
+          </>
+        ),
         () => (
           <div style={{ marginBottom: 12 }}>
             <button

@@ -98,9 +98,10 @@ export async function generateReview(params: {
   const titleFormatBlock =
     '[제목 형식 — 필수]\n' +
     '- 제목은 반드시 "썰"로 끝나야 한다. "이용 후기", "리뷰" 같은 단어는 쓰지 말고 오직 "썰"로만 끝내라.\n' +
+    '- 괄호 [] 를 제목에 넣지 마라. 지역명·업종명을 그대로 붙여서 써라.\n' +
     (params.topic
-      ? `- 제목 예시: "${params.regionName} ${params.typeName}에서 ${params.topic} 썰" 형식으로 작성하라.\n`
-      : '- 형식: [지역] [업종]에서 [상황/에피소드] 썰\n')
+      ? `- 제목 예시: "${params.regionName} ${params.typeName}에서 ${params.topic} 썰"\n`
+      : '- 형식: 지역명 업종명에서 상황/에피소드 썰 (예: 강남 룸싸롱에서 연예인급 그녀 만난 썰)\n')
 
   const systemPrompt =
     '너는 실제로 해당 업소를 방문한 손님이다. 아래 [업소 소개글]을 참고하여, [시나리오]에 맞는 "썰"(경험담)을 작성해라. 리뷰보다 썰 느낌이 강하게 — 본인 생각·감정이 많이 담긴 글로.\n\n' +

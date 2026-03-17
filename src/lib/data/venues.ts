@@ -84,7 +84,7 @@ export const REGION_SLUG_TO_NAME: Record<string, string> = {
   suwon: "수원 인계동",
   dongtan: "동탄",
   osan: "오산",
-  garak: "가락",
+  garak: "가락동",
   jeju: "제주",
 };
 
@@ -96,6 +96,7 @@ export const REGION_NAME_TO_SLUG: Record<string, string> = {
   동탄: "dongtan",
   오산: "osan",
   가락: "garak",
+  가락동: "garak",
   제주: "jeju",
 };
 

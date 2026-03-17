@@ -113,7 +113,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
 
   let q = supabaseAdmin
     .from('partners')
-    .select('id, name, href, region, type, review_schedule_preset')
+    .select('id, name, href, region, type, desc, review_schedule_preset')
     .eq('is_active', true)
     .limit(100)
   if (partnerIds != null && partnerIds.length > 0) {
@@ -149,24 +149,25 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
   for (const partner of list) {
     const { data: intros } = await supabaseAdmin
       .from('venue_intros')
-      .select('id, intro_ai_json')
+      .select('id, intro_ai_json, is_applied, created_at')
       .eq('partner_id', partner.id)
-      .eq('is_applied', true)
+      .order('is_applied', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1)
 
     const intro = intros?.[0]
-    if (!intro) {
-      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '적용된 소개글 없음' })
-      continue
-    }
-
-    const introText = extractIntroText(intro.intro_ai_json)
+    let introText = intro ? extractIntroText(intro.intro_ai_json) : ''
     if (!introText.trim()) {
-      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '소개글 내용 없음' })
-      continue
+      const partnerDesc = (partner as { desc?: string }).desc?.trim() ?? ''
+      introText = partnerDesc
     }
 
     const { regionSlug, typeSlug, venueSlug } = parseHref(partner.href)
+    if (!introText.trim()) {
+      const fallbackRegionName = REGION_SLUG_TO_NAME[regionSlug] ?? partner.region ?? regionSlug
+      const fallbackTypeName = SLUG_TO_TYPE[typeSlug] ?? partner.type ?? typeSlug
+      introText = `${partner.name}는 ${fallbackRegionName} ${fallbackTypeName} 업소입니다. 실제 이용 경험 기반으로 서비스, 분위기, 가격, 접근성, 재방문 의사를 중심으로 구체적인 후기형 소개를 작성합니다.`
+    }
 
     const presetId = (partner as { review_schedule_preset?: string }).review_schedule_preset ?? undefined
     const todayRange = getTodayKSTRangeUTC()

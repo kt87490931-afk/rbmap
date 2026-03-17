@@ -32,6 +32,7 @@ interface PartnerOption {
   id: string
   name: string
   review_schedule_preset?: string
+  updated_at?: string | null
 }
 
 export default function AdminCronHealthPage() {
@@ -193,6 +194,7 @@ export default function AdminCronHealthPage() {
   const reviewsJob = jobs['generate-reviews'] ?? { items: [], summary: { lastSuccess: null, lastFailure: null, totalRuns: 0 } }
   const sitemapJob = jobs['sitemap-ping'] ?? { items: [], summary: { lastSuccess: null, lastFailure: null, totalRuns: 0 } }
   const hasError = !!data?.error
+  const partnerNameMap = new Map(partners.map((p) => [p.id, p.name]))
 
   function renderJobSection(
     title: string,
@@ -271,7 +273,7 @@ export default function AdminCronHealthPage() {
             </thead>
             <tbody>
               {items.map((r) => {
-                const resList = Array.isArray(r.results) ? r.results as { name?: string; ok?: boolean; msg?: string }[] : []
+                const resList = Array.isArray(r.results) ? r.results as { partnerId?: string; name?: string; ok?: boolean; msg?: string }[] : []
                 const status = getStatusLabel(r)
                 const isFailed = r.endedAt != null && !r.ok
                 return (
@@ -309,11 +311,18 @@ export default function AdminCronHealthPage() {
                     {showDetail(r) && resList.length > 0 && (
                       <tr style={{ background: 'var(--card2)' }}>
                         <td colSpan={6} style={{ padding: '8px 16px', fontSize: 11, color: 'var(--muted)', borderTop: 'none' }}>
-                          {resList.map((x, i) => (
-                            <div key={i} style={{ marginBottom: 4 }}>
-                              <strong>{x.name ?? '업체'}</strong>: {x.ok ? '✓ 리뷰 생성' : (x.msg ?? '-')}
-                            </div>
-                          ))}
+                          {resList.map((x, i) => {
+                            const currentName = x.partnerId ? partnerNameMap.get(x.partnerId) : undefined
+                            const displayName =
+                              currentName && x.name && currentName !== x.name
+                                ? `${currentName} (실행 당시: ${x.name})`
+                                : (currentName || x.name || '업체')
+                            return (
+                              <div key={i} style={{ marginBottom: 4 }}>
+                                <strong>{displayName}</strong>: {x.ok ? '✓ 리뷰 생성' : (x.msg ?? '-')}
+                              </div>
+                            )
+                          })}
                         </td>
                       </tr>
                     )}
@@ -392,13 +401,13 @@ export default function AdminCronHealthPage() {
                   )}
                   {diagnostic.activeCount > 0 && partners.length > 0 && diagnostic.activeCount !== partners.length && (
                     <p style={{ marginTop: 6, marginBottom: 0, color: 'var(--gold)' }}>
-                      ※ 수동 실행용은 “적용된 소개글 있음”만 표시({partners.length}개). 크론 로그의 「제휴 N개」는 위 {diagnostic.activeCount}개 기준입니다. 9개인데 4개만 나오면 이 페이지가 크론과 같은 서버/DB를 쓰는지, 제휴업체 관리에서 is_active를 확인하세요.
+                      ※ 수동 실행 목록은 활성 제휴업체 전체({partners.length}개)와 연동됩니다. 크론 로그의 「제휴 N개」는 위 {diagnostic.activeCount}개 기준입니다. 숫자가 다르면 이 페이지와 크론이 같은 서버/DB를 쓰는지, 제휴업체 관리의 활성 상태를 확인하세요.
                     </p>
                   )}
                 </>
               )}
             </div>
-            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>제휴업체를 선택한 뒤 수동 실행하면 즉시 리뷰가 생성됩니다.</p>
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>제휴업체를 선택한 뒤 수동 실행하면 즉시 리뷰가 생성됩니다. 업소명/스케쥴 변경은 다음 실행부터 자동 반영됩니다.</p>
             {partners.length > 0 ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -432,7 +441,7 @@ export default function AdminCronHealthPage() {
                 {runMsg && <span style={{ marginLeft: 12, fontSize: 13, color: runOk ? 'var(--green)' : 'var(--red)' }}>{runMsg}</span>}
               </>
             ) : (
-              <p style={{ fontSize: 12, color: 'var(--muted)' }}>적용된 소개글이 있는 제휴업체가 없습니다.</p>
+              <p style={{ fontSize: 12, color: 'var(--muted)' }}>활성 제휴업체가 없습니다.</p>
             )}
           </div>
         )

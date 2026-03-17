@@ -273,7 +273,22 @@ export default function AdminCronHealthPage() {
             </thead>
             <tbody>
               {items.map((r) => {
-                const resList = Array.isArray(r.results) ? r.results as { partnerId?: string; name?: string; ok?: boolean; msg?: string }[] : []
+                const resList = Array.isArray(r.results)
+                  ? r.results as Array<{
+                      partnerId?: string
+                      name?: string
+                      ok?: boolean
+                      msg?: string
+                      check?: string
+                      url_count?: number
+                      diagnostics?: {
+                        review_count?: number
+                        partner_count?: number
+                        errors?: string[]
+                        partial?: boolean
+                      }
+                    }>
+                  : []
                 const status = getStatusLabel(r)
                 const isFailed = r.endedAt != null && !r.ok
                 return (
@@ -312,6 +327,21 @@ export default function AdminCronHealthPage() {
                       <tr style={{ background: 'var(--card2)' }}>
                         <td colSpan={6} style={{ padding: '8px 16px', fontSize: 11, color: 'var(--muted)', borderTop: 'none' }}>
                           {resList.map((x, i) => {
+                            if (x.check === 'sitemap_generate') {
+                              const d = x.diagnostics ?? {}
+                              const errCount = Array.isArray(d.errors) ? d.errors.length : 0
+                              const errorsText = errCount > 0 ? ` / 오류 ${errCount}건` : ''
+                              return (
+                                <div key={i} style={{ marginBottom: 4 }}>
+                                  <strong>사이트맵 진단</strong>: 총 {x.url_count ?? 0}개 URL / 리뷰 {d.review_count ?? 0}개 / 제휴 {d.partner_count ?? 0}개{errorsText}{d.partial ? ' / 부분 성공' : ''}
+                                  {Array.isArray(d.errors) && d.errors.length > 0 && (
+                                    <div style={{ marginTop: 4, color: 'var(--red)' }}>
+                                      {d.errors.join(' | ')}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            }
                             const currentName = x.partnerId ? partnerNameMap.get(x.partnerId) : undefined
                             const displayName =
                               currentName && x.name && currentName !== x.name
@@ -451,7 +481,7 @@ export default function AdminCronHealthPage() {
         '🗺️ 사이트맵 Ping',
         '매일 KST 06시 실행. sitemap 생성 로직 직접 검증 (URL 개수 확인). Google Search Console에서 사이트맵 제출 권장.',
         sitemapJob,
-        (items) => renderHistoryTable(items, () => false),
+        (items) => renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as unknown[]).length > 0),
         () => (
           <div style={{ marginBottom: 12 }}>
             <button

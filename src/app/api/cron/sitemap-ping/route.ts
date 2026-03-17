@@ -33,14 +33,20 @@ export async function GET(request: Request) {
     let ok = false
     let msg = ''
     let urlCount = 0
+    let diagnostics: Record<string, unknown> = {}
     try {
       const sitemapMod = await import('@/app/sitemap')
-      const urls = await sitemapMod.default()
-      urlCount = Array.isArray(urls) ? urls.length : 0
-      ok = urlCount > 0
-      msg = ok ? `사이트맵 검증 성공 (${urlCount}개 URL)` : '사이트맵 URL 없음'
+      const payload = await sitemapMod.generateSitemapPayload()
+      urlCount = Array.isArray(payload?.urls) ? payload.urls.length : 0
+      diagnostics = (payload?.diagnostics ?? {}) as Record<string, unknown>
+      const hasErrors = Array.isArray(diagnostics.errors) && diagnostics.errors.length > 0
+      ok = urlCount > 0 && !hasErrors
+      msg = ok
+        ? `사이트맵 검증 성공 (총 ${urlCount}개 URL / 리뷰 ${diagnostics.review_count ?? 0}개 / 제휴 ${diagnostics.partner_count ?? 0}개)`
+        : `사이트맵 검증 실패 (총 ${urlCount}개 URL / 오류 ${Array.isArray(diagnostics.errors) ? diagnostics.errors.length : 0}건)`
     } catch (e) {
       msg = e instanceof Error ? e.message : '사이트맵 생성 오류'
+      diagnostics = { errors: [msg] }
     }
 
     const durationMs = Date.now() - startAt
@@ -55,7 +61,7 @@ export async function GET(request: Request) {
             msg,
             processed: 1,
             success_count: ok ? 1 : 0,
-            results: [{ check: 'sitemap_generate', url_count: urlCount }],
+            results: [{ check: 'sitemap_generate', url_count: urlCount, diagnostics }],
             duration_ms: durationMs,
           })
           .eq('id', healthId)
@@ -67,6 +73,7 @@ export async function GET(request: Request) {
       msg,
       duration_ms: durationMs,
       url_count: urlCount,
+      diagnostics,
     })
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : 'Unknown error'

@@ -11,6 +11,21 @@ vi.mock('@/lib/supabase-server', () => ({
   },
 }))
 
+vi.mock('@/app/sitemap', () => ({
+  generateSitemapPayload: () =>
+    Promise.resolve({
+      urls: [
+        { url: 'https://rbbmap.com' },
+        { url: 'https://rbbmap.com/reviews' },
+      ],
+      diagnostics: {
+        review_count: 1,
+        partner_count: 1,
+        errors: [],
+      },
+    }),
+}))
+
 describe('GET /api/cron/sitemap-ping', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200 }))

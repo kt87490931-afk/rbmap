@@ -140,16 +140,26 @@ export default async function ReviewReadPage({
       <div className="page-wrap">
         <div className="article-layout">
           <article className="art-body">
-            {(post.summary_rating || post.summary_price || post.summary_lineup || post.summary_price_type || (post.scenario_used?.core_keywords?.length ?? 0) > 0 || post.scenario_used?.purpose_label) && (
+            {(contact || post.summary_price || post.summary_lineup || post.summary_price_type || (post.scenario_used?.core_keywords?.length ?? 0) > 0 || post.scenario_used?.purpose_label) && (
               <div className="summary-box">
                 <h4>✦ 핵심 요약</h4>
+                {contact && (
+                  <div className="summary-contact-banner">
+                    {(() => {
+                      const digits = contact.replace(/\D/g, '')
+                      const isPhone = digits.length >= 10
+                      return isPhone ? (
+                        <CallTrackLink href={`tel:${digits}`} path={venueUrl} className="summary-contact-num">
+                          {contact}
+                        </CallTrackLink>
+                      ) : (
+                        <span className="summary-contact-num">{contact}</span>
+                      )
+                    })()}
+                  </div>
+                )}
+                {(post.summary_price || post.summary_lineup || post.summary_price_type) && (
                 <div className="summary-grid">
-                  {post.summary_rating && (
-                    <div className="summary-item">
-                      <strong>{post.summary_rating}</strong>
-                      <span>종합 평점</span>
-                    </div>
-                  )}
                   {post.summary_price && (
                     <div className="summary-item">
                       <strong>{post.summary_price}</strong>
@@ -169,6 +179,7 @@ export default async function ReviewReadPage({
                     </div>
                   )}
                 </div>
+                )}
                 {(post.scenario_used?.core_keywords?.length ?? 0) > 0 && (
                   <div className="summary-keywords" style={{ marginTop: 12 }}>
                     {(post.scenario_used?.core_keywords ?? []).map((kw, i) => (

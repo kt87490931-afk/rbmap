@@ -33,6 +33,7 @@ jobs:
             echo "=== npm ci ==="
             npm ci || { echo "npm ci FAILED"; exit 1; }
             echo "=== npm run build ==="
+            rm -rf .next
             export NODE_OPTIONS="--max-old-space-size=1024"
             npm run build || { echo "npm run build FAILED"; exit 1; }
 

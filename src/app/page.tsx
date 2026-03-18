@@ -162,6 +162,7 @@ export default async function Home() {
       name: p.name,
       star: p.stars || "★—",
       type: p.type,
+      contact: (p.contact ?? "").trim() || undefined,
       price: undefined as string | undefined,
       desc: desc || undefined,
     };

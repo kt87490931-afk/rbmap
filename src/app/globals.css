@@ -3831,6 +3831,19 @@ select.admin-form-control {
   line-height: 1.2;
   text-decoration: none;
 }
+@media (max-width: 600px) {
+  .summary-contact-banner {
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .summary-contact-banner .summary-contact-num {
+    font-size: clamp(24px, 6.5vw, 28px);
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
 .summary-contact-banner a.summary-contact-num:hover {
   color: var(--gold-lt);
 }

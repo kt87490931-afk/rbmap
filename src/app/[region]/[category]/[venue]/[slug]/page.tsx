@@ -12,6 +12,7 @@ import {
   formatStars,
   buildReviewUrl,
   REVIEW_TYPE_TO_NAME,
+  getPartnerContactForVenue,
 } from '@/lib/data/review-posts'
 import { REGION_SLUG_TO_NAME, REGION_SLUGS, getVenueDetail } from '@/lib/data/venues'
 import { getSiteSection } from '@/lib/data/site'
@@ -53,7 +54,11 @@ export default async function ReviewReadPage({
   ])
 
   const venueDisplayName = (venueData?.name ?? post.venue).trim() || post.venue
-  const contact = (venueData?.contact ?? '').trim()
+  let contact = (venueData?.contact ?? '').trim()
+  if (!contact) {
+    const partnerContact = await getPartnerContactForVenue(region, category, venue, venueDisplayName)
+    contact = (partnerContact?.contact ?? '').trim()
+  }
 
   const regionName = getRegionName(region)
   const typeName = getTypeName(category)

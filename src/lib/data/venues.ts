@@ -534,7 +534,11 @@ export async function getVenueDetail(
     venue = await enrichVenueWithReviewPosts(venue, regionSlug, categorySlug, venueSlug);
     const similarFromPartners = buildSimilarVenuesFromPartners(partners, regionSlug, regionName, venueSlug, 3);
     venue = { ...venue, similarVenues: similarFromPartners.length > 0 ? similarFromPartners : venue.similarVenues };
-    return await applyVenueEdits(venue, regionSlug, categorySlug, venueSlug);
+    venue = await applyVenueEdits(venue, regionSlug, categorySlug, venueSlug);
+    // 제휴업체 연락처는 항상 partners 테이블 값 사용 (관리자에서 하이픈 수정 시 venue_edits 구값에 덮어쓰이지 않도록)
+    const partnerContact = (match.contact ?? "").replace(/^📞\s*/, "").trim();
+    if (partnerContact) venue = { ...venue, contact: partnerContact };
+    return venue;
   }
 
   // 2) Fallback 데이터로 대체 (partners에 없을 때)

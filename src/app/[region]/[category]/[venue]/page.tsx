@@ -183,7 +183,9 @@ export default async function VenueDetailPage({
           <div className="hb-phone-banner">
             <div className="hb-phone-left">
               <div className="hb-phone-label">예약 · 문의 전화</div>
-              <div className="hb-phone-num" id="d-phone">{data.contact}</div>
+              <CallTrackLink href={`tel:${(data.contact ?? "").replace(/\D/g, "")}`} path={`/${region}/${category}/${venue}`} className="hb-phone-num" id="d-phone">
+                {data.contact}
+              </CallTrackLink>
               <div className="hb-phone-sub" id="d-phone-sub">{phoneSub}</div>
             </div>
             <div className="hb-phone-right">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ContactTapToCall } from "@/components/venue/ContactTapToCall";
 
 export interface VenueCard {
   href: string;
@@ -43,7 +44,7 @@ export default function FeaturedVenuesSection({ venues }: FeaturedVenuesSectionP
                 <span className="vc-name">{v.name}</span>
                 <span className="vc-star">{v.star}</span>
               </div>
-              {v.contact && <div className="vc-contact">{v.contact}</div>}
+              {v.contact && <ContactTapToCall contact={v.contact} className="vc-contact" />}
               <div className="vc-type">{v.type}</div>
               {v.price && <div className="vc-price">{v.price}</div>}
               {v.desc && <p className="vc-desc">{v.desc}</p>}

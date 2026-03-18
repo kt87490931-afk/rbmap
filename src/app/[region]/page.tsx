@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { unstable_noStore } from "next/cache";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
+import { ContactTapToCall } from "@/components/venue/ContactTapToCall";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RegionSidebarEditor from "@/components/region/RegionSidebarEditor";
@@ -374,7 +375,7 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
                       <span className="pv-stars">{p.stars}</span>
                     </div>
                     <div className="pv-meta-row">
-                      <span className="pv-contact">{p.contact}</span>
+                      {p.contact ? <ContactTapToCall contact={p.contact} className="pv-contact" /> : null}
                       {(p.tags ?? []).slice(0, 2).map((tag) => (
                         <span key={tag} className="pv-tag">{tag}</span>
                       ))}

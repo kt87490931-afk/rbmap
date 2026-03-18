@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Partner } from "@/lib/data/partners";
+import { ContactTapToCall } from "@/components/venue/ContactTapToCall";
 
 const FALLBACK_PARTNERS: Partner[] = [
   { id: "1", href: "/suwon/venue/aura", icon: "🎤", region: "수원 인계동", type: "하이퍼블릭", type_class: "p-suwon", type_style: { background: "rgba(58,123,213,.2)", border: "1px solid rgba(58,123,213,.3)", color: "#3a7bd5" }, name: "아우라 가라오케", stars: "★★★★★", contact: "📞 031-000-0000", tags: ["예약 가능", "주차 가능"], location: "경기도 수원시 팔달구 인계동 000-00, 아우라빌딩 3F", desc: "수원 인계동 유흥 1번지에서 10년 이상 운영해온 아우라 가라오케입니다.", char_count: "소개글 약 220자", sort_order: 0 },
@@ -36,7 +37,7 @@ export default function PartnerSection({ partners }: PartnerSectionProps) {
                   <span className="pv-stars">{p.stars}</span>
                 </div>
                 <div className="pv-meta-row">
-                  <span className="pv-contact">{p.contact}</span>
+                  {p.contact ? <ContactTapToCall contact={p.contact.replace(/^📞\s*/, "")} className="pv-contact" /> : null}
                   {(p.tags ?? []).map((tag) => (
                     <span key={tag} className="pv-tag">{tag}</span>
                   ))}

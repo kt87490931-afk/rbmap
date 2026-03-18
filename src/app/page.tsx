@@ -44,6 +44,7 @@ const DEFAULT_DESC =
 const DEFAULT_KEYWORDS =
   "룸빵여지도, 강남 가라오케, 수원 가라오케, 동탄 가라오케, 제주 가라오케, 룸싸롱, 하이퍼블릭, 셔츠룸, 쩜오, 퍼블릭";
 const SITE_URL = "https://rbbmap.com";
+const OG_IMAGE_VERSION = "v20260318";
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -52,7 +53,8 @@ export async function generateMetadata(): Promise<Metadata> {
     const description = seo?.description || DEFAULT_DESC;
     const keywords = seo?.keywords || DEFAULT_KEYWORDS;
     const siteUrl = seo?.siteUrl || SITE_URL;
-    const ogImageAbs = (seo?.ogImage?.trim() || `${siteUrl}/og/og-home.png`).replace(/^\/+/, siteUrl + "/");
+    const baseOg = (seo?.ogImage?.trim() || `${siteUrl}/og/og-home.png`).replace(/^\/+/, siteUrl + "/");
+    const ogImageAbs = baseOg.includes("?") ? `${baseOg}&v=${OG_IMAGE_VERSION}` : `${baseOg}?v=${OG_IMAGE_VERSION}`;
     return {
       title,
       description,
@@ -85,13 +87,13 @@ export async function generateMetadata(): Promise<Metadata> {
         siteName: "룸빵여지도",
         title: DEFAULT_TITLE,
         description: DEFAULT_DESC,
-        images: [{ url: `${SITE_URL}/og/og-home.png`, width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" }],
+        images: [{ url: `${SITE_URL}/og/og-home.png?v=${OG_IMAGE_VERSION}`, width: 1200, height: 630, alt: "룸빵여지도 — 믿을 수 있는 업소를 한눈에" }],
       },
       twitter: {
         card: "summary_large_image",
         title: DEFAULT_TITLE,
         description: "믿을 수 있는 업소를 한눈에!",
-        images: [`${SITE_URL}/og/og-home.png`],
+        images: [`${SITE_URL}/og/og-home.png?v=${OG_IMAGE_VERSION}`],
       },
     };
   }

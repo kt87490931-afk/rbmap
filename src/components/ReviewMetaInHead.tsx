@@ -72,7 +72,7 @@ export async function ReviewMetaInHead() {
 
   const canonicalPath = `/${region}/${category}/${venue}/${slugRaw}`
   const canonicalUrl = `${SITE_URL}${canonicalPath}`
-  const ogImage = `${SITE_URL}/og/og-home.png`
+  const ogImage = `${SITE_URL}/og/og-home.png?v=v20260318`
 
   if (!post) {
     return (

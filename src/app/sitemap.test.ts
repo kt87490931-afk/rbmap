@@ -5,71 +5,29 @@ vi.mock('@/lib/data/regions', () => ({
   getRegions: vi.fn().mockResolvedValue([{ slug: 'gangnam' }, { slug: 'dongtan' }]),
 }))
 
-let reviewRangeCalls = 0
-vi.mock('@/lib/supabase-server', () => ({
-  supabaseAdmin: {
-    from: (table: string) => {
-      if (table === 'partners') {
-        return {
-          select: () => ({
-            eq: () => ({
-              order: () => ({
-                limit: () => Promise.resolve({
-                  data: [{ href: '/gangnam/karaoke/dalto' }],
-                  error: null,
-                }),
-              }),
-            }),
-          }),
-        }
-      }
-      if (table === 'review_posts') {
-        return {
-          select: () => ({
-            eq: () => ({
-              order: () => ({
-                range: () => {
-                  reviewRangeCalls += 1
-                  if (reviewRangeCalls === 1) {
-                    return Promise.resolve({
-                      data: [{
-                        region: 'dongtan',
-                        type: 'karaoke',
-                        venue_slug: 'dongtan-choigga',
-                        slug: 'review-1',
-                        updated_at: '2026-03-14T12:00:00Z',
-                        published_at: '2026-03-14T12:00:00Z',
-                        created_at: '2026-03-14T12:00:00Z',
-                      }],
-                      error: null,
-                    })
-                  }
-                  return Promise.resolve({ data: [], error: null })
-                },
-              }),
-            }),
-          }),
-        }
-      }
-      return {
-        select: () => ({
-          eq: () => ({
-            order: () => ({
-              limit: () => Promise.resolve({ data: [], error: null }),
-              range: () => Promise.resolve({ data: [], error: null }),
-            }),
-          }),
-        }),
-      }
-    },
-  },
+vi.mock('@/lib/data/partners', () => ({
+  getPartners: vi.fn().mockResolvedValue([
+    { href: '/gangnam/karaoke/dalto', name: '달토' },
+  ]),
 }))
 
-describe('sitemap', () => {
-  beforeEach(() => {
-    reviewRangeCalls = 0
-  })
+vi.mock('@/lib/data/review-posts', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/lib/data/review-posts')>()
+  return {
+    ...mod,
+    getReviewPostsList: vi.fn().mockResolvedValue([
+      {
+        region: 'dongtan',
+        type: 'karaoke',
+        venue_slug: 'dongtan-choigga',
+        slug: 'review-1',
+        updated_at: '2026-03-14T12:00:00Z',
+      },
+    ]),
+  }
+})
 
+describe('sitemap', () => {
   it('정적 페이지 URL 포함', async () => {
     const urls = await sitemap()
     const urlStrings = urls.map((u) => u.url)

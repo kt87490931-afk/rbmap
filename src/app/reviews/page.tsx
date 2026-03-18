@@ -13,6 +13,25 @@ export const metadata: Metadata = {
   title: '전체 후기 | 썰로 읽는 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 | 룸빵여지도',
   description: '썰로 읽는 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 후기 모음. 20분마다 최신 리뷰를 자동 업데이트합니다.',
   alternates: { canonical: `${SITE_URL}/reviews` },
+  openGraph: {
+    url: `${SITE_URL}/reviews`,
+    type: 'website',
+    title: '전체 후기 | 썰로 읽는 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 | 룸빵여지도',
+    description: '썰로 읽는 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 후기 모음. 20분마다 최신 리뷰를 자동 업데이트합니다.',
+    images: [
+      {
+        url: `${SITE_URL}/og/og-home.png`,
+        width: 1200,
+        height: 630,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '전체 후기 | 썰로 읽는 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 | 룸빵여지도',
+    description: '썰로 읽는 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 후기 모음. 20분마다 최신 리뷰를 자동 업데이트합니다.',
+    images: [`${SITE_URL}/og/og-home.png`],
+  },
 }
 
 export const dynamic = 'force-dynamic'

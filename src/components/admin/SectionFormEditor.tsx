@@ -619,7 +619,7 @@ function FaqForm({ data, onChange }: { data: Record<string, unknown>; onChange: 
         renderItem={(item, _, up) => (
           <>
             <FormInput label="질문" value={item.q ?? ''} onChange={(v) => up({ ...item, q: v })} placeholder="예: 리뷰는 어떻게 작성되나요?" />
-            <FormTextarea label="답변" value={item.a ?? ''} onChange={(v) => up({ ...item, a: v })} rows={2} placeholder="답변 내용" />
+            <FormTextarea label="답변" value={item.a ?? ''} onChange={(v) => up({ ...item, a: v })} rows={2} />
           </>
         )}
       />

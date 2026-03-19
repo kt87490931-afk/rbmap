@@ -10,7 +10,7 @@ alwaysApply: true
 - **코드·파일 수정이나 생성이 있으면 항상 배포까지 진행한다.**
 - 배포 절차:
   1. `git add -A && git commit -m "메시지"` → `git push origin main`
-  2. 서버 SSH 접속 후: `cd /var/www/rbmap && git pull && npm ci && npm run build && pm2 restart rbmap`
+  2. 서버 SSH 접속 후: `cd /var/www/rbmap && git pull && npm ci && npm run build && pm2 restart rbmap && bash scripts/setup-cron-rbmap.sh`
 - SSH 호스트: `rbmap` (152.42.216.40)
 
 ## 2. Supabase DB 권한

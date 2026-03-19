@@ -137,6 +137,7 @@ export default async function Home() {
   const totalVenueCount = Object.values(partnerCounts).reduce((sum, c) => sum + (c?.venues ?? 0), 0);
   const regionCount = regions.filter((r) => !r.coming).length;
   const totalReviewCount = Object.values(reviewCountsByRegion).reduce((sum, n) => sum + (n ?? 0), 0);
+  const regionDisplayNames = Object.fromEntries(regions.map((r) => [r.slug, r.name]));
   const partnerCountsWithReviews: Record<string, { venues: number; reviews: number }> = {};
   for (const [slug, c] of Object.entries(partnerCounts)) {
     partnerCountsWithReviews[slug] = {
@@ -178,7 +179,7 @@ export default async function Home() {
     return {
       id: p.id,
       href: buildReviewUrl(p.region, p.type, p.venue_slug, p.slug),
-      region: getRegionName(p.region),
+      region: getRegionName(p.region, regionDisplayNames),
       date: dateStr,
       title: p.title,
       excerpt: (p.sec_overview || p.sec_summary || "").slice(0, 500) + ((p.sec_overview || p.sec_summary || "").length > 500 ? "…" : ""),
@@ -194,7 +195,7 @@ export default async function Home() {
     const timeStr = dt
       ? new Date(dt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false })
       : "";
-    const regionName = getRegionName(p.region);
+    const regionName = getRegionName(p.region, regionDisplayNames);
     const typeName = getTypeName(p.type);
     return {
       id: p.id,
@@ -221,7 +222,7 @@ export default async function Home() {
             const body = (p.sec_overview || p.sec_summary || p.title || "").trim();
             const text30 = body.length > 30 ? `${body.slice(0, 30)}…` : body;
             return {
-              region: getRegionName(p.region),
+              region: getRegionName(p.region, regionDisplayNames),
               text: text30 || `${p.venue} 리뷰 등록`,
             };
           })}

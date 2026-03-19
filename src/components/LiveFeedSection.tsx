@@ -16,12 +16,16 @@ interface LiveFeedSectionProps {
 export default function LiveFeedSection({ items }: LiveFeedSectionProps) {
   const list = (items?.length ? items : FALLBACK_ITEMS);
 
-  const regionToTag = (pill: string) => {
+  /** pill_class가 p-{slug}이면 tag-{slug}로 매핑 (DB 지역 slug와 동기화) */
+  const regionToTag = (pill: string, pillClass?: string) => {
+    const fromSlug = pillClass?.match(/^p-([a-z0-9-]+)$/i)?.[1];
+    if (fromSlug) return `tag-${fromSlug}`;
     if (pill.includes("강남")) return "tag-gangnam";
     if (pill.includes("수원")) return "tag-suwon";
     if (pill.includes("동탄")) return "tag-dongtan";
     if (pill.includes("제주")) return "tag-jeju";
-    return "tag-gangnam";
+    if (pill.includes("잠실")) return "tag-jamsil";
+    return "tag-default";
   };
 
   return (
@@ -41,7 +45,7 @@ export default function LiveFeedSection({ items }: LiveFeedSectionProps) {
         <div className="feed-list" role="feed" aria-label="최신 리뷰 피드">
           {list.map((item) => (
             <Link key={item.id} href={item.href} className="feed-item">
-              <span className={`feed-region ${regionToTag(item.pill)}`}>{item.pill}</span>
+              <span className={`feed-region ${regionToTag(item.pill, item.pill_class)}`}>{item.pill}</span>
               <span className="feed-title">{item.title}</span>
               <span className="feed-meta">
                 <span className="feed-stars">{item.stars}</span>

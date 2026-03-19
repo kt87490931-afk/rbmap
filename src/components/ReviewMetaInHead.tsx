@@ -5,9 +5,10 @@
  */
 import { headers } from 'next/headers'
 import {
-  getReviewPostBySlug,
+  getPublishedReviewPostWithVenueFix,
   getPartnerMetaForVenue,
   getTypeName,
+  buildReviewUrl,
 } from '@/lib/data/review-posts'
 import { getRegionBySlugServer } from '@/lib/data/regions'
 
@@ -57,15 +58,21 @@ export async function ReviewMetaInHead() {
   if (!REVIEW_CATEGORIES.includes(category)) return null
 
   const slug = decodeSlug(slugRaw)
-  const [regionData, post, partnerMeta] = await Promise.all([
+  const [regionData, resolved] = await Promise.all([
     getRegionBySlugServer(region),
-    getReviewPostBySlug(region, category, venue, slug),
-    getPartnerMetaForVenue(region, category, venue),
+    getPublishedReviewPostWithVenueFix(region, category, venue, slug),
   ])
   if (!regionData || regionData.coming) return null
 
-  const canonicalPath = `/${region}/${category}/${venue}/${slugRaw}`
-  const canonicalUrl = `${SITE_URL}${canonicalPath}`
+  const post = resolved?.post
+  const canonicalRel =
+    resolved?.redirectToCanonical ??
+    (post ? buildReviewUrl(region, category, post.venue_slug, post.slug) : `/${region}/${category}/${venue}/${slugRaw}`)
+  const canonicalUrl = `${SITE_URL}${encodeURI(canonicalRel)}`
+
+  const partnerMeta = post
+    ? await getPartnerMetaForVenue(region, category, post.venue_slug)
+    : null
   const ogImage = `${SITE_URL}/og/og-home.png?v=v20260318`
 
   if (!post) {

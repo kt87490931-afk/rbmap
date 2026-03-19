@@ -76,6 +76,7 @@ export default async function ReviewsListPage({
   ])
   const { posts, total } = result
 
+  const regionDisplayNames = Object.fromEntries(regions.map((r) => [r.slug, r.name]))
   const pillStyle = (r: string) => REGION_PILL_STYLE[r] ?? { bg: 'rgba(255,255,255,.05)', color: 'var(--muted)', border: 'var(--border)' }
 
   return (
@@ -165,7 +166,7 @@ export default async function ReviewsListPage({
                   <div className="fr-head">
                     <div className="fr-hl">
                       <span className="fr-num">{String(displayNum).padStart(2, '0')}</span>
-                      <span className="fr-rpill" style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}>{getRegionName(r.region)}</span>
+                      <span className="fr-rpill" style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}>{getRegionName(r.region, regionDisplayNames)}</span>
                       <span className="fr-type">{getTypeName(r.type)}</span>
                       <span className="fr-vtag">{r.venue}</span>
                     </div>

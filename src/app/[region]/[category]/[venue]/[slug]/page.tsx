@@ -1,9 +1,9 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import {
-  getReviewPostBySlug,
+  getPublishedReviewPostWithVenueFix,
   getReviewPostsByVenue,
   getReviewPostsByRegion,
   getPrevNextReviews,
@@ -32,21 +32,26 @@ export default async function ReviewReadPage({
   params: Promise<Params>
 }) {
   const { region, category, venue, slug } = await params
+  const slugDecoded = slug ? decodeURIComponent(slug) : slug
 
-  const [regionData, post] = await Promise.all([
-    getRegionBySlugServer(region),
-    getReviewPostBySlug(region, category, venue, slug ? decodeURIComponent(slug) : slug),
-  ])
+  const regionData = await getRegionBySlugServer(region)
   if (!regionData || regionData.coming || !REVIEW_TYPE_TO_NAME[category]) {
     notFound()
   }
-  if (!post) notFound()
+
+  const resolved = await getPublishedReviewPostWithVenueFix(region, category, venue, slugDecoded)
+  if (!resolved) notFound()
+  if (resolved.redirectToCanonical) {
+    redirect(resolved.redirectToCanonical)
+  }
+  const post = resolved.post
+  const venueKey = post.venue_slug
 
   const [sameVenueReviews, sameRegionReviews, prevNext, venueData, header, footer, allRegions] = await Promise.all([
-    getReviewPostsByVenue(region, venue, post.id, 5),
-    getReviewPostsByRegion(region, category, venue, 5),
+    getReviewPostsByVenue(region, venueKey, post.id, 5),
+    getReviewPostsByRegion(region, category, venueKey, 5),
     post.published_at ? getPrevNextReviews(post.published_at, post.id) : Promise.resolve({ prev: null, next: null }),
-    getVenueDetail(region, category, venue),
+    getVenueDetail(region, category, venueKey),
     getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>('header'),
     getSiteSection<{ desc?: string; copyright?: string }>('footer'),
     getRegionsServer(),
@@ -55,13 +60,13 @@ export default async function ReviewReadPage({
   const venueDisplayName = (venueData?.name ?? post.venue).trim() || post.venue
   let contact = (venueData?.contact ?? '').trim()
   if (!contact) {
-    const partnerContact = await getPartnerContactForVenue(region, category, venue, venueDisplayName)
+    const partnerContact = await getPartnerContactForVenue(region, category, venueKey, venueDisplayName)
     contact = (partnerContact?.contact ?? '').trim()
   }
 
   const regionName = regionData.name ?? getRegionName(region)
   const typeName = getTypeName(category)
-  const venueUrl = `/${region}/${category}/${venue}`
+  const venueUrl = `/${region}/${category}/${venueKey}`
   const totalChars =
     post.sec_overview.length +
     post.sec_lineup.length +
@@ -69,7 +74,7 @@ export default async function ReviewReadPage({
     post.sec_facility.length +
     post.sec_summary.length
 
-  const reviewPath = buildReviewUrl(region, category, venue, slug ?? '')
+  const reviewPath = buildReviewUrl(region, category, venueKey, post.slug)
   const canonicalUrl = `${SITE_URL}${reviewPath}`
   const jsonLd = {
     '@context': 'https://schema.org',

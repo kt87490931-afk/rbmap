@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 import {
-  getReviewPostBySlug,
+  getPublishedReviewPostWithVenueFix,
   getPartnerMetaForVenue,
   buildReviewUrl,
   getTypeName,
 } from '@/lib/data/review-posts'
 import { getVenueDetail } from '@/lib/data/venues'
-import { REGION_SLUG_TO_NAME } from '@/lib/data/venues'
+import { getRegionBySlugServer } from '@/lib/data/regions'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
 const META_DESC_MAX = 160
@@ -24,12 +24,21 @@ export async function generateMetadata({
   params: Promise<Params>
 }): Promise<Metadata> {
   const { region, category, venue, slug } = await params
-  const [post, partnerMeta, venueData] = await Promise.all([
-    getReviewPostBySlug(region, category, venue, slug),
-    getPartnerMetaForVenue(region, category, venue),
-    getVenueDetail(region, category, venue),
+  const slugDecoded = slug ? decodeURIComponent(slug) : slug
+  const [regionData, resolved] = await Promise.all([
+    getRegionBySlugServer(region),
+    getPublishedReviewPostWithVenueFix(region, category, venue, slugDecoded),
   ])
-  if (!post) return {}
+  if (!regionData || regionData.coming || !resolved) return {}
+  const post = resolved.post
+  const venueKey = post.venue_slug
+  const canonicalRel =
+    resolved.redirectToCanonical ?? buildReviewUrl(region, category, venueKey, post.slug)
+
+  const [partnerMeta, venueData] = await Promise.all([
+    getPartnerMetaForVenue(region, category, venueKey),
+    getVenueDetail(region, category, venueKey),
+  ])
   const venueDisplayName = (venueData?.name ?? post.venue).trim() || post.venue
   const title = `${post.title} | 룸빵여지도`
   let desc =
@@ -42,11 +51,10 @@ export async function generateMetadata({
   } else if (desc.length > META_DESC_MAX) {
     desc = desc.slice(0, META_DESC_MAX)
   }
-  const canonicalPath = buildReviewUrl(region, category, venue, slug)
-  const canonicalUrl = `${SITE_URL}${canonicalPath}`
+  const canonicalUrl = `${SITE_URL}${encodeURI(canonicalRel)}`
   const ogImage = `${SITE_URL}/og/og-home.png`
 
-  const regionName = REGION_SLUG_TO_NAME[region] ?? region
+  const regionName = regionData.name ?? region
   const typeName = getTypeName(post.type)
   const keywords = partnerMeta?.tags?.length
     ? partnerMeta.tags.join(', ')

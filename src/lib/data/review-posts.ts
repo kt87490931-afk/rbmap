@@ -23,6 +23,9 @@ export const REGION_PILL_STYLE: Record<string, { bg: string; color: string; bord
   suwon: { bg: 'rgba(58,123,213,.12)', color: '#5a9be8', border: 'rgba(58,123,213,.28)' },
   dongtan: { bg: 'rgba(46,204,113,.12)', color: '#3dba7a', border: 'rgba(46,204,113,.28)' },
   jeju: { bg: 'rgba(155,89,182,.12)', color: '#b07dd1', border: 'rgba(155,89,182,.28)' },
+  garak: { bg: 'rgba(230,126,34,.12)', color: '#e67e22', border: 'rgba(230,126,34,.28)' },
+  osan: { bg: 'rgba(52,152,219,.12)', color: '#5dade2', border: 'rgba(52,152,219,.28)' },
+  jamsil: { bg: 'rgba(192,57,43,.15)', color: '#e74c3c', border: 'rgba(231,76,60,.35)' },
 }
 
 export interface ReviewPost {
@@ -372,6 +375,36 @@ export async function getReviewPostBySlug(
   return mapRow(data)
 }
 
+/**
+ * URL의 venue 세그먼트가 DB(venue_slug)와 다를 때(예: jsroom vs 실제 한글 slug) 404 방지.
+ * region+type+review_slug로 1건 매칭되면 canonical venue_slug로 리다이렉트하도록 페이지에서 사용.
+ */
+export async function getPublishedReviewPostWithVenueFix(
+  region: string,
+  type: string,
+  venueSlugFromUrl: string,
+  slug: string
+): Promise<{ post: ReviewPost; redirectToCanonical: string | null } | null> {
+  const exact = await getReviewPostBySlug(region, type, venueSlugFromUrl, slug)
+  if (exact) return { post: exact, redirectToCanonical: null }
+
+  const { data, error } = await supabaseAdmin
+    .from('review_posts')
+    .select('*')
+    .eq('status', 'published')
+    .eq('region', region)
+    .eq('type', type)
+    .eq('slug', slug)
+    .maybeSingle()
+
+  if (error || !data) return null
+  const post = mapRow(data)
+  if (post.venue_slug === venueSlugFromUrl) return { post, redirectToCanonical: null }
+
+  const canonicalPath = buildReviewUrl(region, type, post.venue_slug, post.slug)
+  return { post, redirectToCanonical: canonicalPath }
+}
+
 export async function getReviewPostsByVenue(
   region: string,
   venueSlug: string,
@@ -443,7 +476,10 @@ export async function getPrevNextReviews(
   return { prev, next }
 }
 
-export function getRegionName(slug: string): string {
+/** regions 테이블에서 만든 slug→표시명 맵을 넘기면 신규 지역도 한글명 표시 */
+export function getRegionName(slug: string, slugToDisplayName?: Record<string, string>): string {
+  const fromDb = slugToDisplayName?.[slug]
+  if (fromDb) return fromDb
   return REGION_SLUG_TO_NAME[slug] ?? slug
 }
 

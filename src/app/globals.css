@@ -1748,6 +1748,27 @@ body::after {
   background: rgba(155, 89, 182, 0.2);
   color: #b07fd0;
 }
+.tag-jamsil {
+  background: rgba(231, 76, 60, 0.18);
+  color: #e74c3c;
+}
+.tag-garak {
+  background: rgba(230, 126, 34, 0.18);
+  color: #e67e22;
+}
+.tag-osan {
+  background: rgba(52, 152, 219, 0.18);
+  color: #5dade2;
+}
+.tag-incheon,
+.tag-busan {
+  background: rgba(149, 165, 166, 0.2);
+  color: #bdc3c7;
+}
+.tag-default {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted, #888);
+}
 .feed-title {
   font-size: 13px;
   font-weight: 500;

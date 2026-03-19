@@ -96,6 +96,7 @@ export const REGION_SLUG_TO_NAME: Record<string, string> = {
   osan: "오산",
   garak: "가락동",
   jeju: "제주",
+  jamsil: "잠실",
 };
 
 /** 지역명 → URL slug (제휴업체 폼 등에서 사용) */

@@ -272,7 +272,10 @@ export default async function Home() {
       <KeywordHubSection />
       <div className="gold-divider" />
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="faq">
-        <FaqSection items={faqData?.faq ?? []} isAdmin={!!isAdmin} />
+        <FaqSection
+          items={(faqData?.faq ?? []).map((x) => ({ q: x.q ?? "", a: x.a ?? "" }))}
+          isAdmin={!!isAdmin}
+        />
       </SectionWithSettings>
       <div className="gold-divider" />
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="cta">

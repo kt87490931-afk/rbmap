@@ -601,6 +601,32 @@ function WidgetsAForm({ data, onChange }: { data: Record<string, unknown>; onCha
   )
 }
 
+// --- FAQ Form (자주 묻는 질문 전용) ---
+function FaqForm({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+  const d = data ?? {}
+  const set = (k: string, v: unknown) => onChange({ ...d, [k]: v })
+  const faq = (d.faq as { q?: string; a?: string }[]) ?? []
+  return (
+    <>
+      <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+        질문과 답변을 추가·수정·삭제할 수 있습니다. 저장하면 메인 페이지 하단 FAQ에 반영됩니다.
+      </p>
+      <ArrayBlock
+        label="질문 / 답변"
+        items={faq}
+        onChange={(arr) => set('faq', arr)}
+        getDefault={() => ({ q: '', a: '' })}
+        renderItem={(item, _, up) => (
+          <>
+            <FormInput label="질문" value={item.q ?? ''} onChange={(v) => up({ ...item, q: v })} placeholder="예: 리뷰는 어떻게 작성되나요?" />
+            <FormTextarea label="답변" value={item.a ?? ''} onChange={(v) => up({ ...item, a: v })} rows={2} placeholder="답변 내용" />
+          </>
+        )}
+      />
+    </>
+  )
+}
+
 // --- Widgets B Form ---
 function WidgetsBForm({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
   const d = data ?? {}
@@ -689,6 +715,7 @@ const FORM_MAP: Record<string, React.FC<{ data: Record<string, unknown>; onChang
   region_preview: RegionPreviewForm,
   widgets_a: WidgetsAForm,
   widgets_b: WidgetsBForm,
+  faq: FaqForm,
 }
 
 export default function SectionFormEditor({

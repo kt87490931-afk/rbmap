@@ -113,7 +113,7 @@ export default async function Home() {
     }
   }
 
-  const [feedConfig, reviewConfig, hero, ticker, header, about, categoryGuide, cta, footer, visitorDisplay, regions, partnerCounts, reviewCountsByRegion] = await Promise.all([
+  const [feedConfig, reviewConfig, hero, ticker, header, about, categoryGuide, cta, footer, faqData, visitorDisplay, regions, partnerCounts, reviewCountsByRegion] = await Promise.all([
     getSiteSection<FeedConfig>("feed_config"),
     getSiteSection<ReviewConfig>("review_config"),
     getSiteSection<Parameters<typeof Hero>[0]["data"]>("hero"),
@@ -123,6 +123,7 @@ export default async function Home() {
     getSiteSection<Parameters<typeof CategoryGuideSection>[0]["data"]>("category_guide"),
     getSiteSection<Parameters<typeof CTAStrip>[0]["data"]>("cta"),
     getSiteSection<Parameters<typeof Footer>[0]["data"]>("footer"),
+    getSiteSection<{ faq?: { q?: string; a?: string }[] }>("faq"),
     getDisplayVisitorCount().then((r) => r.display).catch(() => 0),
     getRegions(),
     getPartnerCountsByRegion(),
@@ -270,7 +271,9 @@ export default async function Home() {
       <div className="gold-divider" />
       <KeywordHubSection />
       <div className="gold-divider" />
-      <FaqSection />
+      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="faq">
+        <FaqSection items={faqData?.faq ?? []} isAdmin={!!isAdmin} />
+      </SectionWithSettings>
       <div className="gold-divider" />
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="cta">
         <CTAStrip data={cta} />

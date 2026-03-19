@@ -15,6 +15,7 @@ const SECTION_LABELS: Record<string, string> = {
   region_preview: '7. 지역별 주요업소',
   reviews: '8. 6시간 마다 업데이트 인기 리뷰',
   widgets_b: '9. 타임라인·지역빠른이동·공지·FAQ',
+  faq: '자주 묻는 질문 (FAQ)',
   stats: '10. 통계',
   cta: '11. 광고 및 등록 문의',
   header: '헤더',
@@ -25,7 +26,7 @@ const SECTION_LABELS: Record<string, string> = {
 
 const SITE_SECTION_KEYS = [
   'hero', 'ticker', 'header', 'about', 'region_guide', 'category_guide',
-  'widgets_a', 'widgets_b', 'stats', 'cta', 'footer', 'region_preview',
+  'widgets_a', 'widgets_b', 'faq', 'stats', 'cta', 'footer', 'region_preview',
   'partners_config', 'feed_config', 'review_config',
 ] as const
 
@@ -74,6 +75,7 @@ export default function SectionWithSettings({
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: 16,
+          zIndex: 20,
         }}
       >
         ⚙

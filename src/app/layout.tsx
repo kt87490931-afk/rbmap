@@ -21,6 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       metadataBase: new URL(siteUrl),
       keywords,
+      robots: { index: true, follow: true },
       icons: {
         icon: [
           { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
@@ -37,6 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       metadataBase: new URL(SITE_URL),
       keywords: "룸빵여지도, 강남 가라오케, 수원 가라오케, 동탄 가라오케, 제주 가라오케, 룸싸롱, 하이퍼블릭, 셔츠룸, 쩜오, 퍼블릭",
+      robots: { index: true, follow: true },
       icons: {
         icon: [
           { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },

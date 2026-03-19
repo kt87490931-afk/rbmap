@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { REGION_SLUGS } from '@/lib/data/venues'
+import { getRegionBySlugServer } from '@/lib/data/regions'
 
 /** /gangnam/category/karaoke → /gangnam (지역 페이지) */
 export default async function RegionCategoryRedirectPage({
@@ -8,7 +8,8 @@ export default async function RegionCategoryRedirectPage({
   params: Promise<{ region: string; category: string }>
 }) {
   const { region } = await params
-  if ((REGION_SLUGS as readonly string[]).includes(region)) {
+  const regionData = await getRegionBySlugServer(region)
+  if (regionData && !regionData.coming) {
     redirect(`/${region}`)
   }
   redirect('/')

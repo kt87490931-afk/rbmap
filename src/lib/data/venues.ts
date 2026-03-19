@@ -58,6 +58,7 @@ function buildSimilarVenuesFromPartners(
   });
 }
 import { supabaseAdmin } from "../supabase-server";
+import { getRegionBySlugServer } from "./regions";
 import { getReviewPostsByVenue, buildReviewUrl, formatStars } from "./review-posts";
 
 /** 종목(업종) → URL slug 매핑 */
@@ -85,7 +86,9 @@ export const SLUG_TO_TYPE: Record<string, string> = {
   bar: "바",
 };
 
+/** @deprecated DB(regions 테이블) 기반으로 전환됨. 레거시/폴백용 */
 export const REGION_SLUGS = ["gangnam", "suwon", "dongtan", "osan", "garak", "jeju"] as const;
+/** @deprecated DB 기반. 폴백용 */
 export const REGION_SLUG_TO_NAME: Record<string, string> = {
   gangnam: "강남",
   suwon: "수원 인계동",
@@ -475,11 +478,11 @@ export async function getVenueDetail(
   venueSlug: string
 ): Promise<VenueDetail | null> {
   const typeName = SLUG_TO_TYPE[categorySlug];
-  const regionName = REGION_SLUG_TO_NAME[regionSlug];
+  if (!typeName) return null;
 
-  if (!(REGION_SLUGS as readonly string[]).includes(regionSlug) || !typeName || !regionName) {
-    return null;
-  }
+  const regionData = await getRegionBySlugServer(regionSlug);
+  if (!regionData || regionData.coming) return null;
+  const regionName = regionData.name ?? regionSlug;
 
   // 1) Partners에서 매칭 시도 (DB 제휴업체가 우선) — 실패 시 fallback으로
   let partners: Awaited<ReturnType<typeof getPartners>> = [];

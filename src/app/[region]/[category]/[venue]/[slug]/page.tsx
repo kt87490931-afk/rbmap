@@ -14,17 +14,14 @@ import {
   REVIEW_TYPE_TO_NAME,
   getPartnerContactForVenue,
 } from '@/lib/data/review-posts'
-import { REGION_SLUG_TO_NAME, REGION_SLUGS, getVenueDetail } from '@/lib/data/venues'
+import { getVenueDetail } from '@/lib/data/venues'
+import { getRegionBySlugServer, getRegionsServer } from '@/lib/data/regions'
 import { getSiteSection } from '@/lib/data/site'
 import { CallTrackLink } from '@/components/venue/CallTrackLink'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
 
 type Params = { region: string; category: string; venue: string; slug: string }
-
-function isValidRegion(r: string): r is (typeof REGION_SLUGS)[number] {
-  return (REGION_SLUGS as readonly string[]).includes(r)
-}
 
 /** 리뷰 페이지는 항상 서버에서 렌더링. 메타는 [slug]/layout.tsx에서 생성. */
 export const dynamic = 'force-dynamic'
@@ -36,21 +33,23 @@ export default async function ReviewReadPage({
 }) {
   const { region, category, venue, slug } = await params
 
-  if (!isValidRegion(region) || !REVIEW_TYPE_TO_NAME[category]) {
+  const [regionData, post] = await Promise.all([
+    getRegionBySlugServer(region),
+    getReviewPostBySlug(region, category, venue, slug ? decodeURIComponent(slug) : slug),
+  ])
+  if (!regionData || regionData.coming || !REVIEW_TYPE_TO_NAME[category]) {
     notFound()
   }
-
-  const slugDecoded = slug ? decodeURIComponent(slug) : slug
-  const post = await getReviewPostBySlug(region, category, venue, slugDecoded)
   if (!post) notFound()
 
-  const [sameVenueReviews, sameRegionReviews, prevNext, venueData, header, footer] = await Promise.all([
+  const [sameVenueReviews, sameRegionReviews, prevNext, venueData, header, footer, allRegions] = await Promise.all([
     getReviewPostsByVenue(region, venue, post.id, 5),
     getReviewPostsByRegion(region, category, venue, 5),
     post.published_at ? getPrevNextReviews(post.published_at, post.id) : Promise.resolve({ prev: null, next: null }),
     getVenueDetail(region, category, venue),
     getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>('header'),
     getSiteSection<{ desc?: string; copyright?: string }>('footer'),
+    getRegionsServer(),
   ])
 
   const venueDisplayName = (venueData?.name ?? post.venue).trim() || post.venue
@@ -60,7 +59,7 @@ export default async function ReviewReadPage({
     contact = (partnerContact?.contact ?? '').trim()
   }
 
-  const regionName = getRegionName(region)
+  const regionName = regionData.name ?? getRegionName(region)
   const typeName = getTypeName(category)
   const venueUrl = `/${region}/${category}/${venue}`
   const totalChars =
@@ -368,7 +367,7 @@ export default async function ReviewReadPage({
         data={{
           ...footer,
           cols: [
-            { title: '지역', items: REGION_SLUGS.slice(0, 4).map((s) => ({ label: REGION_SLUG_TO_NAME[s] ?? s, href: `/${s}` })) },
+            { title: '지역', items: allRegions.filter((r) => !r.coming).slice(0, 4).map((r) => ({ label: r.name, href: `/${r.slug}` })) },
             { title: '서비스', items: [{ label: '전체 리뷰', href: '/reviews' }, { label: '랭킹', href: '/ranking' }, { label: '광고 문의', href: '/contact' }] },
           ],
         }}

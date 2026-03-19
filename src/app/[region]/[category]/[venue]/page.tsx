@@ -13,21 +13,13 @@ import { hasDevAdminCookie } from "@/lib/admin-auth";
 import { verifyOtpSession } from "@/lib/otp";
 
 export const dynamic = "force-dynamic";
-import {
-  getVenueDetail,
-  REGION_SLUGS,
-  SLUG_TO_TYPE,
-  REGION_SLUG_TO_NAME,
-} from "@/lib/data/venues";
+import { getVenueDetail, SLUG_TO_TYPE } from "@/lib/data/venues";
+import { getRegionsServer } from "@/lib/data/regions";
 import { getSiteSection } from "@/lib/data/site";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://roombang.co.kr";
 
 type PageParams = { region: string; category: string; venue: string };
-
-function isValidRegion(region: string): region is (typeof REGION_SLUGS)[number] {
-  return (REGION_SLUGS as readonly string[]).includes(region);
-}
 
 function isValidCategory(category: string): boolean {
   return !!SLUG_TO_TYPE[category];
@@ -50,14 +42,15 @@ export default async function VenueDetailPage({
   unstable_noStore()
   const { region, category, venue } = await params;
 
-  if (!isValidRegion(region) || !isValidCategory(category)) {
+  if (!isValidCategory(category)) {
     notFound();
   }
 
-  const [data, header, footer] = await Promise.all([
+  const [data, header, footer, allRegions] = await Promise.all([
     getVenueDetail(region, category, venue),
     getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>("header"),
     getSiteSection<{ desc?: string; copyright?: string; links?: { label: string; href: string }[] }>("footer"),
+    getRegionsServer(),
   ]);
 
   if (!data) notFound();
@@ -74,7 +67,7 @@ export default async function VenueDetailPage({
     }
   }
 
-  const regionName = REGION_SLUG_TO_NAME[region] ?? region;
+  const regionName = data.region ?? region;
   const typeName = SLUG_TO_TYPE[category] ?? category;
 
   const canonicalUrl = `${SITE_URL}${data.url}`;
@@ -448,7 +441,7 @@ export default async function VenueDetailPage({
           ...footer,
           cols: [
             { title: `${regionName} 업종`, items: (data.seoKwLinks ?? []).slice(0, 4).map((k) => ({ label: k.text, href: k.href })) },
-            { title: "다른 지역", items: REGION_SLUGS.filter((s) => s !== region).slice(0, 4).map((s) => ({ label: REGION_SLUG_TO_NAME[s], href: `/${s}` })).concat([{ label: "전체 지역", href: "/regions" }]) },
+            { title: "다른 지역", items: allRegions.filter((r) => r.slug !== region && !r.coming).slice(0, 4).map((r) => ({ label: r.name, href: `/${r.slug}` })).concat([{ label: "전체 지역", href: "/regions" }]) },
             { title: "서비스", items: [{ label: `${regionName} 리뷰`, href: `/${region}/reviews` }, { label: `${regionName} 랭킹`, href: `/${region}/ranking` }, { label: "이용 가이드", href: "/guide" }, { label: "광고 문의", href: "/contact" }] },
           ],
         }}

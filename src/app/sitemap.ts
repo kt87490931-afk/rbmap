@@ -1,7 +1,6 @@
 import { MetadataRoute } from "next";
-import { getRegions } from "@/lib/data/regions";
+import { getValidRegionSlugs } from "@/lib/data/regions";
 import { buildReviewUrl } from "@/lib/data/review-posts";
-import { REGION_SLUGS } from "@/lib/data/venues";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://rbbmap.com";
@@ -90,21 +89,16 @@ export async function generateSitemapPayload(): Promise<{
     errors: [],
   };
 
-  // 색인 가능한 지역만 사이트맵에 포함 (REGION_SLUGS와 일치하는 지역만)
-  // busan, incheon 등 준비중/리다이렉트되는 지역은 제외 → "발견됨-색인안됨" 방지
+  // DB regions 테이블 기준. 준비중(coming) 지역 제외 → "발견됨-색인안됨" 방지
   let regionSlugs: string[] = [];
   try {
-    const allRegions = await getRegions();
-    const allowedSet = new Set(REGION_SLUGS as readonly string[]);
-    regionSlugs = allRegions.map((r) => r.slug).filter((s) => allowedSet.has(s));
+    regionSlugs = await getValidRegionSlugs();
     if (regionSlugs.length === 0) {
-      diagnostics.errors.push("regions 조회 후 REGION_SLUGS와 일치하는 지역 없음: fallback 사용");
-      regionSlugs = [...REGION_SLUGS];
+      diagnostics.errors.push("regions 조회 후 유효 지역(준비중 제외) 없음");
     }
-  } catch {
-    diagnostics.errors.push("regions 조회 실패: fallback REGION_SLUGS 사용");
+  } catch (e) {
+    diagnostics.errors.push(`regions 조회 실패: ${e instanceof Error ? e.message : "unknown"}`);
     diagnostics.partial = true;
-    regionSlugs = [...REGION_SLUGS];
   }
   diagnostics.region_count = regionSlugs.length;
   const allTypes = new Set<string>(CATEGORIES);

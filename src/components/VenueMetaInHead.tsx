@@ -3,19 +3,12 @@
  * 리뷰 상세와 동일하게 크롤러가 초기 HTML에서 og:title, og:description 등을 읽을 수 있도록 함.
  */
 import { headers } from 'next/headers'
-import { getVenueDetail, REGION_SLUGS, REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from '@/lib/data/venues'
+import { getVenueDetail, SLUG_TO_TYPE } from '@/lib/data/venues'
+import { getRegionBySlugServer } from '@/lib/data/regions'
 import { getPartnerMetaForVenue } from '@/lib/data/review-posts'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
 const META_DESC_MAX = 160
-
-function isVenuePath(segments: string[]): segments is [string, string, string] {
-  if (segments.length !== 3) return false
-  const [region, category] = segments
-  const regionOk = (REGION_SLUGS as readonly string[]).includes(region)
-  const categoryOk = !!SLUG_TO_TYPE[category]
-  return regionOk && categoryOk
-}
 
 function getPathnameFromHeaders(headersList: Headers): string {
   const fromMiddleware = headersList.get('x-pathname')?.trim()
@@ -36,17 +29,19 @@ export async function VenueMetaInHead() {
   const headersList = await headers()
   const pathname = getPathnameFromHeaders(headersList)
   const segments = pathname.split('/').filter(Boolean)
-  if (!isVenuePath(segments)) return null
+  if (segments.length !== 3) return null
+  const [region, category, venue] = segments as [string, string, string]
+  if (!SLUG_TO_TYPE[category]) return null
 
-  const [region, category, venue] = segments
-  const [data, partnerMeta] = await Promise.all([
+  const [regionData, data, partnerMeta] = await Promise.all([
+    getRegionBySlugServer(region),
     getVenueDetail(region, category, venue),
     getPartnerMetaForVenue(region, category, venue),
   ])
 
-  if (!data) return null
+  if (!regionData || regionData.coming || !data) return null
 
-  const regionName = REGION_SLUG_TO_NAME[region] ?? region
+  const regionName = regionData.name ?? region
   const typeName = SLUG_TO_TYPE[category] ?? category
   const title = `${data.name} | ${regionName} ${typeName} - 룸빵여지도`
   const canonicalPath = data.url.startsWith('/') ? data.url : `/${region}/${category}/${venue}`

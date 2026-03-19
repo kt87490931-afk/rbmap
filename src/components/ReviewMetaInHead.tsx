@@ -9,7 +9,7 @@ import {
   getPartnerMetaForVenue,
   getTypeName,
 } from '@/lib/data/review-posts'
-import { REGION_SLUGS } from '@/lib/data/venues'
+import { getRegionBySlugServer } from '@/lib/data/regions'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
 const META_DESC_MAX = 160
@@ -24,15 +24,6 @@ const REVIEW_CATEGORIES = [
   'public',
   'bar',
 ]
-
-function isReviewPath(segments: string[]): segments is [string, string, string, string] {
-  if (segments.length !== 4) return false
-  const [region, category] = segments
-  return (
-    (REGION_SLUGS as readonly string[]).includes(region) &&
-    REVIEW_CATEGORIES.includes(category)
-  )
-}
 
 function decodeSlug(s: string): string {
   try {
@@ -61,14 +52,17 @@ export async function ReviewMetaInHead() {
   const headersList = await headers()
   const pathname = getPathnameFromHeaders(headersList)
   const segments = pathname.split('/').filter(Boolean)
-  if (!isReviewPath(segments)) return null
+  if (segments.length !== 4) return null
+  const [region, category, venue, slugRaw] = segments as [string, string, string, string]
+  if (!REVIEW_CATEGORIES.includes(category)) return null
 
-  const [region, category, venue, slugRaw] = segments
   const slug = decodeSlug(slugRaw)
-  const [post, partnerMeta] = await Promise.all([
+  const [regionData, post, partnerMeta] = await Promise.all([
+    getRegionBySlugServer(region),
     getReviewPostBySlug(region, category, venue, slug),
     getPartnerMetaForVenue(region, category, venue),
   ])
+  if (!regionData || regionData.coming) return null
 
   const canonicalPath = `/${region}/${category}/${venue}/${slugRaw}`
   const canonicalUrl = `${SITE_URL}${canonicalPath}`

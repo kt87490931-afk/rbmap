@@ -90,16 +90,22 @@ export async function generateSitemapPayload(): Promise<{
     errors: [],
   };
 
-  let regions: { slug: string }[] = [];
+  // 색인 가능한 지역만 사이트맵에 포함 (REGION_SLUGS와 일치하는 지역만)
+  // busan, incheon 등 준비중/리다이렉트되는 지역은 제외 → "발견됨-색인안됨" 방지
+  let regionSlugs: string[] = [];
   try {
-    regions = (await getRegions()).map((r) => ({ slug: r.slug }));
+    const allRegions = await getRegions();
+    const allowedSet = new Set(REGION_SLUGS as readonly string[]);
+    regionSlugs = allRegions.map((r) => r.slug).filter((s) => allowedSet.has(s));
+    if (regionSlugs.length === 0) {
+      diagnostics.errors.push("regions 조회 후 REGION_SLUGS와 일치하는 지역 없음: fallback 사용");
+      regionSlugs = [...REGION_SLUGS];
+    }
   } catch {
     diagnostics.errors.push("regions 조회 실패: fallback REGION_SLUGS 사용");
     diagnostics.partial = true;
-    regions = REGION_SLUGS.map((s) => ({ slug: s }));
+    regionSlugs = [...REGION_SLUGS];
   }
-
-  const regionSlugs = regions.length > 0 ? regions.map((r) => r.slug) : [...REGION_SLUGS];
   diagnostics.region_count = regionSlugs.length;
   const allTypes = new Set<string>(CATEGORIES);
 
@@ -183,8 +189,9 @@ export async function generateSitemapPayload(): Promise<{
 
       const reviewPath = buildReviewUrl(r.region, r.type, r.venue_slug, r.slug);
       const lastMod = r.updated_at || r.published_at || r.created_at;
+      const fullReviewUrl = `${BASE}${reviewPath}`;
       urls.push({
-        url: `${BASE}${reviewPath}`,
+        url: encodeURI(fullReviewUrl),
         lastModified: lastMod ? new Date(lastMod) : new Date(),
         changeFrequency: "weekly" as const,
         priority: 0.7,

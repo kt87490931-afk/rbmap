@@ -181,12 +181,14 @@ export async function generateMetadata({ params }: { params: Promise<{ region: s
   const venues = regionData?.venues ?? 0;
   const reviews = regionData?.reviews ?? 0;
   const canonicalUrl = `${SITE_URL}/${region}`;
+  const isComing = !!regionData?.coming;
   return {
     title,
     description: `${name} 가라오케·하이퍼블릭·${cfg?.sub ?? ""} 정보. ${name} 인기 업소 ${venues}곳의 실제 이용 후기와 가격을 6시간마다 업데이트합니다.`,
     keywords: `${name}가라오케, ${name}하이퍼블릭, ${name}룸싸롱, ${name}유흥`,
     openGraph: { title: `${name} 가라오케·하이퍼블릭 추천 | 룸빵여지도`, description: `${name} 유흥 정보. ${venues}개 업소, ${reviews}개 리뷰, 6시간 업데이트.`, type: "website", url: canonicalUrl },
     alternates: { canonical: canonicalUrl },
+    ...(isComing && { robots: { index: false, follow: true } }),
   };
 }
 

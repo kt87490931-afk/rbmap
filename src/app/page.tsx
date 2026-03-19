@@ -26,7 +26,7 @@ import {
 } from "@/lib/data/review-posts";
 import { getRegions } from "@/lib/data/regions";
 import { getPartnerCountsByRegion } from "@/lib/data/partners";
-import { getSiteSection } from "@/lib/data/site";
+import { getSiteSection, getSiteSections } from "@/lib/data/site";
 import { TYPE_TO_SLUG, REGION_SLUG_TO_NAME } from "@/lib/data/venues";
 import { getDisplayVisitorCount } from "@/lib/visit-count";
 import { authOptions } from "@/lib/auth";
@@ -57,10 +57,12 @@ export async function generateMetadata(): Promise<Metadata> {
     const siteUrl = seo?.siteUrl || SITE_URL;
     const baseOg = (seo?.ogImage?.trim() || `${siteUrl}/og/og-home.png`).replace(/^\/+/, siteUrl + "/");
     const ogImageAbs = baseOg.includes("?") ? `${baseOg}&v=${OG_IMAGE_VERSION}` : `${baseOg}?v=${OG_IMAGE_VERSION}`;
+    const canonicalUrl = (siteUrl || SITE_URL).replace(/\/+$/, "") || SITE_URL;
     return {
       title,
       description,
       keywords,
+      alternates: { canonical: canonicalUrl },
       openGraph: {
         type: "website",
         locale: "ko_KR",
@@ -82,6 +84,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: DEFAULT_TITLE,
       description: DEFAULT_DESC,
       keywords: DEFAULT_KEYWORDS,
+      alternates: { canonical: SITE_URL },
       openGraph: {
         type: "website",
         locale: "ko_KR",
@@ -114,22 +117,35 @@ export default async function Home() {
     }
   }
 
-  const [feedConfig, reviewConfig, hero, ticker, header, about, categoryGuide, cta, footer, faqData, visitorDisplay, regions, partnerCounts, reviewCountsByRegion] = await Promise.all([
-    getSiteSection<FeedConfig>("feed_config"),
-    getSiteSection<ReviewConfig>("review_config"),
-    getSiteSection<Parameters<typeof Hero>[0]["data"]>("hero"),
-    getSiteSection<Parameters<typeof Ticker>[0]["data"]>("ticker"),
-    getSiteSection<Parameters<typeof Header>[0]["data"]>("header"),
-    getSiteSection<Parameters<typeof AboutSection>[0]["data"]>("about"),
-    getSiteSection<Parameters<typeof CategoryGuideSection>[0]["data"]>("category_guide"),
-    getSiteSection<Parameters<typeof CTAStrip>[0]["data"]>("cta"),
-    getSiteSection<Parameters<typeof Footer>[0]["data"]>("footer"),
-    getSiteSection<{ faq?: { q?: string; a?: string }[] }>("faq"),
+  const SECTION_KEYS: import("@/lib/data/site").SiteSectionKey[] = [
+    "feed_config",
+    "review_config",
+    "hero",
+    "ticker",
+    "header",
+    "about",
+    "category_guide",
+    "cta",
+    "footer",
+    "faq",
+  ];
+  const [sections, visitorDisplay, regions, partnerCounts, reviewCountsByRegion] = await Promise.all([
+    getSiteSections(SECTION_KEYS),
     getDisplayVisitorCount().then((r) => r.display).catch(() => 0),
     getRegions(),
     getPartnerCountsByRegion(),
     getReviewCountsByRegion(),
   ]);
+  const feedConfig = (sections.feed_config ?? {}) as FeedConfig;
+  const reviewConfig = (sections.review_config ?? {}) as ReviewConfig;
+  const hero = (sections.hero ?? {}) as Parameters<typeof Hero>[0]["data"];
+  const ticker = (sections.ticker ?? {}) as Parameters<typeof Ticker>[0]["data"];
+  const header = (sections.header ?? {}) as Parameters<typeof Header>[0]["data"];
+  const about = (sections.about ?? {}) as Parameters<typeof AboutSection>[0]["data"];
+  const categoryGuide = (sections.category_guide ?? {}) as Parameters<typeof CategoryGuideSection>[0]["data"];
+  const cta = (sections.cta ?? {}) as Parameters<typeof CTAStrip>[0]["data"];
+  const footer = (sections.footer ?? {}) as Parameters<typeof Footer>[0]["data"];
+  const faqData = (sections.faq ?? {}) as { faq?: { q?: string; a?: string }[] };
 
   const feedLimit = feedConfig?.display_limit ?? 10;
   const reviewDisplayLimitRaw = reviewConfig?.display_limit ?? 6;

@@ -2,6 +2,7 @@
  * 오늘 방문자 수 (KST 기준)
  * visit_logs에서 오늘의 실제 방문자(봇 제외) 조회
  */
+import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "./supabase-server";
 
 function kstDate(offset = 0): string {
@@ -65,7 +66,7 @@ export function getEffectiveVisitorOffset(offset: number): number {
 /**
  * 메인 표시용 접속자 수 (실제 방문자 + 24시 기준 점진 증가하는 추가 인원)
  */
-export async function getDisplayVisitorCount(): Promise<{ actual: number; offset: number; display: number }> {
+async function getDisplayVisitorCountUncached(): Promise<{ actual: number; offset: number; display: number }> {
   const [stats, { data: configRow }] = await Promise.all([
     getTodayVisitorCount(),
     supabaseAdmin.from("site_sections").select("content").eq("section_key", "visitor_config").maybeSingle(),
@@ -76,4 +77,9 @@ export async function getDisplayVisitorCount(): Promise<{ actual: number; offset
   const display = Math.max(0, stats.visitors + effectiveOffset);
 
   return { actual: stats.visitors, offset, display };
+}
+
+/** 60초 캐시로 TTFB 개선 (방문자 수는 실시간일 필요 없음) */
+export async function getDisplayVisitorCount(): Promise<{ actual: number; offset: number; display: number }> {
+  return unstable_cache(getDisplayVisitorCountUncached, ["display-visitor-count"], { revalidate: 60 })();
 }

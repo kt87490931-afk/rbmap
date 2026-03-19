@@ -247,3 +247,23 @@ export async function getSiteSection<T = unknown>(key: SiteSectionKey): Promise<
   }
   return data.content as T
 }
+
+/** 여러 섹션을 1회 쿼리로 조회 (TTFB 개선) */
+export async function getSiteSections<T extends Record<string, unknown>>(
+  keys: SiteSectionKey[]
+): Promise<T> {
+  if (keys.length === 0) return {} as T
+  const { data, error } = await supabase
+    .from('site_sections')
+    .select('section_key, content')
+    .in('section_key', keys)
+
+  const result = { ...Object.fromEntries(keys.map((k) => [k, FALLBACKS[k]])) } as T
+  if (error) return result
+  for (const row of data ?? []) {
+    if (row.section_key && row.content != null) {
+      (result as Record<string, unknown>)[row.section_key] = row.content
+    }
+  }
+  return result
+}

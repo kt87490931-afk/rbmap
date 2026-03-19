@@ -16,11 +16,11 @@ const DEFAULT_FAQ: FaqItem[] = [
 
 interface FaqSectionProps {
   items?: FaqItem[];
-  /** 제목 옆 톱니바퀴 표시 여부 (true이거나 생략 시 표시 — 클릭 시 FAQ 편집 모달, 저장은 관리자만 가능) */
+  /** 운영자(관리자) 로그인 시에만 제목 옆 톱니바퀴 표시 */
   isAdmin?: boolean;
 }
 
-export default function FaqSection({ items = DEFAULT_FAQ, isAdmin = true }: FaqSectionProps) {
+export default function FaqSection({ items = DEFAULT_FAQ, isAdmin }: FaqSectionProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const list = items.length > 0 ? items : DEFAULT_FAQ;
   const toggle = (el: HTMLElement | null) => {
@@ -33,7 +33,7 @@ export default function FaqSection({ items = DEFAULT_FAQ, isAdmin = true }: FaqS
         <span className="section-label">FAQ</span>
         <h2 className="section-h2" style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           자주 묻는 <em>질문</em>
-          {
+          {isAdmin && (
             <button
               type="button"
               aria-label="FAQ 설정"
@@ -56,7 +56,7 @@ export default function FaqSection({ items = DEFAULT_FAQ, isAdmin = true }: FaqS
             >
               ⚙
             </button>
-          }
+          )}
         </h2>
         {modalOpen && (
           <div

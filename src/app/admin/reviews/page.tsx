@@ -74,6 +74,7 @@ export default function AdminReviewsPage() {
   const [cronStatusLoading, setCronStatusLoading] = useState(true)
   const [manualRunLoading, setManualRunLoading] = useState(false)
   const [manualRunMsg, setManualRunMsg] = useState('')
+  const [singleProcessPartnerId, setSingleProcessPartnerId] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
   const [holdRestoreLoadingId, setHoldRestoreLoadingId] = useState<string | null>(null)
   const [editItem, setEditItem] = useState<ReviewItem | null>(null)
@@ -147,6 +148,32 @@ export default function AdminReviewsPage() {
     }
     setManualRunLoading(false)
     setTimeout(() => setManualRunMsg(''), 8000)
+  }
+
+  /** 한 개 업체만 수동 처리 (과부하 방지용) */
+  async function runSingleVenue(s: NextScheduleItem) {
+    if (!s.canGenerateNow) return
+    setSingleProcessPartnerId(s.partnerId)
+    try {
+      const res = await fetch('/api/admin/cron-health/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ partnerIds: [s.partnerId] }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        showMsg(`처리 완료: ${s.name} (성공 ${json.success ?? 0}건)`)
+        fetchNextSchedules()
+        fetchLatestCronRun()
+        fetchItems()
+      } else {
+        showMsg(`실패: ${json?.error ?? res.statusText}`)
+      }
+    } catch {
+      showMsg('요청 실패')
+    }
+    setSingleProcessPartnerId(null)
   }
 
   /** 업체별 리뷰 수 (region|type|venue_slug → count) */
@@ -393,7 +420,20 @@ export default function AdminReviewsPage() {
                       </span>
                     </td>
                     <td style={{ fontSize: 12 }}>{s.nextAtKST}{s.isTomorrow ? ' (내일)' : ''}</td>
-                    <td style={{ fontWeight: 500, color: s.canGenerateNow ? 'var(--gold)' : 'var(--muted)' }}>{s.inText}</td>
+                    <td style={{ fontWeight: 500, color: s.canGenerateNow ? 'var(--gold)' : 'var(--muted)' }}>
+                      <span style={{ marginRight: 8 }}>{s.inText}</span>
+                      {s.canGenerateNow && (
+                        <button
+                          type="button"
+                          onClick={() => runSingleVenue(s)}
+                          disabled={singleProcessPartnerId !== null}
+                          className="btn-save"
+                          style={{ padding: '4px 10px', fontSize: 11 }}
+                        >
+                          {singleProcessPartnerId === s.partnerId ? '처리 중…' : '처리'}
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

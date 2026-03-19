@@ -1,4 +1,3 @@
-import { unstable_noStore } from "next/cache";
 import { getServerSession } from "next-auth";
 import Header from "@/components/Header";
 import Ticker from "@/components/Ticker";
@@ -37,6 +36,9 @@ import type { Metadata } from "next";
 
 type FeedConfig = { display_limit?: number };
 type ReviewConfig = { display_limit?: number };
+
+/** ISR: 5분 캐시. 빠른 접속 + SEO 유리. (운영자 톱니바퀴는 최대 5분간 캐시된 화면) */
+export const revalidate = 300;
 
 const DEFAULT_TITLE = "룸빵여지도 | 전국 룸싸롱·가라오케·셔츠룸·쩜오·퍼블릭·노래방 유흥 정보";
 const DEFAULT_DESC =
@@ -100,7 +102,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  unstable_noStore();
   let isAdmin = await hasDevAdminCookie();
   if (!isAdmin) {
     try {

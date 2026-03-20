@@ -2971,6 +2971,21 @@ body::after {
   }
 }
 
+/* 리뷰 페이지 3열 그리드 */
+.fr-grid-3 {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 680px) {
+  .fr-grid.fr-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .fr-grid.fr-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 .fr-card {
   background: var(--card);
   border: 1px solid var(--border);

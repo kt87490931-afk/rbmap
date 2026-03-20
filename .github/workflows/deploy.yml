@@ -5,10 +5,19 @@ on:
     branches: [main]
   workflow_dispatch:  # 수동 실행 가능
 
+concurrency:
+  group: deploy-rbmap
+  cancel-in-progress: true  # 새 배포 시 진행 중인 이전 배포 취소 (최신만 실행)
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
+      - name: Pre-deploy
+        run: |
+          echo "Trigger: ${{ github.event_name }} | Ref: ${{ github.ref }} | SHA: ${{ github.sha }}"
+
       - name: Deploy to Droplet via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:

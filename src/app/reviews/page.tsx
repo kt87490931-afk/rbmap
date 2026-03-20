@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { getRegions } from '@/lib/data/regions'
-import { getReviewPostsListPaginated, buildReviewUrl, getRegionName, getTypeName, formatStars, REGION_PILL_STYLE } from '@/lib/data/review-posts'
+import { getReviewPostsListPaginated, getReviewCountsByRegion, getReviewCountsByType, buildReviewUrl, getRegionName, getTypeName, formatStars, REGION_PILL_STYLE } from '@/lib/data/review-posts'
 import { getSiteSection } from '@/lib/data/site'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
@@ -38,11 +38,10 @@ export const dynamic = 'force-dynamic'
 
 const PER_PAGE = 50
 
-function buildQuery(overrides: { region?: string; type?: string; star?: string; sort?: string; page?: number }) {
+function buildQuery(overrides: { region?: string; type?: string; sort?: string; page?: number }) {
   const q: Record<string, string> = {}
   if (overrides.region && overrides.region !== 'all') q.region = overrides.region
   if (overrides.type && overrides.type !== 'all') q.type = overrides.type
-  if (overrides.star && overrides.star !== 'all') q.star = overrides.star
   if (overrides.sort) q.sort = overrides.sort
   if (overrides.page && overrides.page > 1) q.page = String(overrides.page)
   return new URLSearchParams(q).toString()
@@ -51,21 +50,19 @@ function buildQuery(overrides: { region?: string; type?: string; star?: string; 
 export default async function ReviewsListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ region?: string; type?: string; star?: string; sort?: string; page?: string }>
+  searchParams: Promise<{ region?: string; type?: string; sort?: string; page?: string }>
 }) {
   unstable_noStore()
   const params = await searchParams
   const region = params.region ?? 'all'
   const type = params.type ?? 'all'
-  const star = params.star ?? 'all'
   const sort = params.sort === 'popular' ? 'popular' : 'latest'
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1)
 
-  const [result, header, footer, regions] = await Promise.all([
+  const [result, header, footer, regions, regionCounts, typeCounts] = await Promise.all([
     getReviewPostsListPaginated({
       region: region !== 'all' ? region : undefined,
       type: type !== 'all' ? type : undefined,
-      star: star !== 'all' ? star : undefined,
       sort,
       page,
       perPage: PER_PAGE,
@@ -73,10 +70,23 @@ export default async function ReviewsListPage({
     getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>('header'),
     getSiteSection<{ desc?: string; copyright?: string; links?: { label: string; href: string }[] }>('footer'),
     getRegions(),
+    getReviewCountsByRegion(),
+    getReviewCountsByType(),
   ])
   const { posts, total } = result
+  const totalCount = Object.values(regionCounts).reduce((a, b) => a + b, 0) || total
 
   const regionDisplayNames = Object.fromEntries(regions.map((r) => [r.slug, r.name]))
+  const typeSlugToDisplay: Record<string, string> = {
+    karaoke: '가라오케',
+    highpublic: '하이퍼블릭',
+    jjomoh: '쩜오',
+    shirtsroom: '셔츠룸',
+    shirtroom: '셔츠룸',
+    public: '퍼블릭',
+    'room-salon': '룸싸롱',
+    bar: '바',
+  }
   const pillStyle = (r: string) => REGION_PILL_STYLE[r] ?? { bg: 'rgba(255,255,255,.05)', color: 'var(--muted)', border: 'var(--border)' }
 
   return (
@@ -114,37 +124,47 @@ export default async function ReviewsListPage({
         <div className="fp">
           <div className="fp-grp">
             <span className="fp-lbl">지역</span>
-            <Link href={`/reviews?${buildQuery({ region: 'all', type, star, sort, page: 1 })}`} className={`fp-btn ${region === 'all' ? 'active' : ''}`}>전체</Link>
-            {regions.filter((r) => !r.coming).map((r) => (
-              <Link
-                key={r.slug}
-                href={`/reviews?${buildQuery({ region: r.slug, type, star, sort, page: 1 })}`}
-                className={`fp-btn ${region === r.slug ? 'active' : ''}`}
-              >
-                {r.name}
-              </Link>
-            ))}
+            <Link href={`/reviews?${buildQuery({ region: 'all', type, sort, page: 1 })}`} className={`fp-btn ${region === 'all' ? 'active' : ''}`}>전체 ({totalCount})</Link>
+            {regions.filter((r) => !r.coming).map((r) => {
+              const cnt = regionCounts[r.slug] ?? 0
+              return (
+                <Link
+                  key={r.slug}
+                  href={`/reviews?${buildQuery({ region: r.slug, type, sort, page: 1 })}`}
+                  className={`fp-btn ${region === r.slug ? 'active' : ''}`}
+                >
+                  {r.name} {cnt > 0 ? `(${cnt})` : ''}
+                </Link>
+              )
+            })}
           </div>
           <div className="fp-div" />
           <div className="fp-grp">
             <span className="fp-lbl">업종</span>
-            <Link href={`/reviews?${buildQuery({ region, type: 'all', star, sort, page: 1 })}`} className={`fp-btn ${type === 'all' ? 'active' : ''}`}>전체</Link>
-            <Link href={`/reviews?${buildQuery({ region, type: 'karaoke', star, sort, page: 1 })}`} className={`fp-btn ${type === 'karaoke' ? 'active' : ''}`}>가라오케</Link>
-            <Link href={`/reviews?${buildQuery({ region, type: 'highpublic', star, sort, page: 1 })}`} className={`fp-btn ${type === 'highpublic' ? 'active' : ''}`}>하이퍼블릭</Link>
-            <Link href={`/reviews?${buildQuery({ region, type: 'jjomoh', star, sort, page: 1 })}`} className={`fp-btn ${type === 'jjomoh' ? 'active' : ''}`}>쩜오</Link>
-            <Link href={`/reviews?${buildQuery({ region, type: 'shirtsroom', star, sort, page: 1 })}`} className={`fp-btn ${type === 'shirtsroom' ? 'active' : ''}`}>셔츠룸</Link>
-            <Link href={`/reviews?${buildQuery({ region, type: 'public', star, sort, page: 1 })}`} className={`fp-btn ${type === 'public' ? 'active' : ''}`}>퍼블릭</Link>
-          </div>
-          <div className="fp-div" />
-          <div className="fp-grp">
-            <span className="fp-lbl">별점</span>
-            <Link href={`/reviews?${buildQuery({ region, type, star: 'all', sort, page: 1 })}`} className={`fp-btn ${star === 'all' ? 'active' : ''}`}>전체</Link>
-            <Link href={`/reviews?${buildQuery({ region, type, star: '5', sort, page: 1 })}`} className={`fp-btn ${star === '5' ? 'active' : ''}`}>★★★★★</Link>
-            <Link href={`/reviews?${buildQuery({ region, type, star: '4', sort, page: 1 })}`} className={`fp-btn ${star === '4' ? 'active' : ''}`}>★★★★</Link>
+            <Link href={`/reviews?${buildQuery({ region, type: 'all', sort, page: 1 })}`} className={`fp-btn ${type === 'all' ? 'active' : ''}`}>전체 ({totalCount})</Link>
+            {[
+              { slug: 'karaoke', label: '가라오케' },
+              { slug: 'highpublic', label: '하이퍼블릭' },
+              { slug: 'jjomoh', label: '쩜오' },
+              { slug: 'shirtsroom', label: '셔츠룸', altSlug: 'shirtroom' },
+              { slug: 'public', label: '퍼블릭' },
+            ].map((x) => {
+              const cnt = (typeCounts[x.slug] ?? 0) + ((x as { altSlug?: string }).altSlug ? (typeCounts[(x as { altSlug: string }).altSlug] ?? 0) : 0)
+              const slugToUse = (typeCounts[x.slug] ?? 0) > 0 ? x.slug : ((x as { altSlug?: string }).altSlug && (typeCounts[(x as { altSlug: string }).altSlug] ?? 0) > 0) ? (x as { altSlug: string }).altSlug : x.slug
+              return (
+                <Link
+                  key={x.slug}
+                  href={`/reviews?${buildQuery({ region, type: slugToUse, sort, page: 1 })}`}
+                  className={`fp-btn ${(type === x.slug || type === (x as { altSlug?: string }).altSlug) ? 'active' : ''}`}
+                >
+                  {x.label} {cnt > 0 ? `(${cnt})` : ''}
+                </Link>
+              )
+            })}
           </div>
           <div className="fp-grp fp-sort">
-            <Link href={`/reviews?${buildQuery({ region, type, star, sort: 'latest', page: 1 })}`} className={`fp-btn ${sort === 'latest' ? 'active' : ''}`}>최신순</Link>
-            <Link href={`/reviews?${buildQuery({ region, type, star, sort: 'popular', page: 1 })}`} className={`fp-btn ${sort === 'popular' ? 'active' : ''}`}>인기순</Link>
+            <Link href={`/reviews?${buildQuery({ region, type, sort: 'latest', page: 1 })}`} className={`fp-btn ${sort === 'latest' ? 'active' : ''}`}>최신순</Link>
+            <Link href={`/reviews?${buildQuery({ region, type, sort: 'popular', page: 1 })}`} className={`fp-btn ${sort === 'popular' ? 'active' : ''}`}>인기순</Link>
           </div>
           <div className="fp-right">
             <span className="fp-count">리뷰 {total > 0 ? `${(page - 1) * PER_PAGE + 1}–${Math.min(page * PER_PAGE, total)} / ${total}개` : '0개'} 표시</span>
@@ -154,7 +174,7 @@ export default async function ReviewsListPage({
 
       <div className="page-wrap">
         <section className="section">
-          <div className="fr-grid">
+          <div className="fr-grid fr-grid-3">
             {posts.map((r, i) => {
               const href = buildReviewUrl(r.region, r.type, r.venue_slug, r.slug)
               const style = pillStyle(r.region)
@@ -196,7 +216,7 @@ export default async function ReviewsListPage({
             <nav className="reviews-pagination" aria-label="리뷰 목록 페이지 넘김">
               <div className="reviews-pagination-inner">
                 {page > 1 ? (
-                  <Link href={`/reviews?${buildQuery({ region, type, star, sort, page: page - 1 })}`} className="reviews-pagination-btn reviews-pagination-prev">이전</Link>
+                  <Link href={`/reviews?${buildQuery({ region, type, sort, page: page - 1 })}`} className="reviews-pagination-btn reviews-pagination-prev">이전</Link>
                 ) : (
                   <span className="reviews-pagination-btn reviews-pagination-prev disabled">이전</span>
                 )}
@@ -228,14 +248,14 @@ export default async function ReviewsListPage({
                         p === page ? (
                           <span key={p} className="reviews-pagination-num current">{p}</span>
                         ) : (
-                          <Link key={p} href={`/reviews?${buildQuery({ region, type, star, sort, page: p })}`} className="reviews-pagination-num">{p}</Link>
+                          <Link key={p} href={`/reviews?${buildQuery({ region, type, sort, page: p })}`} className="reviews-pagination-num">{p}</Link>
                         )
                       )
                     )
                   })()}
                 </div>
                 {page < Math.ceil(total / PER_PAGE) ? (
-                  <Link href={`/reviews?${buildQuery({ region, type, star, sort, page: page + 1 })}`} className="reviews-pagination-btn reviews-pagination-next">다음</Link>
+                  <Link href={`/reviews?${buildQuery({ region, type, sort, page: page + 1 })}`} className="reviews-pagination-btn reviews-pagination-next">다음</Link>
                 ) : (
                   <span className="reviews-pagination-btn reviews-pagination-next disabled">다음</span>
                 )}

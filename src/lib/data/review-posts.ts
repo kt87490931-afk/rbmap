@@ -355,6 +355,20 @@ export async function getReviewCountsByRegion(): Promise<Record<string, number>>
   return counts
 }
 
+/** 업종별 published 리뷰 수 (/reviews 필터 버튼용) */
+export async function getReviewCountsByType(): Promise<Record<string, number>> {
+  const { data } = await supabaseAdmin
+    .from('review_posts')
+    .select('type')
+    .eq('status', 'published')
+  const counts: Record<string, number> = {}
+  for (const row of data ?? []) {
+    const t = (row as { type?: string }).type ?? ''
+    if (t) counts[t] = (counts[t] ?? 0) + 1
+  }
+  return counts
+}
+
 export async function getReviewPostBySlug(
   region: string,
   type: string,

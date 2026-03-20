@@ -367,19 +367,21 @@ export default function AdminReviewsPage() {
             )}
             <div style={{ marginTop: 6, fontSize: 11, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <Link href="/admin/cron-health" style={{ color: 'var(--gold)' }}>전체 실행 이력 보기 (크론헬스) →</Link>
-              <button
-                type="button"
-                onClick={runDueNow}
-                disabled={manualRunLoading}
-                className="btn-save"
-                style={{ padding: '6px 14px', fontSize: 12 }}
-              >
-                {manualRunLoading ? '처리 중...' : '곧 항목 수동 처리'}
-              </button>
-              {manualRunMsg && <span style={{ fontSize: 12, color: 'var(--green)' }}>{manualRunMsg}</span>}
             </div>
           </div>
         ) : null}
+        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={runDueNow}
+            disabled={manualRunLoading}
+            className="btn-save"
+            style={{ padding: '6px 14px', fontSize: 12 }}
+          >
+            {manualRunLoading ? '처리 중...' : '곧 항목 수동 처리'}
+          </button>
+          {manualRunMsg && <span style={{ fontSize: 12, color: 'var(--green)' }}>{manualRunMsg}</span>}
+        </div>
         <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
           「곧」으로 표시된 업체는 다음 가능 시각이 이미 지난 상태입니다. <strong>곧 항목 수동 처리</strong>를 누르면 지금 당장 같은 규칙(다음 가능 시각 빠른 순, 최대 25건)으로 리뷰를 생성합니다. 수동 처리해도 다음 스케줄(예: 12시간 후)은 그대로 적용됩니다.
         </p>
@@ -422,17 +424,16 @@ export default function AdminReviewsPage() {
                     <td style={{ fontSize: 12 }}>{s.nextAtKST}{s.isTomorrow ? ' (내일)' : ''}</td>
                     <td style={{ fontWeight: 500, color: s.canGenerateNow ? 'var(--gold)' : 'var(--muted)' }}>
                       <span style={{ marginRight: 8 }}>{s.inText}</span>
-                      {s.canGenerateNow && (
-                        <button
-                          type="button"
-                          onClick={() => runSingleVenue(s)}
-                          disabled={singleProcessPartnerId !== null}
-                          className="btn-save"
-                          style={{ padding: '4px 10px', fontSize: 11 }}
-                        >
-                          {singleProcessPartnerId === s.partnerId ? '처리 중…' : '처리'}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => runSingleVenue(s)}
+                        disabled={!s.canGenerateNow || singleProcessPartnerId !== null}
+                        className="btn-save"
+                        style={{ padding: '4px 10px', fontSize: 11, opacity: s.canGenerateNow ? 1 : 0.6 }}
+                        title={!s.canGenerateNow ? `${s.statusLabel} 상태에서는 다음 가능 시각 이후에 사용 가능` : undefined}
+                      >
+                        {singleProcessPartnerId === s.partnerId ? '처리 중…' : '처리'}
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -146,6 +146,7 @@ export default async function ReviewsListPage({
               { slug: 'karaoke', label: '가라오케' },
               { slug: 'highpublic', label: '하이퍼블릭' },
               { slug: 'jjomoh', label: '쩜오' },
+              { slug: 'room-salon', label: '룸싸롱' },
               { slug: 'shirtsroom', label: '셔츠룸', altSlug: 'shirtroom' },
               { slug: 'public', label: '퍼블릭' },
             ].map((x) => {

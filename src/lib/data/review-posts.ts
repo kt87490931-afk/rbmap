@@ -405,6 +405,18 @@ export async function getPublishedReviewPostWithVenueFix(
   return { post, redirectToCanonical: canonicalPath }
 }
 
+/** 업체별 리뷰 수 (가벼운 COUNT 쿼리 — 초기 페이지 로드용) */
+export async function getReviewCountByVenue(region: string, venueSlug: string): Promise<number> {
+  const { count, error } = await supabaseAdmin
+    .from('review_posts')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'published')
+    .eq('region', region)
+    .eq('venue_slug', venueSlug)
+  if (error) return 0
+  return count ?? 0
+}
+
 export async function getReviewPostsByVenue(
   region: string,
   venueSlug: string,

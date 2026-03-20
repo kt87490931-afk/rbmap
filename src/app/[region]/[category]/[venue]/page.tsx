@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { VenueEditModals } from "@/components/venue/VenueEditModals";
 import { VenueEditButton } from "@/components/venue/VenueEditButton";
+import { VenueReviewsLazy } from "@/components/venue/VenueReviewsLazy";
 import { CallTrackLink } from "@/components/venue/CallTrackLink";
 import { authOptions } from "@/lib/auth";
 import { hasDevAdminCookie } from "@/lib/admin-auth";
@@ -309,28 +310,8 @@ export default async function VenueDetailPage({
           </div>
         </section>
 
-        {/* 섹션 4: 리뷰 */}
-        <section className="art-section" id="reviews">
-          {isAdmin && <VenueEditButton section="reviews" />}
-          <span className="sec-label">REVIEWS · 이용 후기</span>
-          <h2 className="art-h2">{data.name} <em>이용 후기</em></h2>
-          <p className="art-lead">AI가 6시간마다 최신 후기를 수집·정리합니다.</p>
-          <div className="fr-grid">
-            {(data.reviews ?? []).map((r) => (
-              <Link key={r.id} href={r.href} className="fr-card">
-                <div className="fr-card-head">
-                  <span className="fr-stars">{r.stars}</span>
-                  <span className="fr-date">{r.date}</span>
-                </div>
-                <div className="fr-title">{r.title}</div>
-                <div className="fr-body">
-                  <p>{r.body}</p>
-                </div>
-                <div className="fr-more">전문 보기 →</div>
-              </Link>
-            ))}
-          </div>
-        </section>
+        {/* 섹션 4: 리뷰 (클라이언트에서 지연 로드 — TTFB 개선) */}
+        <VenueReviewsLazy region={region} venue={venue} venueName={data.name} isAdmin={!!isAdmin} />
 
         {/* 섹션 5: 유사 업소 */}
         <section className="art-section" id="similar">

@@ -1,41 +1,27 @@
 import { getServerSession } from "next-auth";
 import Header from "@/components/Header";
-import Ticker from "@/components/Ticker";
+import TickerAsync from "@/components/home/TickerAsync";
 import Hero from "@/components/Hero";
 import AboutSection from "@/components/AboutSection";
 import CategoryGuideSection from "@/components/CategoryGuideSection";
 import SectionWithSettings from "@/components/SectionWithSettings";
-import LiveFeedSection from "@/components/LiveFeedSection";
+import LiveFeedSectionAsync from "@/components/home/LiveFeedSectionAsync";
 import RegionsSection from "@/components/RegionsSection";
-import FeaturedVenuesSection from "@/components/FeaturedVenuesSection";
-import ReviewMagazineSection from "@/components/ReviewMagazineSection";
+import FeaturedVenuesSectionAsync from "@/components/home/FeaturedVenuesSectionAsync";
+import ReviewMagazineSectionAsync from "@/components/home/ReviewMagazineSectionAsync";
 import KeywordHubSection from "@/components/KeywordHubSection";
 import FaqSection from "@/components/FaqSection";
 import CTAStrip from "@/components/CTAStrip";
 import Footer from "@/components/Footer";
-import { getPartners } from "@/lib/data/partners";
-import type { FeedItem } from "@/lib/data/feed";
-import {
-  getReviewPostsList,
-  getReviewPostsListByClickCount,
-  getReviewCountsByRegion,
-  buildReviewUrl,
-  getRegionName,
-  getTypeName,
-  formatStars,
-} from "@/lib/data/review-posts";
+import { getReviewCountsByRegion } from "@/lib/data/review-posts";
 import { getRegions } from "@/lib/data/regions";
 import { getPartnerCountsByRegion } from "@/lib/data/partners";
 import { getSiteSection, getSiteSections } from "@/lib/data/site";
-import { TYPE_TO_SLUG, REGION_SLUG_TO_NAME } from "@/lib/data/venues";
 import { getDisplayVisitorCount } from "@/lib/visit-count";
 import { authOptions } from "@/lib/auth";
 import { hasDevAdminCookie } from "@/lib/admin-auth";
 import { verifyOtpSession } from "@/lib/otp";
 import type { Metadata } from "next";
-
-type FeedConfig = { display_limit?: number };
-type ReviewConfig = { display_limit?: number };
 
 /** ISR: 5분 캐시. 빠른 접속 + SEO 유리. (운영자 톱니바퀴는 최대 5분간 캐시된 화면) */
 export const revalidate = 300;
@@ -136,10 +122,8 @@ export default async function Home() {
     getPartnerCountsByRegion(),
     getReviewCountsByRegion(),
   ]);
-  const feedConfig = (sections.feed_config ?? {}) as FeedConfig;
-  const reviewConfig = (sections.review_config ?? {}) as ReviewConfig;
   const hero = (sections.hero ?? {}) as Parameters<typeof Hero>[0]["data"];
-  const ticker = (sections.ticker ?? {}) as Parameters<typeof Ticker>[0]["data"];
+  const ticker = (sections.ticker ?? null) as { items?: { region?: string; text?: string }[] } | null;
   const header = (sections.header ?? {}) as Parameters<typeof Header>[0]["data"];
   const about = (sections.about ?? {}) as Parameters<typeof AboutSection>[0]["data"];
   const categoryGuide = (sections.category_guide ?? {}) as Parameters<typeof CategoryGuideSection>[0]["data"];
@@ -147,10 +131,6 @@ export default async function Home() {
   const footer = (sections.footer ?? {}) as Parameters<typeof Footer>[0]["data"];
   const faqData = (sections.faq ?? {}) as { faq?: { q?: string; a?: string }[] };
 
-  const feedLimit = feedConfig?.display_limit ?? 10;
-  const reviewDisplayLimitRaw = reviewConfig?.display_limit ?? 6;
-  const REVIEW_DISPLAY_OPTIONS = [3, 6, 9, 12, 15, 30, 45, 60];
-  const reviewDisplayLimit = REVIEW_DISPLAY_OPTIONS.includes(reviewDisplayLimitRaw) ? reviewDisplayLimitRaw : 6;
   const totalVenueCount = Object.values(partnerCounts).reduce((sum, c) => sum + (c?.venues ?? 0), 0);
   const regionCount = regions.filter((r) => !r.coming).length;
   const totalReviewCount = Object.values(reviewCountsByRegion).reduce((sum, n) => sum + (n ?? 0), 0);
@@ -163,88 +143,12 @@ export default async function Home() {
     };
   }
 
-  const [partnersForWidgets, reviewPosts, reviewPostsByClick] = await Promise.all([
-    getPartners(),
-    getReviewPostsList({ limit: feedLimit }),
-    getReviewPostsListByClickCount(60),
-  ]);
-
-  const REGION_NAME_TO_SLUG: Record<string, string> = { 강남: "gangnam", 수원: "suwon", "수원 인계동": "suwon", 동탄: "dongtan", 오산: "osan", 가락: "garak", 제주: "jeju" };
-  const venueCards = partnersForWidgets.map((p) => {
-    const href = p.href?.startsWith("/") ? p.href : `/${(p.href ?? "").split("/")[1] ?? "gangnam"}/${TYPE_TO_SLUG[p.type] || "karaoke"}/${p.id}`;
-    const regionName = REGION_SLUG_TO_NAME[(href?.split("/")[1] ?? "")] ?? p.region ?? "";
-    const rawDesc = p.desc || "";
-    const desc = rawDesc.length > 500 ? rawDesc.slice(0, 500) + "…" : rawDesc || undefined;
-    return {
-      href,
-      region: regionName,
-      name: p.name,
-      star: p.stars || "★—",
-      type: p.type,
-      contact: (p.contact ?? "").trim() || undefined,
-      price: undefined as string | undefined,
-      desc: desc || undefined,
-    };
-  });
-
-  const reviewMagazineItems = reviewPostsByClick.map((p, i) => {
-    const dt = p.published_at || p.created_at;
-    const dateStr = dt ? new Date(dt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" }).replace(/\. /g, ".").replace(/\.$/, "") : "";
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const isNew = dt ? new Date(dt) > weekAgo : false;
-    return {
-      id: p.id,
-      href: buildReviewUrl(p.region, p.type, p.venue_slug, p.slug),
-      region: getRegionName(p.region, regionDisplayNames),
-      date: dateStr,
-      title: p.title,
-      excerpt: (p.sec_overview || p.sec_summary || "").slice(0, 500) + ((p.sec_overview || p.sec_summary || "").length > 500 ? "…" : ""),
-      stars: formatStars(p.star),
-      venue: p.venue,
-      is_new: isNew,
-      sort_order: i,
-    };
-  });
-
-  const feedItems: FeedItem[] = reviewPosts.map((p, i) => {
-    const dt = p.published_at || p.created_at;
-    const timeStr = dt
-      ? new Date(dt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false })
-      : "";
-    const regionName = getRegionName(p.region, regionDisplayNames);
-    const typeName = getTypeName(p.type);
-    return {
-      id: p.id,
-      href: buildReviewUrl(p.region, p.type, p.venue_slug, p.slug),
-      pill: regionName,
-      pill_class: `p-${p.region}`,
-      title: p.title,
-      sub: `${p.venue} · ${typeName} · 새 리뷰 등록`,
-      stars: formatStars(p.star),
-      time: timeStr,
-      sort_order: i,
-    };
-  });
-
   return (
     <>
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="header">
         <Header data={header} />
       </SectionWithSettings>
-      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="ticker">
-        <Ticker
-          data={ticker}
-          items={reviewPosts.slice(0, 6).map((p) => {
-            const body = (p.sec_overview || p.sec_summary || p.title || "").trim();
-            const text30 = body.length > 30 ? `${body.slice(0, 30)}…` : body;
-            return {
-              region: getRegionName(p.region, regionDisplayNames),
-              text: text30 || `${p.venue} 리뷰 등록`,
-            };
-          })}
-        />
-      </SectionWithSettings>
+      <TickerAsync ticker={ticker} isAdmin={!!isAdmin} />
       <SectionWithSettings isAdmin={!!isAdmin} sectionKey="hero">
         <Hero
           data={hero}
@@ -275,17 +179,11 @@ export default async function Home() {
         <CategoryGuideSection data={categoryGuide} />
       </SectionWithSettings>
       <div className="gold-divider" />
-      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="feed_config" sectionLabel="실시간 최신 업데이트" adminLink="/admin/live-feed">
-        <LiveFeedSection items={feedItems} />
-      </SectionWithSettings>
+      <LiveFeedSectionAsync isAdmin={!!isAdmin} />
       <div className="gold-divider" />
-      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="region_preview">
-        <FeaturedVenuesSection venues={venueCards.length > 0 ? venueCards : undefined} />
-      </SectionWithSettings>
+      <FeaturedVenuesSectionAsync isAdmin={!!isAdmin} />
       <div className="gold-divider" />
-      <SectionWithSettings isAdmin={!!isAdmin} sectionKey="review_config" sectionLabel="6시간 마다 업데이트 인기 리뷰" adminLink="/admin/reviews">
-        <ReviewMagazineSection reviews={reviewMagazineItems} displayLimit={reviewDisplayLimit} />
-      </SectionWithSettings>
+      <ReviewMagazineSectionAsync isAdmin={!!isAdmin} />
       <div className="gold-divider" />
       <KeywordHubSection />
       <div className="gold-divider" />

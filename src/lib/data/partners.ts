@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { supabase } from '../supabase'
 
 export interface Partner {
@@ -41,7 +42,7 @@ function isSamplePartner(p: { name?: string; contact?: string; is_active?: boole
 }
 
 /** limit: 0 또는 미지정 = 전체, N = 상위 N개만. 샘플/플레이스홀더 업체는 제외 */
-export async function getPartners(limit?: number): Promise<Partner[]> {
+async function getPartnersUncached(limit?: number): Promise<Partner[]> {
   let q = supabase
     .from('partners')
     .select('*')
@@ -58,6 +59,14 @@ export async function getPartners(limit?: number): Promise<Partner[]> {
     tags: Array.isArray(p.tags) ? p.tags : [],
   }))
   return list.filter((p) => !isSamplePartner(p))
+}
+
+/** 전체 조회 시 2분 캐시 (업체 상세 페이지 TTFB 개선) */
+export async function getPartners(limit?: number): Promise<Partner[]> {
+  if (limit == null || limit === 0) {
+    return unstable_cache(getPartnersUncached, ['partners-all'], { revalidate: 120 })()
+  }
+  return getPartnersUncached(limit)
 }
 
 /** regionName: '동탄' 등, regionSlug: 'dongtan' (href·slug 매칭용) */

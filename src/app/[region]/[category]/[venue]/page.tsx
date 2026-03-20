@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { unstable_noStore } from "next/cache";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import Header from "@/components/Header";
@@ -12,10 +11,11 @@ import { authOptions } from "@/lib/auth";
 import { hasDevAdminCookie } from "@/lib/admin-auth";
 import { verifyOtpSession } from "@/lib/otp";
 
-export const dynamic = "force-dynamic";
+/** ISR 5분 캐시 — 업체 상세 페이지 TTFB 대폭 개선 (검색 유입 사용자 경험) */
+export const revalidate = 300;
 import { getVenueDetail, SLUG_TO_TYPE } from "@/lib/data/venues";
 import { getRegionsServer } from "@/lib/data/regions";
-import { getSiteSection } from "@/lib/data/site";
+import { getSiteSections } from "@/lib/data/site";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://roombang.co.kr";
 
@@ -39,19 +39,19 @@ export default async function VenueDetailPage({
 }: {
   params: Promise<PageParams>;
 }) {
-  unstable_noStore()
   const { region, category, venue } = await params;
 
   if (!isValidCategory(category)) {
     notFound();
   }
 
-  const [data, header, footer, allRegions] = await Promise.all([
+  const [data, sections, allRegions] = await Promise.all([
     getVenueDetail(region, category, venue),
-    getSiteSection<{ logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }>("header"),
-    getSiteSection<{ desc?: string; copyright?: string; links?: { label: string; href: string }[] }>("footer"),
+    getSiteSections<{ header: { logo_icon?: string; logo_text?: string; nav?: { label: string; href: string }[] }; footer: { desc?: string; copyright?: string; links?: { label: string; href: string }[] } }>(["header", "footer"]),
     getRegionsServer(),
   ]);
+  const header = sections.header ?? {};
+  const footer = sections.footer ?? {};
 
   if (!data) notFound();
 

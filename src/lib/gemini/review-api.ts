@@ -5,7 +5,7 @@
 
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import { geminiModel, geminiTemperature, geminiTopP, geminiMaxOutputTokens } from './config'
+import { geminiModel, geminiTemperature, geminiTopP, geminiMaxOutputTokens, geminiSafetySettingsOff } from './config'
 import { reviewTonePrompts } from './review-config'
 import type { ScenarioCombo, ReviewTone } from '../review-scenarios'
 import { scenarioToPromptText, REVIEW_TONES } from '../review-scenarios'
@@ -159,6 +159,7 @@ export async function generateReview(params: {
       maxOutputTokens: geminiMaxOutputTokens,
       topP: geminiTopP,
     },
+    safetySettings: geminiSafetySettingsOff,
   }
 
   const start = Date.now()

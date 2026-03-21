@@ -3,6 +3,7 @@
  */
 import { NextResponse } from 'next/server'
 import { requireAdminOrSetup } from '@/lib/admin-auth'
+import { geminiModel, geminiSafetySettingsOff } from '@/lib/gemini/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,10 +56,10 @@ export async function GET() {
     })
   }
 
-  const model = 'gemini-2.5-flash'
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`
   const payload = JSON.stringify({
     contents: [{ parts: [{ text: 'Hello. Reply with OK only.' }] }],
+    safetySettings: geminiSafetySettingsOff,
   })
 
   const start = Date.now()

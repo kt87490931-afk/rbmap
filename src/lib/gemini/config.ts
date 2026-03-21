@@ -5,6 +5,14 @@
 
 export const geminiModel = 'gemini-2.5-flash'
 export const geminiTemperature = 0.95
+
+/** 세이프티 필터 전부 해제 (REST API safetySettings) */
+export const geminiSafetySettingsOff = [
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+] as const
 export const geminiTopP = 0.9
 export const geminiMaxOutputTokens = 8000
 

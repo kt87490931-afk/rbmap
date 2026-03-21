@@ -12,6 +12,7 @@ import {
   geminiTopP,
   geminiMaxOutputTokens,
   geminiRoles,
+  geminiSafetySettingsOff,
 } from './config'
 import { hashSeed, pickOpeningPattern, pickFocus } from '../intro-diversity'
 import {
@@ -273,6 +274,7 @@ export async function generateVenueIntro(
   const payload = {
     contents: [{ parts: [{ text: fullPrompt }] }],
     generationConfig,
+    safetySettings: geminiSafetySettingsOff,
   }
 
   const start = Date.now()

@@ -8,7 +8,7 @@ import { join } from 'path'
 import { geminiModel, geminiTemperature, geminiTopP, geminiMaxOutputTokens } from './config'
 import { reviewTonePrompts } from './review-config'
 import type { ScenarioCombo, ReviewTone } from '../review-scenarios'
-import { scenarioToPromptText } from '../review-scenarios'
+import { scenarioToPromptText, REVIEW_TONES } from '../review-scenarios'
 import { pickReviewOpeningHook, pickReviewFocus, REVIEW_BAN_PATTERNS, reviewSeed } from '../review-diversity'
 
 function getApiKey(): string {
@@ -100,6 +100,9 @@ export async function generateReview(params: {
   if (!apiKey) return { success: false, message: 'API 키가 설정되지 않았습니다.' }
 
   const toneConfig = reviewTonePrompts[params.tone] || reviewTonePrompts.early_30s
+  const toneInfo = REVIEW_TONES.find((t) => t.id === params.tone)
+  const charMin = toneInfo?.charTarget ?? 800
+  const charMax = Math.max(charMin + 200, 1000)
   const scenarioBlock = scenarioToPromptText(params.scenario, params.tone)
   const scenarioHash = JSON.stringify(params.scenario)
   const seed = reviewSeed(params.venueName, scenarioHash)
@@ -122,7 +125,7 @@ export async function generateReview(params: {
     '너는 실제로 해당 업소를 방문한 손님이다. 아래 [업소 소개글]을 참고하여, [시나리오]에 맞는 "썰"(경험담)을 작성해라. 리뷰보다 썰 느낌이 강하게 — 본인 생각·감정이 많이 담긴 글로.\n\n' +
     toneConfig.prompt +
     '[필수]\n' +
-    '- 분량: 800자 이상 1000자 이하 (한글 기준)\n' +
+    `- 분량: ${charMin}자 이상 ${charMax}자 이하 (한글 기준)\n` +
     '- 이모지 사용 금지. 텍스트만.\n' +
     '- 실제 방문 경험처럼 구체적으로. 과장 없이.\n' +
     '- 본문/제목 어디에도 "룸빵여지도", "rbbmap", "rbbmap.com" 같은 사이트/브랜드/도메인 언급을 절대 쓰지 마라.\n' +
@@ -190,10 +193,11 @@ export async function generateReview(params: {
     title = sanitizeForbiddenMentions(title)
 
     const len = content.length
-    if (len < 700) {
+    const minLen = Math.max(600, Math.floor(charMin * 0.7))
+    if (len < minLen) {
       return {
         success: false,
-        message: `생성된 리뷰가 ${len}자로 부족합니다. 800자 이상이 필요합니다.`,
+        message: `생성된 리뷰가 ${len}자로 부족합니다. ${charMin}자 이상이 필요합니다.`,
       }
     }
     if (len > 2000) {

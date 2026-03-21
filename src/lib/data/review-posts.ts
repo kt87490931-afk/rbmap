@@ -186,41 +186,30 @@ function normalizePath(p: string): string {
 }
 
 /**
- * /reviews 페이지와 동일한 review_posts를 클릭순(방문수)으로 정렬하여 반환
- * visit_logs의 path와 리뷰 URL을 매칭하여 방문 수로 정렬
+ * 클릭순(전체 누적 방문수)으로 정렬하여 반환
  */
 export async function getReviewPostsListByClickCount(limit = 5): Promise<ReviewPost[]> {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const startISO = thirtyDaysAgo.toISOString();
-
-  const [postsRes, visitsRes] = await Promise.all([
+  const [postsRes, pathCount] = await Promise.all([
     supabaseAdmin
       .from("review_posts")
       .select("*")
       .eq("status", "published")
       .order("published_at", { ascending: false })
       .limit(200),
-    supabaseAdmin
-      .from("visit_logs")
-      .select("path")
-      .gte("created_at", startISO),
+    getPathCountsFromVisitLogs(),
   ]);
 
   const posts = (postsRes.data ?? []).map(mapRow);
-  const visits = visitsRes.data ?? [];
-
-  const pathCount: Record<string, number> = {};
-  for (const v of visits) {
-    const key = normalizePath((v as { path?: string }).path ?? "");
-    if (key) pathCount[key] = (pathCount[key] ?? 0) + 1;
-  }
 
   const withCount = posts.map((p) => {
     const path = normalizePath(buildReviewUrl(p.region, p.type, p.venue_slug, p.slug));
     return { post: p, count: pathCount[path] ?? 0 };
   });
-  withCount.sort((a, b) => b.count - a.count || (b.post.published_at || "").localeCompare(a.post.published_at || ""));
+  withCount.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    if (a.count === 0) return (a.post.published_at || "").localeCompare(b.post.published_at || "");
+    return (b.post.published_at || "").localeCompare(a.post.published_at || "");
+  });
   return withCount.slice(0, limit).map((w) => w.post);
 }
 
@@ -269,6 +258,28 @@ function applyListFilters(
 
 const POPULAR_SORT_CAP = 2000
 
+/** visit_logs path별 전체 누적 방문수. RPC 우선, 없으면 raw select fallback */
+async function getPathCountsFromVisitLogs(): Promise<Record<string, number>> {
+  const out: Record<string, number> = {}
+  try {
+    const { data } = await supabaseAdmin.rpc('get_visit_log_path_counts')
+    for (const row of data ?? []) {
+      const key = (row as { path_key?: string }).path_key ?? ''
+      const cnt = Number((row as { cnt?: number }).cnt ?? 0)
+      if (key) out[key] = cnt
+    }
+    if (Object.keys(out).length > 0) return out
+  } catch {
+    /* RPC 없음 → fallback */
+  }
+  const { data: visits } = await supabaseAdmin.from('visit_logs').select('path').limit(100000)
+  for (const v of visits ?? []) {
+    const key = normalizePath((v as { path?: string }).path ?? '')
+    if (key) out[key] = (out[key] ?? 0) + 1
+  }
+  return out
+}
+
 /**
  * /reviews 페이지용: 페이지네이션 + 정렬(최신순/인기순)
  * - sort: 'latest' | 'popular'
@@ -307,33 +318,28 @@ export async function getReviewPostsListPaginated(filters: {
     return { posts: rows.map(mapRow), total: total ?? 0 }
   }
 
-  // 인기순: 동일 필터로 최대 POPULAR_SORT_CAP건 조회 후 visit_logs로 정렬, 해당 페이지만 반환
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-  const startISO = thirtyDaysAgo.toISOString()
-
+  // 인기순: 동일 필터로 최대 POPULAR_SORT_CAP건 조회 후 visit_logs 전체 누적 방문수로 정렬
   const listForPopular = applyListFilters(supabaseAdmin.from('review_posts').select('*'), { region, type, star })
     .order('published_at', { ascending: false })
     .limit(POPULAR_SORT_CAP)
-  const [postsRes, visitsRes] = await Promise.all([
+  const [postsRes, pathCountRes] = await Promise.all([
     listForPopular,
-    supabaseAdmin.from('visit_logs').select('path').gte('created_at', startISO),
+    getPathCountsFromVisitLogs(),
   ])
 
   const posts = ((postsRes.data ?? []) as Record<string, unknown>[]).map(mapRow)
-  const visits = visitsRes.data ?? []
-
-  const pathCount: Record<string, number> = {}
-  for (const v of visits) {
-    const key = normalizePath((v as { path?: string }).path ?? '')
-    if (key) pathCount[key] = (pathCount[key] ?? 0) + 1
-  }
+  const pathCount = pathCountRes
 
   const withCount = posts.map((p) => {
     const path = normalizePath(buildReviewUrl(p.region, p.type, p.venue_slug, p.slug))
     return { post: p, count: pathCount[path] ?? 0 }
   })
-  withCount.sort((a, b) => b.count - a.count || (b.post.published_at || '').localeCompare(a.post.published_at || ''))
+  // 방문수 내림차순. 동점일 때: 방문 있음 → 최신순, 방문 0건 → 오래된 글 먼저 (신규 글이 인기 1위 불가)
+  withCount.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count
+    if (a.count === 0) return (a.post.published_at || '').localeCompare(b.post.published_at || '') // 0건: 오래된 순
+    return (b.post.published_at || '').localeCompare(a.post.published_at || '') // 방문 있음: 최신순
+  })
 
   const total = withCount.length
   const start = (page - 1) * perPage

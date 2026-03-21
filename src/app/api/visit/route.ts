@@ -42,7 +42,14 @@ export async function POST(request: Request) {
   try {
     const headersList = await headers();
     const body = await request.json().catch(() => ({}));
-    const path = (body.path as string) || "/";
+    let path = (body.path as string) || "/";
+    try {
+      path = decodeURIComponent(path);
+    } catch {
+      /* keep as-is if decode fails */
+    }
+    const trimmed = path.replace(/^\/+|\/+$/g, "").trim();
+    path = trimmed ? `/${trimmed}` : "/";
     const rawReferrer = (body.referrer as string) || "";
     const referrer = rawReferrer.length > 2000 ? rawReferrer.slice(0, 2000) : rawReferrer;
 

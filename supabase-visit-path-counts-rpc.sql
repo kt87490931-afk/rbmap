@@ -8,11 +8,14 @@ SECURITY DEFINER
 STABLE
 AS $$
   SELECT
-    trim(both '/' from coalesce(path, ''))::text AS path_key,
+    path_key,
     count(*)::bigint AS cnt
-  FROM visit_logs
-  WHERE path IS NOT NULL AND trim(both '/' from path) != ''
-  GROUP BY trim(both '/' from path);
+  FROM (
+    SELECT trim(both '/' from coalesce(path, '')) AS path_key
+    FROM visit_logs
+    WHERE path IS NOT NULL AND trim(both '/' from coalesce(path, '')) != ''
+  ) t
+  GROUP BY path_key;
 $$;
 
 -- service_role에서 호출 (supabaseAdmin)

@@ -180,9 +180,15 @@ export async function getPartnerMetaForVenue(
   return { tags, desc }
 }
 
-/** path 정규화 (앞뒤 슬래시 제거) */
+/** path 정규화 (디코딩 + 앞뒤 슬래시 제거, 매칭용) */
 function normalizePath(p: string): string {
-  return (p || "").replace(/^\/+|\/+$/g, "") || "";
+  let s = (p || "").trim();
+  try {
+    s = decodeURIComponent(s);
+  } catch {
+    /* keep as-is */
+  }
+  return s.replace(/^\/+|\/+$/g, "") || "";
 }
 
 /**
@@ -272,7 +278,11 @@ async function getPathCountsFromVisitLogs(): Promise<Record<string, number>> {
   } catch {
     /* RPC 없음 → fallback */
   }
-  const { data: visits } = await supabaseAdmin.from('visit_logs').select('path').limit(100000)
+  const { data: visits } = await supabaseAdmin
+    .from('visit_logs')
+    .select('path')
+    .order('created_at', { ascending: false })
+    .range(0, 99999)
   for (const v of visits ?? []) {
     const key = normalizePath((v as { path?: string }).path ?? '')
     if (key) out[key] = (out[key] ?? 0) + 1

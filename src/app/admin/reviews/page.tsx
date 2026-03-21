@@ -19,6 +19,7 @@ interface ReviewItem {
   created_at: string
   status: string
   is_ai_written: boolean
+  view_count?: number
   sec_overview?: string
   sec_lineup?: string
   sec_price?: string
@@ -79,15 +80,17 @@ export default function AdminReviewsPage() {
   const [holdRestoreLoadingId, setHoldRestoreLoadingId] = useState<string | null>(null)
   const [editItem, setEditItem] = useState<ReviewItem | null>(null)
   const [editForm, setEditForm] = useState<{ title: string; star: number; sec_overview: string; sec_lineup: string; sec_price: string; sec_facility: string; sec_summary: string } | null>(null)
+  const [sort, setSort] = useState<'latest' | 'popular'>('latest')
 
   const fetchItems = useCallback(async () => {
+    setLoading(true)
     try {
-      const res = await fetch('/api/admin/reviews', { credentials: 'include' })
+      const res = await fetch(`/api/admin/reviews?sort=${sort}`, { credentials: 'include' })
       const data = await res.json()
       setItems(Array.isArray(data) ? data : [])
     } catch { setItems([]) }
     setLoading(false)
-  }, [])
+  }, [sort])
 
   const fetchNextSchedules = useCallback(async () => {
     setScheduleLoading(true)
@@ -448,6 +451,25 @@ export default function AdminReviewsPage() {
         <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>
           <strong>보류</strong> = 홈페이지에서 비공개(노출 끔). DB에는 남아 있어 같은 제목 중복 생성 방지에 사용됩니다. <strong>복원</strong> 시 다시 게시됩니다.
         </p>
+        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>정렬:</span>
+          <button
+            type="button"
+            onClick={() => setSort('latest')}
+            className={sort === 'latest' ? 'btn-save' : 'btn-secondary'}
+            style={{ padding: '4px 12px', fontSize: 12 }}
+          >
+            최신순
+          </button>
+          <button
+            type="button"
+            onClick={() => setSort('popular')}
+            className={sort === 'popular' ? 'btn-save' : 'btn-secondary'}
+            style={{ padding: '4px 12px', fontSize: 12 }}
+          >
+            인기순
+          </button>
+        </div>
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table">
             <thead>
@@ -461,6 +483,7 @@ export default function AdminReviewsPage() {
                 <th>말투</th>
                 <th>날짜</th>
                 <th>상태</th>
+                <th>조회수</th>
                 <th>AI</th>
                 <th>작업</th>
               </tr>
@@ -496,6 +519,7 @@ export default function AdminReviewsPage() {
                         {r.status === 'draft' ? '보류' : '게시'}
                       </span>
                     </td>
+                    <td style={{ fontWeight: 600, color: 'var(--accent)' }}>{(r.view_count ?? 0).toLocaleString()}</td>
                     <td>{r.is_ai_written ? 'Y' : '-'}</td>
                     <td>
                       {r.status === 'draft' ? (

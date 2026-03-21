@@ -264,8 +264,8 @@ function applyListFilters(
 
 const POPULAR_SORT_CAP = 2000
 
-/** visit_logs path별 전체 누적 방문수. RPC 우선, 없으면 raw select fallback */
-async function getPathCountsFromVisitLogs(): Promise<Record<string, number>> {
+/** visit_logs path별 전체 누적 방문수. RPC 우선, 없으면 raw select fallback. (어드민 조회수 표시용 export) */
+export async function getPathCountsFromVisitLogs(): Promise<Record<string, number>> {
   const out: Record<string, number> = {}
   try {
     const { data } = await supabaseAdmin.rpc('get_visit_log_path_counts')

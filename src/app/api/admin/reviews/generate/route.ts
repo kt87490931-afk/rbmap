@@ -6,6 +6,7 @@ import { requireAdminOrSetup } from '@/lib/admin-auth'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { generateReview } from '@/lib/gemini/review-api'
 import { pickScenarioCombo, pickTone, reviewGenSeed, REVIEW_TONES, type ScenarioCombo, type ReviewTone } from '@/lib/review-scenarios'
+import { pickTitleSituation } from '@/lib/review-topics'
 import { REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from '@/lib/data/venues'
 import { parseUrlSuffixFromHref } from '@/lib/partner-url'
 
@@ -43,6 +44,8 @@ export async function POST(request: Request) {
 
   const body = await request.json()
   const partnerId = body.partner_id ?? body.partnerId
+  const manualTopic = typeof body.topic === 'string' ? body.topic.trim() : undefined
+  const manualTone = typeof body.tone === 'string' ? body.tone.trim() : undefined
   if (!partnerId) return NextResponse.json({ error: 'partner_id 필요' }, { status: 400 })
 
   const { data: partner, error: partnerErr } = await supabaseAdmin
@@ -89,7 +92,12 @@ export async function POST(request: Request) {
   const seed = reviewGenSeed(venueKey, existingCount)
 
   const scenario = pickScenarioCombo(recentCombos, seed)
-  const tone = pickTone(recentTones, seed + 10)
+  const tone: ReviewTone = manualTone && REVIEW_TONES.some((t) => t.id === manualTone)
+    ? (manualTone as ReviewTone)
+    : pickTone(recentTones, seed + 10)
+
+  const recentSituations = (historyRows ?? []).map((r) => (r.scenario_used as { topic?: string } | null)?.topic).filter((t): t is string => typeof t === 'string')
+  const topic = manualTopic && manualTopic.length > 0 ? manualTopic : pickTitleSituation(recentSituations, seed + 20)
   const regionName = REGION_SLUG_TO_NAME[regionSlug] ?? partner.region ?? regionSlug
   const typeName = SLUG_TO_TYPE[typeSlug] ?? partner.type ?? typeSlug
 
@@ -100,6 +108,7 @@ export async function POST(request: Request) {
     introText,
     scenario,
     tone,
+    topic,
   })
 
   if (!genResult.success) {
@@ -135,7 +144,7 @@ export async function POST(request: Request) {
     venue_page_url: partner.href?.startsWith('/') ? partner.href : `/${regionSlug}/${typeSlug}/${venueSlug}`,
     sort_order: 0,
     partner_id: partner.id,
-    scenario_used: { ...scenario, tone, core_keywords: genResult.core_keywords ?? [], purpose_label: genResult.purpose_label ?? '' },
+    scenario_used: { ...scenario, tone, topic, core_keywords: genResult.core_keywords ?? [], purpose_label: genResult.purpose_label ?? '' },
   }
 
   const { data: inserted, error: insertErr } = await supabaseAdmin

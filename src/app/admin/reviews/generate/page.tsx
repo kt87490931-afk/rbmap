@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { REVIEW_SCHEDULE_PRESETS, type ReviewSchedulePresetId } from '@/lib/review-schedule'
+import { REVIEW_TONES } from '@/lib/review-scenarios'
+import { REVIEW_TOPICS_FOR_MANUAL_SELECT } from '@/lib/review-topics'
 
 interface ScheduleItem {
   partnerId: string
@@ -24,12 +26,29 @@ export default function AdminReviewGeneratePage() {
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState<'success' | 'error'>('success')
   const [generatingId, setGeneratingId] = useState<string | null>(null)
+  const [topicByPartner, setTopicByPartner] = useState<Record<string, string>>({})
+  const [toneByPartner, setToneByPartner] = useState<Record<string, string>>({})
 
   const fetchItems = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/reviews/schedule', { credentials: 'include' })
       const data = await res.json()
-      setItems(Array.isArray(data) ? data : [])
+      const arr = Array.isArray(data) ? data : []
+      setItems(arr)
+      setTopicByPartner((prev) => {
+        const next = { ...prev }
+        for (const r of arr) {
+          if (!(r.partnerId in next)) next[r.partnerId] = ''
+        }
+        return next
+      })
+      setToneByPartner((prev) => {
+        const next = { ...prev }
+        for (const r of arr) {
+          if (!(r.partnerId in next)) next[r.partnerId] = ''
+        }
+        return next
+      })
     } catch { setItems([]) }
     setLoading(false)
   }, [])
@@ -44,12 +63,18 @@ export default function AdminReviewGeneratePage() {
 
   async function generateForPartner(partnerId: string) {
     setGeneratingId(partnerId)
+    const topic = topicByPartner[partnerId] ?? ''
+    const tone = toneByPartner[partnerId] ?? ''
     try {
       const res = await fetch('/api/admin/reviews/generate', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ partner_id: partnerId }),
+        body: JSON.stringify({
+          partner_id: partnerId,
+          topic: topic || undefined,
+          tone: tone || undefined,
+        }),
       })
       const data = await res.json()
       if (res.ok) {
@@ -120,7 +145,8 @@ export default function AdminReviewGeneratePage() {
                 <th>소개글</th>
                 <th>마지막 리뷰</th>
                 <th>글자수</th>
-                <th>말투</th>
+                <th>주제</th>
+                <th>말투톤</th>
                 <th>다음 작성 가능</th>
                 <th>작업</th>
               </tr>
@@ -138,8 +164,28 @@ export default function AdminReviewGeneratePage() {
                   <td>{r.hasIntro ? '✓' : <span style={{ color: 'var(--red)' }}>없음</span>}</td>
                   <td style={{ fontSize: 12 }}>{formatDate(r.lastReviewAt)}</td>
                   <td>{r.lastCharCount != null ? `${r.lastCharCount}자` : '-'}</td>
-                  <td style={{ fontSize: 11, maxWidth: 140 }} title={r.lastTone ?? ''}>
-                    {r.lastTone ? (r.lastTone.length > 18 ? r.lastTone.slice(0, 18) + '…' : r.lastTone) : '-'}
+                  <td style={{ minWidth: 160 }}>
+                    <select
+                      value={topicByPartner[r.partnerId] ?? ''}
+                      onChange={(e) => setTopicByPartner((prev) => ({ ...prev, [r.partnerId]: e.target.value }))}
+                      style={{ width: '100%', maxWidth: 180, padding: '4px 6px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                    >
+                      {REVIEW_TOPICS_FOR_MANUAL_SELECT.map((opt) => (
+                        <option key={opt.value || 'rand'} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td style={{ minWidth: 160 }}>
+                    <select
+                      value={toneByPartner[r.partnerId] ?? ''}
+                      onChange={(e) => setToneByPartner((prev) => ({ ...prev, [r.partnerId]: e.target.value }))}
+                      style={{ width: '100%', maxWidth: 180, padding: '4px 6px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                    >
+                      <option value="">랜덤 (자동)</option>
+                      {REVIEW_TONES.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
                   </td>
                   <td style={{ fontSize: 12 }}>{formatDate(r.nextReviewAt)}</td>
                   <td>

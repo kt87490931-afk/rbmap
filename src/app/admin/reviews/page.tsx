@@ -5,6 +5,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { REGION_SLUG_TO_NAME } from '@/lib/data/venues'
 import { REVIEW_TYPE_TO_NAME } from '@/lib/data/review-posts'
 import { REVIEW_TONES } from '@/lib/review-scenarios'
+import {
+  TOPIC_PRIORITY_OPTIONS,
+  TONE_PRIORITY_OPTIONS,
+  formatAppliedConfig,
+  type ReviewPriorityConfig,
+} from '@/lib/review-priority-config'
 
 interface ReviewItem {
   id: string
@@ -81,6 +87,10 @@ export default function AdminReviewsPage() {
   const [editItem, setEditItem] = useState<ReviewItem | null>(null)
   const [editForm, setEditForm] = useState<{ title: string; star: number; sec_overview: string; sec_lineup: string; sec_price: string; sec_facility: string; sec_summary: string } | null>(null)
   const [sort, setSort] = useState<'latest' | 'popular'>('latest')
+  const [priorityConfig, setPriorityConfig] = useState<ReviewPriorityConfig | null>(null)
+  const [priorityConfigLoading, setPriorityConfigLoading] = useState(true)
+  const [priorityApplyLoading, setPriorityApplyLoading] = useState(false)
+  const [priorityForm, setPriorityForm] = useState<ReviewPriorityConfig>({ topic_1: '', topic_2: '', tone_1: '', tone_2: '' })
 
   const fetchItems = useCallback(async () => {
     setLoading(true)
@@ -100,6 +110,24 @@ export default function AdminReviewsPage() {
       setNextSchedules(Array.isArray(data) ? data : [])
     } catch { setNextSchedules([]) }
     setScheduleLoading(false)
+  }, [])
+
+  const fetchPriorityConfig = useCallback(async () => {
+    setPriorityConfigLoading(true)
+    try {
+      const res = await fetch('/api/admin/review-priority-config', { credentials: 'include' })
+      const data = await res.json()
+      if (res.ok && data) {
+        setPriorityConfig(data)
+        setPriorityForm({
+          topic_1: data.topic_1 ?? '',
+          topic_2: data.topic_2 ?? '',
+          tone_1: data.tone_1 ?? '',
+          tone_2: data.tone_2 ?? '',
+        })
+      }
+    } catch { /* ignore */ }
+    setPriorityConfigLoading(false)
   }, [])
 
   const fetchLatestCronRun = useCallback(async () => {
@@ -126,6 +154,29 @@ export default function AdminReviewsPage() {
   useEffect(() => { fetchItems() }, [fetchItems])
   useEffect(() => { fetchNextSchedules() }, [fetchNextSchedules])
   useEffect(() => { fetchLatestCronRun() }, [fetchLatestCronRun])
+  useEffect(() => { fetchPriorityConfig() }, [fetchPriorityConfig])
+
+  async function applyPriorityConfig() {
+    setPriorityApplyLoading(true)
+    try {
+      const res = await fetch('/api/admin/review-priority-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(priorityForm),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPriorityConfig(data)
+        showMsg('우선순위 설정이 적용되었습니다.')
+      } else {
+        showMsg('적용 실패')
+      }
+    } catch {
+      showMsg('적용 실패')
+    }
+    setPriorityApplyLoading(false)
+  }
 
   async function runDueNow() {
     setManualRunLoading(true)
@@ -373,6 +424,82 @@ export default function AdminReviewsPage() {
             </div>
           </div>
         ) : null}
+        {priorityConfigLoading ? (
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>우선순위 설정 로딩 중...</p>
+        ) : (
+          <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 10, color: 'var(--fg)' }}>🎯 리뷰 생성 우선순위 (전역)</div>
+            <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>
+              1순위·2순위 중 랜덤 선택. 미설정/랜덤 = 전체 풀에서 랜덤. 설정 후 적용 버튼을 눌러 저장하세요.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 10 }}>
+              <label style={{ fontSize: 11 }}>
+                <span style={{ display: 'block', marginBottom: 4, color: 'var(--muted)' }}>주제 1순위</span>
+                <select
+                  value={priorityForm.topic_1}
+                  onChange={(e) => setPriorityForm((p) => ({ ...p, topic_1: e.target.value }))}
+                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                >
+                  {TOPIC_PRIORITY_OPTIONS.map((o) => (
+                    <option key={o.value || 't1-empty'} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label style={{ fontSize: 11 }}>
+                <span style={{ display: 'block', marginBottom: 4, color: 'var(--muted)' }}>주제 2순위</span>
+                <select
+                  value={priorityForm.topic_2}
+                  onChange={(e) => setPriorityForm((p) => ({ ...p, topic_2: e.target.value }))}
+                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                >
+                  {TOPIC_PRIORITY_OPTIONS.map((o) => (
+                    <option key={o.value || 't2-empty'} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label style={{ fontSize: 11 }}>
+                <span style={{ display: 'block', marginBottom: 4, color: 'var(--muted)' }}>말투 1순위</span>
+                <select
+                  value={priorityForm.tone_1}
+                  onChange={(e) => setPriorityForm((p) => ({ ...p, tone_1: e.target.value }))}
+                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                >
+                  {TONE_PRIORITY_OPTIONS.map((o) => (
+                    <option key={o.value || 'n1-empty'} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label style={{ fontSize: 11 }}>
+                <span style={{ display: 'block', marginBottom: 4, color: 'var(--muted)' }}>말투 2순위</span>
+                <select
+                  value={priorityForm.tone_2}
+                  onChange={(e) => setPriorityForm((p) => ({ ...p, tone_2: e.target.value }))}
+                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                >
+                  {TONE_PRIORITY_OPTIONS.map((o) => (
+                    <option key={o.value || 'n2-empty'} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={applyPriorityConfig}
+                disabled={priorityApplyLoading}
+                className="btn-save"
+                style={{ padding: '6px 14px', fontSize: 12 }}
+              >
+                {priorityApplyLoading ? '적용 중...' : '적용'}
+              </button>
+              {priorityConfig && (
+                <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 500 }}>
+                  적용됨: {formatAppliedConfig(priorityConfig)}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <button
             type="button"

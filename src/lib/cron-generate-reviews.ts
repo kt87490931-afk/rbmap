@@ -25,6 +25,12 @@ import { REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from './data/venues'
 import { parseUrlSuffixFromHref } from './partner-url'
 import { canGenerateReview, getTodayKSTRangeUTC, getNextReviewAtWithDailyCap } from './review-schedule'
 import { pickTitleSituation } from './review-topics'
+import {
+  getReviewPriorityConfig,
+  hasActivePriorityConfig,
+  resolveTopicFromConfig,
+  resolveToneFromConfig,
+} from './review-priority-config'
 
 /** 해당 업소의 현재 오늘 리뷰 수 + 마지막 리뷰 시각 (등록된 리뷰 날짜·시간 기준 = published_at 우선, 스케줄 호가인용) */
 async function getVenueScheduleState(
@@ -243,6 +249,8 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
   }
 
   // AI 호출 전 검사로 비용 방지, 삽입 직전 재확인으로 동시 실행 시 중복 방지
+  const priorityConfig = await getReviewPriorityConfig()
+  const usePriorityConfig = hasActivePriorityConfig(priorityConfig)
 
   for (const item of toProcess) {
     const { partner, introText, regionSlug, typeSlug, venueSlug, scenario, tone, regionName, typeName } = item
@@ -288,9 +296,20 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     const recentSituations = (recentReviewsForTopic ?? [])
       .map((r) => (r.scenario_used as { topic?: string } | null)?.topic)
       .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+    const recentTones: ReviewTone[] = (recentReviewsForTopic ?? [])
+      .map((r) => (r.scenario_used as { tone?: string } | null)?.tone)
+      .filter((t): t is ReviewTone => typeof t === 'string')
+
     const venueKey = `${partner.name}|${regionSlug}|${typeSlug}|${venueSlug}`
     const seedForTopic = reviewGenSeed(venueKey, recentSituations.length, startAt)
-    const topic = pickTitleSituation(recentSituations, seedForTopic)
+    const seedForTone = seedForTopic + 10
+
+    const topic = usePriorityConfig
+      ? resolveTopicFromConfig(priorityConfig, recentSituations, seedForTopic)
+      : pickTitleSituation(recentSituations, seedForTopic)
+    const resolvedTone = usePriorityConfig
+      ? resolveToneFromConfig(priorityConfig, recentTones, seedForTone)
+      : tone
 
     const genResult = await generateReview({
       venueName: partner.name,
@@ -298,7 +317,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       typeName,
       introText,
       scenario,
-      tone,
+      tone: resolvedTone,
       topic,
     })
 
@@ -379,7 +398,7 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       venue_page_url: partner.href?.startsWith('/') ? partner.href : `/${regionSlug}/${typeSlug}/${venueSlug}`,
       sort_order: 0,
       partner_id: partner.id,
-      scenario_used: { ...scenario, tone, topic, core_keywords: genResult.core_keywords ?? [], purpose_label: genResult.purpose_label ?? '' },
+      scenario_used: { ...scenario, tone: resolvedTone, topic, core_keywords: genResult.core_keywords ?? [], purpose_label: genResult.purpose_label ?? '' },
     }
 
     const { error: insertErr } = await supabaseAdmin.from('review_posts').insert(insertRow)

@@ -6,7 +6,7 @@ import { requireAdminOrSetup } from '@/lib/admin-auth'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { generateReview } from '@/lib/gemini/review-api'
 import { pickScenarioCombo, pickTone, reviewGenSeed, REVIEW_TONES, type ScenarioCombo, type ReviewTone } from '@/lib/review-scenarios'
-import { pickTitleSituation } from '@/lib/review-topics'
+import { resolveTopicValue } from '@/lib/review-topics'
 import { REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from '@/lib/data/venues'
 import { parseUrlSuffixFromHref } from '@/lib/partner-url'
 
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     : pickTone(recentTones, seed + 10)
 
   const recentSituations = (historyRows ?? []).map((r) => (r.scenario_used as { topic?: string } | null)?.topic).filter((t): t is string => typeof t === 'string')
-  const topic = manualTopic && manualTopic.length > 0 ? manualTopic : pickTitleSituation(recentSituations, seed + 20)
+  const topic = resolveTopicValue(manualTopic ?? '', recentSituations, seed + 20)
   const regionName = REGION_SLUG_TO_NAME[regionSlug] ?? partner.region ?? regionSlug
   const typeName = SLUG_TO_TYPE[typeSlug] ?? partner.type ?? typeSlug
 

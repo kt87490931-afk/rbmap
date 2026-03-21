@@ -438,10 +438,10 @@ export default function AdminReviewsPage() {
                 <select
                   value={priorityForm.topic_1}
                   onChange={(e) => setPriorityForm((p) => ({ ...p, topic_1: e.target.value }))}
-                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)', color: '#000', backgroundColor: '#fff' }}
                 >
                   {TOPIC_PRIORITY_OPTIONS.map((o) => (
-                    <option key={o.value || 't1-empty'} value={o.value}>{o.label}</option>
+                    <option key={o.value || 't1-empty'} value={o.value} style={{ color: '#000' }}>{o.label}</option>
                   ))}
                 </select>
               </label>
@@ -450,10 +450,10 @@ export default function AdminReviewsPage() {
                 <select
                   value={priorityForm.topic_2}
                   onChange={(e) => setPriorityForm((p) => ({ ...p, topic_2: e.target.value }))}
-                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)', color: '#000', backgroundColor: '#fff' }}
                 >
                   {TOPIC_PRIORITY_OPTIONS.map((o) => (
-                    <option key={o.value || 't2-empty'} value={o.value}>{o.label}</option>
+                    <option key={o.value || 't2-empty'} value={o.value} style={{ color: '#000' }}>{o.label}</option>
                   ))}
                 </select>
               </label>
@@ -462,10 +462,10 @@ export default function AdminReviewsPage() {
                 <select
                   value={priorityForm.tone_1}
                   onChange={(e) => setPriorityForm((p) => ({ ...p, tone_1: e.target.value }))}
-                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)', color: '#000', backgroundColor: '#fff' }}
                 >
                   {TONE_PRIORITY_OPTIONS.map((o) => (
-                    <option key={o.value || 'n1-empty'} value={o.value}>{o.label}</option>
+                    <option key={o.value || 'n1-empty'} value={o.value} style={{ color: '#000' }}>{o.label}</option>
                   ))}
                 </select>
               </label>
@@ -474,10 +474,10 @@ export default function AdminReviewsPage() {
                 <select
                   value={priorityForm.tone_2}
                   onChange={(e) => setPriorityForm((p) => ({ ...p, tone_2: e.target.value }))}
-                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                  style={{ width: '100%', padding: '6px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)', color: '#000', backgroundColor: '#fff' }}
                 >
                   {TONE_PRIORITY_OPTIONS.map((o) => (
-                    <option key={o.value || 'n2-empty'} value={o.value}>{o.label}</option>
+                    <option key={o.value || 'n2-empty'} value={o.value} style={{ color: '#000' }}>{o.label}</option>
                   ))}
                 </select>
               </label>

@@ -253,36 +253,74 @@ export const REVIEW_TITLE_SITUATIONS: string[] = [
   '6시간마다 뜨는 최신 리뷰 덕분에 내상 피한',
 ]
 
-/** 수동 리뷰 생성 시 선택용 주제 (드롭다운) — 랜덤 + 인기 주제 25개 */
-export const REVIEW_TOPICS_FOR_MANUAL_SELECT: { value: string; label: string }[] = [
+/** 주제 카테고리 (드롭다운) — 두 페이지 동일 사용 */
+export const TOPIC_CATEGORIES = [
+  { id: 'funny_loser', label: '찌질한 주제', topics: [
+    '연예인급 그녀 만난 줄 알았는데', '명품 시계 찬 척하다 정체 들통난', '에이스 앞에서 허세 부리다 망신당한',
+    '분위기 잡다가 의자 다리 부러져 넘어진', '그녀한테 고백했다가 차인', '노래 점수 12점 나와서 기계 부술 뻔한',
+    '취해서 남의 방 들어가 안주 먹고 쫓겨난', '나갈 때 자동문에 머리 박고 쿨하게 나온 척한',
+  ]},
+  { id: 'business', label: '비즈니스', topics: [
+    '중요한 계약 성사 후 팀원들과 들른 곳', '직장 상사 모시고 가서 칭찬받은 사연', '거래처 미팅의 긴장을 풀어준 완벽한 케어',
+    '프로젝트 마감 후 고생한 팀원들과의 회식', '비즈니스 접대 갔다가 내가 더 신난', '실장님 케어 덕분에 계약 성사한',
+    '조용하게 사업 이야기 나누기 좋았던 룸', '깔끔한 정산으로 접대비 처리가 편했던 곳',
+  ]},
+  { id: 'love', label: '사랑/러브라인', topics: [
+    '연예인급 비주얼 그녀 만난', '청순한 외모에 목소리 섹시한 그녀', '조명 아래 비친 그녀 피부 백옥 같았던',
+    '처음 본 그녀와 듀엣 부르다 묘한 기류', '출장 갔다가 인생 예쁜 여자 만난', '혼술 하러 갔다가 예쁜 여자랑 절친 된',
+    '만난 그녀 알고 보니 내 이상형이었던', '내상 입고 우울했는데 천사 같은 그녀가 위로해 준',
+  ]},
+  { id: 'friends', label: '친구와', topics: [
+    '동네 친구들과 오랜만에 작정하고 달린 밤', '군대 동기들과 전역 축하 파티 현장', '청첩장 모임 2차로 선택한 최고의 장소',
+    '생일 파티를 더 특별하게 만들어준 이벤트', '대학 동창회, 옛 추억 소환하며 즐거운 시간', '회식 2차로 완벽했던',
+    '1차 고기 먹고 2차로 오기 딱 좋은 동선', '단체 모임에 딱 좋은 대형룸',
+  ]},
+  { id: 'solo', label: '혼자', topics: [
+    '혼술하러 갔다가 인생 고민 해결하고 온 사연', '스트레스 수치 제로로 만들어준 힐링 공간', '우울했던 기분 한 방에 날려버린 밤',
+    '조용한 재즈 음악과 함께 즐긴 분위기 있는 1인 혼술', '스트레스 풀고 왔다', '우울한 기분 한 방에 날려버린 밤',
+    '아무 이유 없이 그냥 술 마시고 싶을 때 생각나는 1순위',
+  ]},
+  { id: 'facility', label: '시설/서비스', topics: [
+    '마인드 대박 매니저 만난', '텐션 장인들 덕분에 분위기 폭발한', '음향 시설 대박 가수가 된 기분',
+    '화장실 가장 깨끗한 업소', '럭셔리한 인테리어에 압도당한', '단골 대우 확실한 실장님', '친절한 케어에 감동',
+    '가성비로 갔다가 수질에 감동한', '실장님 추천 믿고 갔다가 대성공한', '노래 실력 가수 뺨치는 매니저',
+  ]},
+  { id: 'other', label: '기타', topics: [
+    '첫 방문에 인생 에이스 만난', '내상 치료하고 온', '정찰제 믿고 마셨다', '센스 있는 초이스에 감동',
+    '돈 아깝다는 생각 1도 안 들었던 완벽한 시간', '첫 방문인데 단골 예약하게 만든 매력',
+  ]},
+] as const
+
+/** 카테고리 ID → 주제 하나 랜덤 선택 */
+export function pickTopicFromCategory(categoryId: string, seed: number): string {
+  const cat = TOPIC_CATEGORIES.find((c) => c.id === categoryId)
+  if (!cat || !cat.topics.length) return REVIEW_TITLE_SITUATIONS[0] ?? '연예인급 비주얼 그녀 만난'
+  const idx = Math.abs(seed) % cat.topics.length
+  return cat.topics[idx] ?? cat.topics[0]!
+}
+
+/** value가 cat:xxx 형식이면 카테고리, 아니면 그대로 topic */
+export function resolveTopicValue(value: string, recentSituations: string[], seed: number): string {
+  if (!value || value === 'random') return pickTitleSituation(recentSituations, seed)
+  if (value.startsWith('cat:')) return pickTopicFromCategory(value.slice(4), seed)
+  return value
+}
+
+/** 두 페이지 공통 — 주제 드롭다운 (리뷰생성: 랜덤+카테고리, 리뷰관리: 미설정+랜덤+카테고리) */
+export const TOPIC_SELECT_OPTIONS_GENERATE = [
   { value: '', label: '랜덤 (자동)' },
-  { value: '연예인급 비주얼 그녀 만난', label: '연예인급 비주얼 그녀 만난' },
-  { value: '마인드 대박 매니저 만난', label: '마인드 대박 매니저 만난' },
-  { value: '첫 방문에 인생 에이스 만난', label: '첫 방문에 인생 에이스 만난' },
-  { value: '텐션 장인들 덕분에 분위기 폭발한', label: '텐션 장인들 덕분에 분위기 폭발한' },
-  { value: '혼술 하러 갔다가 예쁜 여자랑 절친 된', label: '혼술 하러 갔다가 예쁜 여자랑 절친 된' },
-  { value: '스트레스 풀고 왔다', label: '스트레스 풀고 왔다' },
-  { value: '실장님 추천 믿고 갔다가 대성공한', label: '실장님 추천 믿고 갔다가 대성공한' },
-  { value: '가성비로 갔다가 수질에 감동한', label: '가성비로 갔다가 수질에 감동한' },
-  { value: '음향 시설 대박 가수가 된 기분', label: '음향 시설 대박 가수가 된 기분' },
-  { value: '화장실 가장 깨끗한 업소', label: '화장실 가장 깨끗한 업소' },
-  { value: '비즈니스 접대 갔다가 내가 더 신난', label: '비즈니스 접대 갔다가 내가 더 신난' },
-  { value: '생일 파티 더 특별하게 만들어준 이벤트', label: '생일 파티 더 특별하게 만들어준 이벤트' },
-  { value: '친절한 케어에 감동', label: '친절한 케어에 감동' },
-  { value: '럭셔리한 인테리어에 압도당한', label: '럭셔리한 인테리어에 압도당한' },
-  { value: '단골 대우 확실한 실장님', label: '단골 대우 확실한 실장님' },
-  { value: '청순한 외모에 목소리 섹시한 그녀', label: '청순한 외모에 목소리 섹시한 그녀' },
-  { value: '조명 아래 비친 그녀 피부 백옥 같았던', label: '조명 아래 비친 그녀 피부 백옥 같았던' },
-  { value: '처음 본 그녀와 듀엣 부르다 묘한 기류', label: '처음 본 그녀와 듀엣 부르다 묘한 기류' },
-  { value: '내상 치료하고 온', label: '내상 치료하고 온' },
-  { value: '정찰제 믿고 마셨다', label: '정찰제 믿고 마셨다' },
-  { value: '단체 모임에 딱 좋은 대형룸', label: '단체 모임에 딱 좋은 대형룸' },
-  { value: '노래 실력 가수 뺨치는 매니저', label: '노래 실력 가수 뺨치는 매니저' },
-  { value: '회식 2차로 완벽했던', label: '회식 2차로 완벽했던' },
-  { value: '우울한 기분 한 방에 날려버린 밤', label: '우울한 기분 한 방에 날려버린 밤' },
-  { value: '센스 있는 초이스에 감동', label: '센스 있는 초이스에 감동' },
-  { value: '출장 갔다가 인생 예쁜 여자 만난', label: '출장 갔다가 인생 예쁜 여자 만난' },
+  ...TOPIC_CATEGORIES.map((c) => ({ value: `cat:${c.id}`, label: c.label })),
 ]
+
+/** (리뷰관리 우선순위용) 미설정, 랜덤 + 카테고리 */
+export const TOPIC_SELECT_OPTIONS_PRIORITY = [
+  { value: '', label: '미설정' },
+  { value: 'random', label: '랜덤' },
+  ...TOPIC_CATEGORIES.map((c) => ({ value: `cat:${c.id}`, label: c.label })),
+]
+
+/** @deprecated TOPIC_SELECT_OPTIONS_GENERATE 사용 */
+export const REVIEW_TOPICS_FOR_MANUAL_SELECT = TOPIC_SELECT_OPTIONS_GENERATE
 
 /** 썰 제목용 — 러브라인/비주얼 강화 (추가 주제.txt, 70% 선호 풀) */
 export const REVIEW_TITLE_SITUATIONS_LOVELINE: string[] = [

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { REVIEW_SCHEDULE_PRESETS, type ReviewSchedulePresetId } from '@/lib/review-schedule'
 import { REVIEW_TONES } from '@/lib/review-scenarios'
-import { REVIEW_TOPICS_FOR_MANUAL_SELECT } from '@/lib/review-topics'
+import { TOPIC_SELECT_OPTIONS_GENERATE } from '@/lib/review-topics'
 
 interface ScheduleItem {
   partnerId: string
@@ -168,10 +168,10 @@ export default function AdminReviewGeneratePage() {
                     <select
                       value={topicByPartner[r.partnerId] ?? ''}
                       onChange={(e) => setTopicByPartner((prev) => ({ ...prev, [r.partnerId]: e.target.value }))}
-                      style={{ width: '100%', maxWidth: 180, padding: '4px 6px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                      style={{ width: '100%', maxWidth: 180, padding: '4px 6px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)', color: '#000', backgroundColor: '#fff' }}
                     >
-                      {REVIEW_TOPICS_FOR_MANUAL_SELECT.map((opt) => (
-                        <option key={opt.value || 'rand'} value={opt.value}>{opt.label}</option>
+                      {TOPIC_SELECT_OPTIONS_GENERATE.map((opt) => (
+                        <option key={opt.value || 'rand'} value={opt.value} style={{ color: '#000' }}>{opt.label}</option>
                       ))}
                     </select>
                   </td>
@@ -179,11 +179,11 @@ export default function AdminReviewGeneratePage() {
                     <select
                       value={toneByPartner[r.partnerId] ?? ''}
                       onChange={(e) => setToneByPartner((prev) => ({ ...prev, [r.partnerId]: e.target.value }))}
-                      style={{ width: '100%', maxWidth: 180, padding: '4px 6px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)' }}
+                      style={{ width: '100%', maxWidth: 180, padding: '4px 6px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)', color: '#000', backgroundColor: '#fff' }}
                     >
-                      <option value="">랜덤 (자동)</option>
+                      <option value="" style={{ color: '#000' }}>랜덤 (자동)</option>
                       {REVIEW_TONES.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
+                        <option key={t.id} value={t.id} style={{ color: '#000' }}>{t.name}</option>
                       ))}
                     </select>
                   </td>

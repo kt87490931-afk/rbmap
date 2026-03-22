@@ -252,6 +252,20 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
   const priorityConfig = await getReviewPriorityConfig()
   const usePriorityConfig = hasActivePriorityConfig(priorityConfig)
 
+  // 피드 전역 주제 회피: 최근 24h 내 등록된 리뷰의 주제 조회
+  const FEED_RECENT_HOURS = 24
+  const feedWindowStart = new Date(Date.now() - FEED_RECENT_HOURS * 60 * 60 * 1000).toISOString()
+  const { data: feedRecentRows } = await supabaseAdmin
+    .from('review_posts')
+    .select('scenario_used')
+    .gte('published_at', feedWindowStart)
+  const feedRecentTopicsFromDB: string[] = (feedRecentRows ?? [])
+    .map((r) => (r.scenario_used as { topic?: string } | null)?.topic)
+    .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+
+  // 같은 배치 내 주제 중복 방지용
+  const batchUsedTopics: string[] = []
+
   for (const item of toProcess) {
     const { partner, introText, regionSlug, typeSlug, venueSlug, scenario, tone, regionName, typeName } = item
 
@@ -304,9 +318,11 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
     const seedForTopic = reviewGenSeed(venueKey, recentSituations.length, startAt)
     const seedForTone = seedForTopic + 10
 
+    const feedRecentTopics = [...feedRecentTopicsFromDB, ...batchUsedTopics]
     const topic = usePriorityConfig
-      ? resolveTopicFromConfig(priorityConfig, recentSituations, seedForTopic)
-      : pickTitleSituation(recentSituations, seedForTopic)
+      ? resolveTopicFromConfig(priorityConfig, recentSituations, seedForTopic, feedRecentTopics)
+      : pickTitleSituation(recentSituations, seedForTopic, feedRecentTopics)
+    batchUsedTopics.push(topic)
     const resolvedTone = usePriorityConfig
       ? resolveToneFromConfig(priorityConfig, recentTones, seedForTone)
       : tone

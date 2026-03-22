@@ -299,9 +299,14 @@ export function pickTopicFromCategory(categoryId: string, seed: number): string 
   return cat.topics[idx] ?? cat.topics[0]!
 }
 
-/** value가 cat:xxx 형식이면 카테고리, 아니면 그대로 topic */
-export function resolveTopicValue(value: string, recentSituations: string[], seed: number): string {
-  if (!value || value === 'random') return pickTitleSituation(recentSituations, seed)
+/** value가 cat:xxx 형식이면 카테고리, 아니면 그대로 topic. feedRecentTopics=최근 24h 피드 주제(중복 회피) */
+export function resolveTopicValue(
+  value: string,
+  recentSituations: string[],
+  seed: number,
+  feedRecentTopics?: string[]
+): string {
+  if (!value || value === 'random') return pickTitleSituation(recentSituations, seed, feedRecentTopics)
   if (value.startsWith('cat:')) return pickTopicFromCategory(value.slice(4), seed)
   return value
 }
@@ -887,17 +892,26 @@ export const REVIEW_TITLE_SITUATIONS_LOVELINE: string[] = [
   '"내일 또 올게!" 약속하고 다음 날 카드 정지돼서 가게 앞만 서성이다 돌아온 썰',
 ]
 
-/** 썰 제목용 상황 선택 — 새 주제(러브라인/비주얼) 80% 이상, 기존 리뷰 주제 20% 이하. 비제휴 지역명 포함 주제는 선택 시 제외 */
-export function pickTitleSituation(recentSituations: string[], seed: number): string {
-  const used = new Set(recentSituations.map((t) => t.trim()).filter(Boolean))
+/** 썰 제목용 상황 선택 — 러브라인/기존 풀 균등 믹스(편향 없음). 비제휴 지역명 포함 주제는 제외 */
+export function pickTitleSituation(
+  recentSituations: string[],
+  seed: number,
+  feedRecentTopics?: string[]
+): string {
+  const used = new Set<string>()
+  for (const t of recentSituations) {
+    const s = t.trim()
+    if (s) used.add(s)
+  }
+  for (const t of feedRecentTopics ?? []) {
+    const s = t.trim()
+    if (s) used.add(s)
+  }
   const lovelineAll = filterPartnerRegionsOnly(REVIEW_TITLE_SITUATIONS_LOVELINE)
   const originalAll = filterPartnerRegionsOnly(REVIEW_TITLE_SITUATIONS)
-  const availableLoveline = lovelineAll.filter((t) => !used.has(t.trim()))
-  const availableOriginal = originalAll.filter((t) => !used.has(t.trim()))
-  const lovelinePool = availableLoveline.length > 0 ? availableLoveline : lovelineAll
-  const originalPool = availableOriginal.length > 0 ? availableOriginal : originalAll
-  const useLoveline = Math.abs(seed) % 100 < 80
-  const pool = useLoveline ? lovelinePool : originalPool
+  const combined = [...lovelineAll, ...originalAll]
+  const available = combined.filter((t) => !used.has(t.trim()))
+  const pool = available.length > 0 ? available : combined
   const idx = Math.abs((seed >> 1) ^ (seed * 31)) % pool.length
   return pool[idx] ?? (lovelineAll[0] ?? originalAll[0] ?? REVIEW_TITLE_SITUATIONS_LOVELINE[0] ?? REVIEW_TITLE_SITUATIONS[0]!)
 }

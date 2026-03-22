@@ -193,12 +193,16 @@ export function pickTone(recentTones: ReviewTone[], seed?: number): ReviewTone {
 
 /**
  * 리뷰 생성용 시드 계산 (venue + 기존 리뷰 수 + 선택적 실행 시각).
- * runTimeMs를 넣으면 크론 실행 시각마다 다른 주제/톤/시나리오가 나와 중복 감소.
+ * runTimeMs를 넣으면 KST 기준 일·시간·10분 단위로 시드에 반영해 24h 내 세밀한 랜덤 분포.
  */
 export function reviewGenSeed(venueKey: string, existingCount: number, runTimeMs?: number): number {
   const base = `${venueKey}|${existingCount}`
   if (runTimeMs != null && runTimeMs > 0) {
-    return hashSeed(`${base}|${Math.floor(runTimeMs / 60000)}`)
+    const kstMs = runTimeMs + 9 * 60 * 60 * 1000
+    const dayOfYear = Math.floor(kstMs / (24 * 60 * 60 * 1000))
+    const hour = Math.floor((kstMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000))
+    const min10 = Math.floor((kstMs % (60 * 60 * 1000)) / (10 * 60 * 1000))
+    return hashSeed(`${base}|${dayOfYear}|${hour}|${min10}`)
   }
   return hashSeed(base)
 }

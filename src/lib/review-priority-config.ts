@@ -59,14 +59,15 @@ export async function setReviewPriorityConfig(config: ReviewPriorityConfig): Pro
     )
 }
 
-/** 설정 기반 topic 결정. cat:xxx → 카테고리 내 랜덤, 미설정/랜덤 → 전체 랜덤 */
+/** 설정 기반 topic 결정. cat:xxx → 카테고리 내 랜덤, 미설정/랜덤 → 전체 랜덤. feedRecentTopics=최근 24h 피드 주제 */
 export function resolveTopicFromConfig(
   config: ReviewPriorityConfig,
   recentSituations: string[],
-  seed: number
+  seed: number,
+  feedRecentTopics?: string[]
 ): string {
   const pickSlot = Math.abs(seed) % 2 === 0 ? config.topic_1 : config.topic_2
-  return resolveTopicValue(pickSlot ?? '', recentSituations, seed)
+  return resolveTopicValue(pickSlot ?? '', recentSituations, seed, feedRecentTopics)
 }
 
 /** 설정 기반 tone 결정. 미설정/랜덤이면 pickTone 사용 */

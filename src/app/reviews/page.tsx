@@ -191,13 +191,10 @@ export default async function ReviewsListPage({
                 const href = buildReviewUrl(r.region, r.type, r.venue_slug, r.slug)
                 const style = pillStyle(r.region)
                 const regionShort = getListRegionLabel(r.region)
-                const timeStr = r.published_at ? new Date(r.published_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : ''
                 return (
                   <Link key={r.id} href={href} className="fr-list-row" data-region={r.region} data-type={r.type} data-star={String(r.star)}>
                     <span className="fr-list-pill" style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}>{regionShort}</span>
                     <span className="fr-list-title">{r.title}</span>
-                    <span className="fr-list-stars">{formatStars(r.star)}</span>
-                    <span className="fr-list-time">{timeStr}</span>
                   </Link>
                 )
               })}

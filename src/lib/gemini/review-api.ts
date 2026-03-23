@@ -113,12 +113,16 @@ export async function generateReview(params: {
     ? `[이번 리뷰 주제 — 반드시 준수, 본문의 80% 이상]\n${params.topic}\n\n이 주제가 본문의 80% 이상을 차지해야 한다. 다른 주제로 바꾸지 마라. 이 주제(상황/에피소드)에 맞는 구체적 경험을 "썰" 스타일로 작성하라. 객관적 리뷰보다 내 생각·감정·반응을 충분히 담아라. 독자 궁금증을 유발해 클릭과 읽기를 이끌어라.\n\n`
     : ''
 
+  /** topic이 이미 "썰"로 끝나면 suffix 추가 안 함 (썰 썰 방지) */
+  const topicEndsWithSsul = params.topic?.trimEnd().endsWith('썰') ?? false
+  const titleSsulSuffix = topicEndsWithSsul ? '' : ' 썰'
+
   const titleFormatBlock =
     '[제목 형식 — 필수]\n' +
     '- 제목은 반드시 "썰"로 끝나야 한다. "이용 후기", "리뷰" 같은 단어는 쓰지 말고 오직 "썰"로만 끝내라.\n' +
     '- 괄호 [] 를 제목에 넣지 마라. 지역명·업종명을 그대로 붙여서 써라.\n' +
     (params.topic
-      ? `- 제목 예시: "${params.regionName} ${params.typeName}에서 ${params.topic} 썰"\n`
+      ? `- 제목 예시: "${params.regionName} ${params.typeName}에서 ${params.topic}${titleSsulSuffix}"\n`
       : '- 형식: 지역명 업종명에서 상황/에피소드 썰 (예: 강남 룸싸롱에서 연예인급 그녀 만난 썰)\n')
 
   const systemPrompt =
@@ -189,9 +193,11 @@ export async function generateReview(params: {
     }
     if (!title) title = `${params.venueName} 이용 후기`
     if (params.topic) {
-      title = `${params.regionName} ${params.typeName}에서 ${params.topic} 썰`
+      title = `${params.regionName} ${params.typeName}에서 ${params.topic}${titleSsulSuffix}`
     }
     title = sanitizeForbiddenMentions(title)
+    // AI가 topic에 이미 "썰"이 있는데 또 붙인 경우 "썰 썰" → "썰"로 정리
+    if (title.endsWith('썰 썰')) title = title.slice(0, -3)
 
     const len = content.length
     const minLen = Math.max(600, Math.floor(charMin * 0.7))

@@ -13,6 +13,11 @@ alwaysApply: true
   2. 서버 SSH 접속 후: `cd /var/www/rbmap && git pull && npm ci && npm run build && pm2 restart rbmap && bash scripts/setup-cron-rbmap.sh`
 - SSH 호스트: `rbmap` (152.42.216.40)
 
+### public/threeno 커밋 범위
+
+- **`public/threeno` 안에서 바뀐 파일은 전부 커밋한다.** (GIF·PNG 등 이미지뿐 아니라 `.txt`·`.gitkeep` 등 포함)
+- 이미지 배포만 요청해도, 같은 폴더에 수정·추가된 파일이 있으면 **함께 스테이징**한다. (`git add public/threeno/`)
+
 ## 2. Supabase DB 권한
 
 - **서버 접속이 가능한 상태라면, Supabase 대시보드/API를 통해 DB 추가·수정이 가능하다.**

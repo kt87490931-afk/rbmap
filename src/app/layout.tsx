@@ -9,6 +9,22 @@ import "./globals.css";
 
 const SITE_URL = "https://rbbmap.com";
 
+/**
+ * 파비콘: 이브알바(theme head)와 같이 PNG를 대표로 둠.
+ * 구글 검색 결과는 첫 rel=icon·shortcut을 중시하는 경우가 많아, 예전처럼 .ico만 앞세우면 지구본 기본 아이콘으로 남을 수 있음.
+ */
+const SITE_ICONS: NonNullable<Metadata["icons"]> = {
+  icon: [
+    { url: "/favicon.png", sizes: "48x48", type: "image/png" },
+    { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
+    { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+    { url: "/favicon-192.png", sizes: "192x192", type: "image/png" },
+    { url: "/favicon-512.png", sizes: "512x512", type: "image/png" },
+  ],
+  apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  shortcut: "/favicon.png",
+};
+
 /** 루트 레이아웃은 title/description/og/twitter를 반환하지 않음. 각 페이지의 generateMetadata가 유일한 소스가 되어 리뷰 상세 등에서 기대값이 자동 반영됨 */
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -22,17 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
       metadataBase: new URL(siteUrl),
       keywords,
       robots: { index: true, follow: true },
-      icons: {
-        icon: [
-          { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
-          { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
-          { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
-          { url: "/favicon-192.png", sizes: "192x192", type: "image/png" },
-          { url: "/favicon-512.png", sizes: "512x512", type: "image/png" },
-        ],
-        apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-        shortcut: "/favicon.ico",
-      },
+      icons: SITE_ICONS,
       verification: { google: googleVerify },
     };
   } catch {
@@ -40,17 +46,7 @@ export async function generateMetadata(): Promise<Metadata> {
       metadataBase: new URL(SITE_URL),
       keywords: "룸빵여지도, 강남 가라오케, 수원 가라오케, 동탄 가라오케, 제주 가라오케, 룸싸롱, 하이퍼블릭, 셔츠룸, 쩜오, 퍼블릭",
       robots: { index: true, follow: true },
-      icons: {
-        icon: [
-          { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
-          { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
-          { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
-          { url: "/favicon-192.png", sizes: "192x192", type: "image/png" },
-          { url: "/favicon-512.png", sizes: "512x512", type: "image/png" },
-        ],
-        apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-        shortcut: "/favicon.ico",
-      },
+      icons: SITE_ICONS,
       verification: { google: "-nLZWOQW-BmcPOZRQuq61o9RsoCYZwyYYvmIa0NVouY" },
     };
   }

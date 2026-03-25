@@ -9,6 +9,7 @@ const toIco = require('to-ico');
 
 const publicDir = path.join(__dirname, '..', 'public');
 const pngPath = path.join(publicDir, 'favicon-48.png');
+const pngRootPath = path.join(publicDir, 'favicon.png');
 const icoPath = path.join(publicDir, 'favicon.ico');
 const backupPath = path.join(__dirname, 'favicon.ico.bak');
 
@@ -28,6 +29,9 @@ async function main() {
 
   fs.writeFileSync(icoPath, ico);
   console.log('Generated favicon.ico (' + ico.length + ' bytes)');
+
+  fs.copyFileSync(pngPath, pngRootPath);
+  console.log('Synced favicon.png from favicon-48.png (검색·브라우저 공통 PNG 경로)');
 }
 
 main().catch((e) => {

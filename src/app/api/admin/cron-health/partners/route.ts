@@ -25,7 +25,7 @@ export async function GET() {
   const normalized = (partners ?? []).map((p) => ({
     id: p.id,
     name: p.name,
-    review_schedule_preset: (p as { review_schedule_preset?: string }).review_schedule_preset ?? '8h_3',
+    review_schedule_preset: (p as { review_schedule_preset?: string }).review_schedule_preset ?? '24h_1',
     updated_at: (p as { updated_at?: string }).updated_at ?? null,
   }))
 

@@ -23,7 +23,7 @@ import {
 } from './review-scenarios'
 import { REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from './data/venues'
 import { parseUrlSuffixFromHref } from './partner-url'
-import { canGenerateReview, getTodayKSTRangeUTC, getNextReviewAtWithDailyCap } from './review-schedule'
+import { canGenerateReview, getTodayKSTRangeUTC, getNextReviewAtWithDailyCap, getPreset } from './review-schedule'
 import { pickTitleSituation } from './review-topics'
 import {
   getReviewPriorityConfig,
@@ -33,7 +33,7 @@ import {
 } from './review-priority-config'
 
 /** 해당 업소의 현재 오늘 리뷰 수 + 마지막 리뷰 시각 (등록된 리뷰 날짜·시간 기준 = published_at 우선, 스케줄 호가인용) */
-async function getVenueScheduleState(
+export async function getVenueScheduleState(
   regionSlug: string,
   typeSlug: string,
   venueSlug: string
@@ -269,8 +269,13 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
   for (const item of toProcess) {
     const { partner, introText, regionSlug, typeSlug, venueSlug, scenario, tone, regionName, typeName } = item
 
-    // [1] AI 호출 전 중복 검사 — 최근 8시간 이내 동일 업체 리뷰 있으면 API 호출하지 않음 (비용·간격 보장)
-    const windowStart = new Date(Date.now() - DUPLICATE_WINDOW_MS).toISOString()
+    const presetId = (partner as { review_schedule_preset?: string }).review_schedule_preset ?? undefined
+    const preset = getPreset(presetId)
+    /** 프리셋 간격(시간) 이상으로 확장 — 24h_1일 때 8시간 창만 쓰면 같은 날 두 번 생성될 수 있음 */
+    const duplicateWindowMs = Math.max(DUPLICATE_WINDOW_MS, preset.intervalHours * 60 * 60 * 1000)
+    const windowStart = new Date(Date.now() - duplicateWindowMs).toISOString()
+
+    // [1] AI 호출 전 중복 검사 — 프리셋 간격 이내 동일 업체 리뷰 있으면 API 호출하지 않음
     const { data: recentSameBefore } = await supabaseAdmin
       .from('review_posts')
       .select('id')
@@ -280,12 +285,16 @@ export async function runGenerateReviews(partnerIds: string[] | null): Promise<{
       .gte('published_at', windowStart)
       .limit(1)
     if (recentSameBefore && recentSameBefore.length > 0) {
-      results.push({ partnerId: partner.id, name: partner.name, ok: false, msg: '최근 8시간 이내 동일 업체 리뷰 있음(중복·비용 방지)' })
+      results.push({
+        partnerId: partner.id,
+        name: partner.name,
+        ok: false,
+        msg: `최근 ${preset.intervalHours}시간 이내 동일 업소 리뷰 있음(중복·비용 방지)`,
+      })
       continue
     }
 
     // [스케줄 재확인] API 호출 직전 최신 DB로 간격/일한도 재검사 — 스테일 리드·레플리카 지연 시 토큰 과다 사용 방지
-    const presetId = (partner as { review_schedule_preset?: string }).review_schedule_preset ?? undefined
     const stateBeforeApi = await getVenueScheduleState(regionSlug, typeSlug, venueSlug)
     if (!canGenerateReview(stateBeforeApi.lastReviewAt, stateBeforeApi.todayCount, presetId)) {
       results.push({

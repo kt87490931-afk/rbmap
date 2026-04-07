@@ -113,7 +113,7 @@ export async function getNextReviewSchedules(): Promise<NextReviewScheduleItem[]
     const presetId = (partner as { review_schedule_preset?: string }).review_schedule_preset ?? undefined
 
     const { nextAt, isTomorrow } = getNextReviewAtWithDailyCap(lastReviewAt, todayCount, presetId)
-    const presetLabel = presetLabels[presetId ?? '8h_3'] ?? presetId ?? '8시간 간격 · 하루 3개'
+    const presetLabel = presetLabels[presetId ?? '24h_1'] ?? presetId ?? '24시간 간격 · 하루 1개'
     const canGenerateNow = canGenerateReview(lastReviewAt, todayCount, presetId)
     const preset = getPreset(presetId)
     const statusLabel = canGenerateNow

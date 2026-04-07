@@ -89,7 +89,7 @@ export async function GET() {
       lastTone: toneName ?? lastTone,
       nextReviewAt,
       canGenerate,
-      reviewSchedulePreset: presetId ?? '8h_3',
+      reviewSchedulePreset: presetId ?? '24h_1',
     })
   }
 

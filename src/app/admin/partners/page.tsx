@@ -63,7 +63,7 @@ export default function AdminPartnersPage() {
     tags: '',
     period_days: 30,
     is_active: true,
-    review_schedule_preset: '8h_3' as ReviewSchedulePresetId,
+    review_schedule_preset: '24h_1' as ReviewSchedulePresetId,
   })
 
   const fetchItems = useCallback(async () => {
@@ -129,13 +129,13 @@ export default function AdminPartnersPage() {
           tags: form.tags ? form.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
           period_days: form.period_days || 30,
           is_active: form.is_active !== false,
-          review_schedule_preset: form.review_schedule_preset || '8h_3',
+          review_schedule_preset: form.review_schedule_preset || '24h_1',
         }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
         setItems((prev) => [...prev, data])
-        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true, review_schedule_preset: '8h_3' })
+        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true, review_schedule_preset: '24h_1' })
         showMsg('추가 완료!')
       } else {
         const errMsg = data.error || (res.status === 403 ? 'OTP 인증이 필요합니다. OTP 인증 페이지에서 다시 인증해 주세요.' : '추가 실패')
@@ -178,7 +178,7 @@ export default function AdminPartnersPage() {
     const categorySlug = parts[1] ?? ''
     const typeLabel = SLUG_TO_TYPE[categorySlug] || item.type
     const urlSuffix = parts[2] ?? parseUrlSuffixFromHref(item.href)
-    const preset = (item.review_schedule_preset && (REVIEW_SCHEDULE_PRESETS as Record<string, unknown>)[item.review_schedule_preset]) ? item.review_schedule_preset : '8h_3'
+    const preset = (item.review_schedule_preset && (REVIEW_SCHEDULE_PRESETS as Record<string, unknown>)[item.review_schedule_preset]) ? item.review_schedule_preset : '24h_1'
     setForm({
       regionSlug,
       type: typeLabel,
@@ -228,7 +228,7 @@ export default function AdminPartnersPage() {
       tags: form.tags ? form.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
       period_days: form.period_days || 30,
       is_active: form.is_active !== false,
-      review_schedule_preset: form.review_schedule_preset || '8h_3',
+      review_schedule_preset: form.review_schedule_preset || '24h_1',
     }
     try {
       const res = await fetch(`/api/admin/partners/${editingId}`, {
@@ -241,7 +241,7 @@ export default function AdminPartnersPage() {
       if (res.ok) {
         setItems((prev) => prev.map((p) => (p.id === editingId ? data : p)))
         setEditingId(null)
-        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true, review_schedule_preset: '8h_3' })
+        setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true, review_schedule_preset: '24h_1' })
         showMsg('수정 완료!')
       } else {
         showMsg(data.error || '수정 실패', 'error')
@@ -349,7 +349,7 @@ export default function AdminPartnersPage() {
           {editingId ? (
             <>
               <button className="btn-save" onClick={saveEdit} disabled={adding}>수정 저장</button>
-              <button className="btn-ghost" style={{ padding: '8px 14px' }} onClick={() => { setEditingId(null); setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true, review_schedule_preset: '8h_3' }) }}>취소</button>
+              <button className="btn-ghost" style={{ padding: '8px 14px' }} onClick={() => { setEditingId(null); setForm({ regionSlug: '', type: '', urlSuffix: '', name: '', icon: '🎤', contact: '', stars: '★★★★★', location: '', desc: '', tags: '', period_days: 30, is_active: true, review_schedule_preset: '24h_1' }) }}>취소</button>
             </>
           ) : (
             <button className="btn-save" onClick={addItem} disabled={adding}>추가</button>
@@ -393,7 +393,7 @@ export default function AdminPartnersPage() {
                   <td style={{ fontSize: 11 }}>
                     {p.review_schedule_preset && REVIEW_SCHEDULE_PRESETS[p.review_schedule_preset as ReviewSchedulePresetId]
                       ? REVIEW_SCHEDULE_PRESETS[p.review_schedule_preset as ReviewSchedulePresetId].label
-                      : REVIEW_SCHEDULE_PRESETS['8h_3'].label}
+                      : REVIEW_SCHEDULE_PRESETS['24h_1'].label}
                   </td>
                   <td>
                     <button

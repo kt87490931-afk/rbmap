@@ -153,7 +153,7 @@ export default function AdminReviewGeneratePage() {
             </thead>
             <tbody>
               {items.map((r) => {
-                const presetId = (r.reviewSchedulePreset || '8h_3') as ReviewSchedulePresetId
+                const presetId = (r.reviewSchedulePreset || '24h_1') as ReviewSchedulePresetId
                 const presetLabel = REVIEW_SCHEDULE_PRESETS[presetId]?.label ?? presetId
                 return (
                 <tr key={r.partnerId}>

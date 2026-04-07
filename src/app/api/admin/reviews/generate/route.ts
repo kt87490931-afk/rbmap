@@ -9,6 +9,8 @@ import { pickScenarioCombo, pickTone, reviewGenSeed, REVIEW_TONES, type Scenario
 import { resolveTopicValue } from '@/lib/review-topics'
 import { REGION_SLUG_TO_NAME, SLUG_TO_TYPE } from '@/lib/data/venues'
 import { parseUrlSuffixFromHref } from '@/lib/partner-url'
+import { canGenerateReview } from '@/lib/review-schedule'
+import { getVenueScheduleState } from '@/lib/cron-generate-reviews'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -46,11 +48,13 @@ export async function POST(request: Request) {
   const partnerId = body.partner_id ?? body.partnerId
   const manualTopic = typeof body.topic === 'string' ? body.topic.trim() : undefined
   const manualTone = typeof body.tone === 'string' ? body.tone.trim() : undefined
+  /** true일 때만 스케줄(간격·일 한도) 무시 — 긴급 시에만 사용 */
+  const force = body.force === true
   if (!partnerId) return NextResponse.json({ error: 'partner_id 필요' }, { status: 400 })
 
   const { data: partner, error: partnerErr } = await supabaseAdmin
     .from('partners')
-    .select('id, name, href, region, type')
+    .select('id, name, href, region, type, review_schedule_preset')
     .eq('id', partnerId)
     .single()
 
@@ -70,6 +74,20 @@ export async function POST(request: Request) {
   if (!introText.trim()) return NextResponse.json({ error: '소개글 내용이 없습니다.' }, { status: 400 })
 
   const { regionSlug, typeSlug, venueSlug } = parseHref(partner.href)
+
+  if (!force) {
+    const presetId = (partner as { review_schedule_preset?: string }).review_schedule_preset ?? undefined
+    const state = await getVenueScheduleState(regionSlug, typeSlug, venueSlug)
+    if (!canGenerateReview(state.lastReviewAt, state.todayCount, presetId)) {
+      return NextResponse.json(
+        {
+          error: '스케줄상 아직 생성할 수 없습니다. (업체별 간격·하루 최대 개수) 자동 생성 크론과 동일한 규칙입니다.',
+          hint: '긴급 시에만 요청 본문에 "force": true 를 넣어 재시도할 수 있습니다.',
+        },
+        { status: 409 }
+      )
+    }
+  }
 
   const { data: historyRows } = await supabaseAdmin
     .from('review_posts')

@@ -11,7 +11,7 @@ export const REVIEW_SCHEDULE_PRESETS = {
 
 export type ReviewSchedulePresetId = keyof typeof REVIEW_SCHEDULE_PRESETS
 
-export const DEFAULT_REVIEW_SCHEDULE_PRESET: ReviewSchedulePresetId = '8h_3'
+export const DEFAULT_REVIEW_SCHEDULE_PRESET: ReviewSchedulePresetId = '24h_1'
 
 export function getPreset(presetId: string | null | undefined): (typeof REVIEW_SCHEDULE_PRESETS)[ReviewSchedulePresetId] {
   const id = (presetId && REVIEW_SCHEDULE_PRESETS[presetId as ReviewSchedulePresetId]) ? presetId as ReviewSchedulePresetId : DEFAULT_REVIEW_SCHEDULE_PRESET
@@ -34,7 +34,7 @@ function getTodayKSTDateString(): string {
  * 리뷰 생성 가능 여부
  * @param lastReviewAt 마지막 리뷰 생성 시각 (ISO 문자열 또는 null)
  * @param todayCount 오늘 이미 생성된 리뷰 수
- * @param presetId 프리셋 ID (없으면 8h_3)
+ * @param presetId 프리셋 ID (없으면 24h_1)
  */
 export function canGenerateReview(
   lastReviewAt: string | null | undefined,

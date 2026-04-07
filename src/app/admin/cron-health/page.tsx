@@ -520,7 +520,7 @@ export default function AdminCronHealthPage() {
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
                   {partners.map((p) => {
-                    const presetId = (p.review_schedule_preset || '8h_3') as ReviewSchedulePresetId
+                    const presetId = (p.review_schedule_preset || '24h_1') as ReviewSchedulePresetId
                     const presetLabel = REVIEW_SCHEDULE_PRESETS[presetId]?.label ?? presetId
                     return (
                       <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>

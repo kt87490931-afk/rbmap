@@ -107,6 +107,8 @@ export interface DailyReportData {
   bots: number;
   partnerViews: Record<string, number>;
   partnerCalls: Record<string, number>;
+  /** /p/threeno-swtest 전화 버튼 클릭 (전일 KST) */
+  threenoCallClicks: number;
   topPartners: { name: string; path: string; views: number; calls: number }[];
   regionDistribution: Record<string, number>;
   typeDistribution: Record<string, number>;
@@ -144,6 +146,9 @@ export async function notifyDailyReport(date: string, data: DailyReportData): Pr
     `  • 방문자: ${data.visitors}명`,
     `  • 봇/스캐너: ${data.bots}명`,
     ``,
+    `📱 <b>쓰리노 전화클릭</b>`,
+    `  • 전일: ${data.threenoCallClicks}건`,
+    ``,
     `📞 <b>전화 클릭</b>`,
     `  • 총 ${totalCalls}건`,
     ...topPartners,
@@ -165,6 +170,9 @@ export async function notifyDailyReport(date: string, data: DailyReportData): Pr
     `📊 <b>[룸빵여지도 일일 리포트] ${date}</b>\n`,
     `👥 <b>접속</b>`,
     `  • 방문자: ${totalVisitors}명`,
+    ``,
+    `📱 <b>쓰리노 전화클릭</b>`,
+    `  • 전일: ${data.threenoCallClicks}건`,
     ``,
     `📞 <b>전화 클릭</b>`,
     `  • 총 ${totalCalls}건`,

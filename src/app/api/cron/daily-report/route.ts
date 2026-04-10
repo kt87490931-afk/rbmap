@@ -32,6 +32,8 @@ function normalizePath(p: string): string {
   return (p || "").replace(/^\/+|\/+$/g, "") || "";
 }
 
+const THREENO_SWTEST_PATH = "p/threeno-swtest";
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   const url = new URL(request.url);
@@ -121,9 +123,11 @@ export async function GET(request: Request) {
     }
 
     const partnerCalls: Record<string, number> = {};
+    let threenoCallClicks = 0;
     for (const c of clicks) {
       const pathNorm = normalizePath(c.path || "");
       if (pathNorm) partnerCalls[pathNorm] = (partnerCalls[pathNorm] ?? 0) + 1;
+      if (pathNorm === THREENO_SWTEST_PATH) threenoCallClicks += 1;
     }
 
     const allPaths = new Set([...Object.keys(partnerViews), ...Object.keys(partnerCalls)]);
@@ -144,6 +148,7 @@ export async function GET(request: Request) {
       bots,
       partnerViews,
       partnerCalls,
+      threenoCallClicks,
       topPartners,
       regionDistribution,
       typeDistribution,
@@ -160,6 +165,7 @@ export async function GET(request: Request) {
       visitors,
       bots,
       totalCalls: Object.values(partnerCalls).reduce((a, b) => a + b, 0),
+      threenoCallClicks,
       newReviews,
       newPartners,
     });

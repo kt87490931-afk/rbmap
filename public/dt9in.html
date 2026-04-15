@@ -1,0 +1,43 @@
+<!--
+  /threeno/* 는 Cache-Control: immutable(1년) 이라, 같은 파일명 PNG를 교체하면
+  브라우저·CDN이 옛 바이트를 씁니다. 이미지 갱신 시 아래 쿼리만 올리세요 (?v= 날짜 등).
+-->
+<style>
+/* 모바일 우선: 세로 이미지 한 장, img 아래 빈틈 제거 */
+.rb-slice { line-height: 0; font-size: 0; }
+.rb-slice img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  vertical-align: top;
+}
+.rb-slice a { display: block; line-height: 0; margin: 0; padding: 0; }
+</style>
+
+<div class="rb-slice">
+<a href="tel:010-4300-4398" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dt9in.png?v=20260415-1" alt="동탄 VIP 하이퍼블릭 모집" /></a>
+</div>
+<script>
+(function () {
+  var trackPath = "/dt9in";
+  var root = document.querySelector(".rb-slice");
+  if (!root) return;
+  root.addEventListener(
+    "click",
+    function (e) {
+      var a = e.target && e.target.closest && e.target.closest("a[href^='tel:']");
+      if (!a) return;
+      fetch("/api/track/click", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "call", path: trackPath }),
+      }).catch(function () {});
+    },
+    { passive: true }
+  );
+})();
+</script>

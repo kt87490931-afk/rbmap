@@ -1,0 +1,43 @@
+
+<style>
+/* 모바일 우선: 세로 이미지 한 장, img 아래 빈틈 제거 */
+.rb-slice { line-height: 0; font-size: 0; }
+.rb-slice img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  vertical-align: top;
+}
+.rb-slice a { display: block; line-height: 0; margin: 0; padding: 0; }
+</style>
+
+<div class="rb-slice">
+<a href="tel:010-4300-4398" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dt9in.png" alt="동탄 VIP 하이퍼블릭 모집" /></a>
+</div>
+<script>
+(function () {
+  var api = "https://rbbmap.com/api/track/click";
+  var trackPath = "/dt9in";
+  var root = document.querySelector(".rb-slice");
+  if (!root) return;
+  root.addEventListener(
+    "click",
+    function (e) {
+      var a = e.target && e.target.closest && e.target.closest("a[href^='tel:']");
+      if (!a) return;
+      fetch(api, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "call", path: trackPath }),
+        mode: "cors",
+        keepalive: true,
+      }).catch(function () {});
+    },
+    { passive: true }
+  );
+})();
+</script>

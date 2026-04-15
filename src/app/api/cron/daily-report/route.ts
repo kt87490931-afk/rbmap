@@ -33,6 +33,7 @@ function normalizePath(p: string): string {
 }
 
 const THREENO_SWTEST_PATH = "p/threeno-swtest";
+const DT9IN_PATH = "dt9in";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -124,10 +125,12 @@ export async function GET(request: Request) {
 
     const partnerCalls: Record<string, number> = {};
     let threenoCallClicks = 0;
+    let dt9inCallClicks = 0;
     for (const c of clicks) {
       const pathNorm = normalizePath(c.path || "");
       if (pathNorm) partnerCalls[pathNorm] = (partnerCalls[pathNorm] ?? 0) + 1;
       if (pathNorm === THREENO_SWTEST_PATH) threenoCallClicks += 1;
+      if (pathNorm === DT9IN_PATH) dt9inCallClicks += 1;
     }
 
     const allPaths = new Set([...Object.keys(partnerViews), ...Object.keys(partnerCalls)]);
@@ -149,6 +152,7 @@ export async function GET(request: Request) {
       partnerViews,
       partnerCalls,
       threenoCallClicks,
+      dt9inCallClicks,
       topPartners,
       regionDistribution,
       typeDistribution,
@@ -166,6 +170,7 @@ export async function GET(request: Request) {
       bots,
       totalCalls: Object.values(partnerCalls).reduce((a, b) => a + b, 0),
       threenoCallClicks,
+      dt9inCallClicks,
       newReviews,
       newPartners,
     });

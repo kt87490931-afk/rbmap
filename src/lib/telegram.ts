@@ -109,6 +109,8 @@ export interface DailyReportData {
   partnerCalls: Record<string, number>;
   /** /p/threeno-swtest 전화 버튼 클릭 (전일 KST) */
   threenoCallClicks: number;
+  /** /dt9in 전화 링크 클릭 (전일 KST) */
+  dt9inCallClicks: number;
   topPartners: { name: string; path: string; views: number; calls: number }[];
   regionDistribution: Record<string, number>;
   typeDistribution: Record<string, number>;
@@ -147,7 +149,8 @@ export async function notifyDailyReport(date: string, data: DailyReportData): Pr
     `  • 봇/스캐너: ${data.bots}명`,
     ``,
     `📱 <b>쓰리노 전화클릭</b>`,
-    `  • 전일: ${data.threenoCallClicks}건`,
+    `  • /p/threeno-swtest: ${data.threenoCallClicks}건`,
+    `  • /dt9in: ${data.dt9inCallClicks}건`,
     ``,
     `📞 <b>전화 클릭</b>`,
     `  • 총 ${totalCalls}건`,
@@ -172,7 +175,8 @@ export async function notifyDailyReport(date: string, data: DailyReportData): Pr
     `  • 방문자: ${totalVisitors}명`,
     ``,
     `📱 <b>쓰리노 전화클릭</b>`,
-    `  • 전일: ${data.threenoCallClicks}건`,
+    `  • /p/threeno-swtest: ${data.threenoCallClicks}건`,
+    `  • /dt9in: ${data.dt9inCallClicks}건`,
     ``,
     `📞 <b>전화 클릭</b>`,
     `  • 총 ${totalCalls}건`,

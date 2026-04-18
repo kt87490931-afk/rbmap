@@ -43,7 +43,9 @@ jobs:
             npm ci || { echo "npm ci FAILED"; exit 1; }
             echo "=== npm run build ==="
             rm -rf .next
-            export NODE_OPTIONS="--max-old-space-size=1024"
+            # 소형 Droplet에서도 트레이스 수집 단계 OOM/경합 완화 (ENOENT *.nft.json 방지)
+            export NEXT_BUILD_WORKER_COUNT=1
+            export NODE_OPTIONS="--max-old-space-size=2048"
             npm run build || { echo "npm run build FAILED"; exit 1; }
 
             cp -r .next/static .next/standalone/.next/static 2>/dev/null || true

@@ -1,12 +1,26 @@
 <!--
   외부 사이트 붙여넣기용 (쓰리노 전화 클릭 → rbbmap 일일 집계에 포함)
-  - 이미지는 rbbmap CDN 경로 그대로 사용
-  - 하단 스크립트가 tel: 클릭 시 https://rbbmap.com/api/track/click 로 기록
-  - path는 /p/threeno-swtest 로 저장 (쓰리노 전화클릭 통계와 동일)
+  - /threeno/* 는 immutable(1년) 캐시 → 이미지 갱신 시 ?v= 만 올리세요.
+  - 모바일: 상단 몇 장은 즉시 로드, 나머지는 lazy + async 디코딩으로 대역폭·메인 스레드 부담 완화.
+  - 전체 HTML로 쓸 때는 <head>에 viewport 메타를 넣는 것을 권장 (아래 주석 참고).
 -->
+<!-- 권장: <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> -->
 <style>
-/* 잘린 이미지 세로로 붙이기: 인라인 img 아래 빈틈 제거 */
-.rb-slice { line-height: 0; font-size: 0; }
+/* 잘린 이미지 세로로 붙이기 + 모바일 가로 넘침 방지 */
+.rb-slice {
+  line-height: 0;
+  font-size: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+.rb-slice *,
+.rb-slice *::before,
+.rb-slice *::after {
+  box-sizing: border-box;
+}
 .rb-slice img {
   display: block;
   width: 100%;
@@ -16,42 +30,49 @@
   padding: 0;
   border: 0;
   vertical-align: top;
+  -webkit-tap-highlight-color: transparent;
 }
-.rb-slice a { display: block; line-height: 0; margin: 0; padding: 0; }
+.rb-slice a {
+  display: block;
+  line-height: 0;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.08);
+}
 </style>
 
 <div class="rb-slice">
-<img src="https://rbbmap.com/threeno/dtprice_02.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dtprice_03.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt0_01.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt0_02.gif" alt="" />
-<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif" alt="전화" /></a>
-<img src="https://rbbmap.com/threeno/dt1_01.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt1_02.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt1_03.gif" alt="" />
-<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif" alt="전화" /></a>
-<img src="https://rbbmap.com/threeno/dt2.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt3_01.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt3_02.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt3_03.gif" alt="" />
-<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif" alt="전화" /></a>
-<img src="https://rbbmap.com/threeno/dt4_01.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt4_02.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt4_03.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt4_04.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt4_05.gif" alt="" />
-<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif" alt="전화" /></a>
-<img src="https://rbbmap.com/threeno/dt5_01.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt5_02.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt5_03.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dt5_04.gif" alt="" />
-<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif" alt="전화" /></a>
-<img src="https://rbbmap.com/threeno/dtprice_01.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dtprice_02.gif" alt="" />
-<img src="https://rbbmap.com/threeno/dtprice_03.gif" alt="" />
-<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif" alt="전화" /></a>
-<img src="https://rbbmap.com/threeno/webtoon.png" alt="" />
-<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif" alt="전화" /></a>
+<img src="https://rbbmap.com/threeno/dtprice_02.gif?v=20260419-1" alt="" decoding="async" fetchpriority="high" loading="eager" />
+<img src="https://rbbmap.com/threeno/dtprice_03.gif?v=20260419-2" alt="" decoding="async" loading="eager" />
+<img src="https://rbbmap.com/threeno/dt0_01.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt0_02.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif?v=20260410-2" alt="전화" decoding="async" loading="lazy" /></a>
+<img src="https://rbbmap.com/threeno/dt1_01.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt1_02.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt1_03.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif?v=20260410-2" alt="전화" decoding="async" loading="lazy" /></a>
+<img src="https://rbbmap.com/threeno/dt2.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt3_01.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt3_02.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt3_03.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif?v=20260410-2" alt="전화" decoding="async" loading="lazy" /></a>
+<img src="https://rbbmap.com/threeno/dt4_01.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt4_02.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt4_03.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt4_04.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt4_05.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif?v=20260410-2" alt="전화" decoding="async" loading="lazy" /></a>
+<img src="https://rbbmap.com/threeno/dt5_01.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt5_02.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt5_03.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dt5_04.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif?v=20260410-2" alt="전화" decoding="async" loading="lazy" /></a>
+<img src="https://rbbmap.com/threeno/dtprice_01.gif?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dtprice_02.gif?v=20260419-1" alt="" decoding="async" loading="lazy" />
+<img src="https://rbbmap.com/threeno/dtprice_03.gif?v=20260419-2" alt="" decoding="async" loading="lazy" />
+<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif?v=20260410-2" alt="전화" decoding="async" loading="lazy" /></a>
+<img src="https://rbbmap.com/threeno/webtoon.png?v=20260410-2" alt="" decoding="async" loading="lazy" />
+<a href="tel:010-8430-2457" target="_blank" rel="noopener noreferrer"><img src="https://rbbmap.com/threeno/dtphone.gif?v=20260410-2" alt="전화" decoding="async" loading="lazy" /></a>
 </div>
 <script>
 (function () {

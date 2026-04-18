@@ -1,0 +1,1 @@
+수정하지말고 이해했는지 답변부터 주세요. https://rbbmap.com/p/threeno-swtest @public/threeno 에 이미지를 변경하려합니다. 변경할 이미지는 첨부한3개의 이미지입니다. 그리고 @public/threeno/swtest - 복사본.txt 첨부한 txt 파일로 이미지코드를 변경하고 싶습니다. 이해하셨나요?

@@ -1,8 +1,9 @@
 <!--
   붙여넣기용 백업본 — public/threeno/swtest-plus.txt 와 동일 스펙
+  최신 동기화: 2026-04-21 (이미지 URL·?v= 는 swtest-plus.txt / threeno-swtest.html 과 일치)
   외부 사이트 (쓰리노 전화 클릭 → rbbmap 일일 집계에 포함)
   - /threeno/* 는 immutable(1년) 캐시 → 이미지 갱신 시 ?v= 만 올리세요.
-  - 모바일: 상단 몇 장은 즉시 로드, 나머지는 lazy + async 디코딩.
+  - 모바일: 상단 몇 장은 즉시 로드, 나머지는 lazy + async 디코딩으로 대역폭·메인 스레드 부담 완화.
   - 전체 HTML로 쓸 때는 <head>에 viewport 메타를 넣는 것을 권장 (아래 주석 참고).
 -->
 <!-- 권장: <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> -->

@@ -15,6 +15,41 @@ export async function POST(request: Request) {
   const authErr = await requireAdminOrSetup()
   if (authErr) return authErr
 
+  // 어드민 "크론 정지" 상태에서는 수동 실행도 차단 (자동/수동 일관성 보장)
+  const { data: cronControl } = await supabaseAdmin
+    .from('site_sections')
+    .select('content')
+    .eq('section_key', 'cron_control')
+    .maybeSingle()
+  const paused = (cronControl?.content as { review_cron_paused?: boolean } | null)?.review_cron_paused === true
+  if (paused) {
+    const skipMsg = '정지 상태로 스킵 (수동 실행 차단)'
+    try {
+      await supabaseAdmin
+        .from('cron_health')
+        .insert({
+          job_name: 'generate-reviews',
+          started_at: new Date().toISOString(),
+          ended_at: new Date().toISOString(),
+          ok: true,
+          msg: skipMsg,
+          processed: 0,
+          success_count: 0,
+          results: [],
+          duration_ms: 0,
+        })
+    } catch { /* ignore */ }
+    return NextResponse.json({
+      ok: true,
+      paused: true,
+      message: '리뷰 생성 크론이 정지 상태입니다. 수동 실행도 차단되어 리뷰를 생성하지 않습니다.',
+      duration_ms: 0,
+      processed: 0,
+      success: 0,
+      results: [],
+    })
+  }
+
   let partnerIds: string[] | null = null
   try {
     const body = await request.json().catch(() => ({}))

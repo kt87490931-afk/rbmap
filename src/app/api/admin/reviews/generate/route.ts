@@ -44,6 +44,23 @@ export async function POST(request: Request) {
   const authErr = await requireAdminOrSetup()
   if (authErr) return authErr
 
+  // 어드민 "크론 정지" 상태에서는 단건 수동 생성도 차단
+  const { data: cronControl } = await supabaseAdmin
+    .from('site_sections')
+    .select('content')
+    .eq('section_key', 'cron_control')
+    .maybeSingle()
+  const paused = (cronControl?.content as { review_cron_paused?: boolean } | null)?.review_cron_paused === true
+  if (paused) {
+    return NextResponse.json(
+      {
+        error: '리뷰 생성 크론이 정지 상태입니다. 재개 후 다시 시도해 주세요.',
+        paused: true,
+      },
+      { status: 409 }
+    )
+  }
+
   const body = await request.json()
   const partnerId = body.partner_id ?? body.partnerId
   const manualTopic = typeof body.topic === 'string' ? body.topic.trim() : undefined

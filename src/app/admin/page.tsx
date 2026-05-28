@@ -6,6 +6,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [counts, setCounts] = useState({ regions: 0, partners: 0, feed: 0, reviews: 0 })
   const [telegramTest, setTelegramTest] = useState<'idle' | 'sending' | 'ok' | 'fail'>('idle')
+  const [cronPaused, setCronPaused] = useState<boolean | null>(null)
+  const [cronPauseLoading, setCronPauseLoading] = useState(false)
   const [visitorOffset, setVisitorOffset] = useState(0)
   const [todayVisitors, setTodayVisitors] = useState(0)
   const [visitorSaving, setVisitorSaving] = useState(false)
@@ -23,13 +25,14 @@ export default function AdminDashboard() {
 
   const fetchCounts = useCallback(async () => {
     try {
-      const [r, p, f, rev, logs, config] = await Promise.all([
+      const [r, p, f, rev, logs, config, cronControl] = await Promise.all([
         fetch('/api/admin/regions'),
         fetch('/api/admin/partners'),
         fetch('/api/admin/feed'),
         fetch('/api/admin/reviews'),
         fetch('/api/admin/visit-logs'),
         fetch('/api/admin/site/visitor_config'),
+        fetch('/api/admin/site/cron_control'),
       ])
       const regions = await r.json()
       const partners = await p.json()
@@ -37,6 +40,7 @@ export default function AdminDashboard() {
       const reviews = await rev.json()
       const logsData = await logs.json()
       const configData = await config.json()
+      const cronControlData = await cronControl.json()
       setCounts({
         regions: Array.isArray(regions) ? regions.length : 0,
         partners: Array.isArray(partners) ? partners.length : 0,
@@ -45,11 +49,27 @@ export default function AdminDashboard() {
       })
       setTodayVisitors(Number(logsData?.todayVisitors ?? 0))
       setVisitorOffset(Number(configData?.visitor_offset ?? 0))
+      setCronPaused(cronControlData?.review_cron_paused === true)
     } catch { /* ignore */ }
     setLoading(false)
   }, [])
 
   useEffect(() => { fetchCounts() }, [fetchCounts])
+
+  async function setCronPausedState(paused: boolean) {
+    setCronPauseLoading(true)
+    try {
+      const res = await fetch('/api/admin/site/cron_control', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ review_cron_paused: paused }),
+      })
+      const json = await res.json()
+      if (res.ok) setCronPaused(json?.review_cron_paused === true)
+    } catch { /* ignore */ }
+    setCronPauseLoading(false)
+  }
 
   if (loading) {
     return <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
@@ -131,6 +151,34 @@ export default function AdminDashboard() {
 
       <div className="card-box">
         <div className="card-box-title">⚡ 빠른 액션</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+          <strong>리뷰 생성 크론:</strong>
+          {cronPaused === null ? (
+            <span style={{ color: 'var(--muted)' }}>확인 중...</span>
+          ) : cronPaused ? (
+            <span style={{ color: 'var(--gold)', fontWeight: 700 }}>정지</span>
+          ) : (
+            <span style={{ color: 'var(--green)', fontWeight: 700 }}>동작 중</span>
+          )}
+          <button
+            type="button"
+            className="btn-danger"
+            style={{ padding: '6px 12px' }}
+            disabled={cronPauseLoading || cronPaused === true}
+            onClick={() => setCronPausedState(true)}
+          >
+            {cronPauseLoading ? '처리 중...' : '크론 정지'}
+          </button>
+          <button
+            type="button"
+            className="btn-save"
+            style={{ padding: '6px 12px' }}
+            disabled={cronPauseLoading || cronPaused === false}
+            onClick={() => setCronPausedState(false)}
+          >
+            {cronPauseLoading ? '처리 중...' : '크론 재개'}
+          </button>
+        </div>
         <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
           <a href="/admin/regions" className="btn-save" style={{ textDecoration: 'none' }}>🗺 지역 관리</a>
           <a href="/admin/partners" className="btn-success" style={{ textDecoration: 'none' }}>🤝 제휴업체 관리</a>

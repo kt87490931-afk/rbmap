@@ -7,7 +7,6 @@ export interface VenueCard {
   name: string;
   star: string;
   type: string;
-  /** 업소 연락처 — 업소명 밑, 업체유형 위에 표시 */
   contact?: string;
   price?: string;
   desc?: string;
@@ -26,29 +25,57 @@ const DEFAULT_VENUES: VenueCard[] = [
 
 export default function FeaturedVenuesSection({ venues }: FeaturedVenuesSectionProps) {
   const list = venues?.length ? venues : DEFAULT_VENUES;
+
   return (
-    <section className="section bg-deep" aria-label="추천 업소">
-      <div className="section-inner">
-        <div className="section-head-row">
-          <div>
-            <span className="section-label">FEATURED VENUES</span>
-            <h2 className="section-h2">지역별 <em>주요 업소</em></h2>
+    <section className="w-full bg-white py-10 md:py-14" aria-label="추천 업소">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4 md:mb-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 text-lg">
+              🔥
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 md:text-xl">지역별 주요 업소</h2>
+              <p className="mt-0.5 text-xs text-gray-500 md:text-sm">각 지역에서 인기 있는 추천 업소</p>
+            </div>
           </div>
-          <Link href="/regions" className="see-all">전체 업소 보기 →</Link>
+          <Link href="/regions" className="text-sm font-semibold text-insta-pink hover:text-insta-purple">
+            전체 업소 보기 →
+          </Link>
         </div>
-        <div className="venue-grid venue-grid-featured">
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-5">
           {list.map((v, i) => (
-            <Link key={v.href ?? i} href={v.href} className="venue-card">
-              <div className="vc-region-line">{v.region}</div>
-              <div className="vc-top">
-                <span className="vc-name">{v.name}</span>
-                <span className="vc-star">{v.star}</span>
+            <Link
+              key={v.href ?? i}
+              href={v.href}
+              className="group overflow-hidden rounded-xl border border-gray-100 bg-white transition-all duration-300 hover:border-pink-100 hover:shadow-lg hover:shadow-pink-100/30"
+            >
+              <div className="relative flex h-28 items-center justify-center overflow-hidden bg-gradient-to-br from-pink-100 via-purple-50 to-pink-50 md:h-32">
+                <span className="text-4xl opacity-40">🎤</span>
+                <div className="absolute left-2 top-2">
+                  <span className="inline-flex items-center rounded-lg bg-white/90 px-2 py-1 text-xs font-medium text-gray-700 backdrop-blur-sm">
+                    {v.region}
+                  </span>
+                </div>
+                <div className="absolute right-2 top-2">
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-white/90 px-2 py-1 text-xs font-medium text-gray-700 backdrop-blur-sm">
+                    ⭐ {v.star}
+                  </span>
+                </div>
               </div>
-              {v.contact && <ContactTapToCall contact={v.contact} className="vc-contact" />}
-              <div className="vc-type">{v.type}</div>
-              {v.price && <div className="vc-price">{v.price}</div>}
-              {v.desc && <p className="vc-desc">{v.desc}</p>}
-              <div className="vc-footer">업소 상세 보기 →</div>
+              <div className="p-3 md:p-4">
+                <div className="mb-1 text-xs font-medium text-insta-pink">{v.type}</div>
+                <h3 className="mb-1 truncate text-sm font-semibold text-gray-900 md:text-base group-hover:text-insta-pink">
+                  {v.name}
+                </h3>
+                {v.contact && <ContactTapToCall contact={v.contact} className="mb-2 block text-xs text-gray-600" />}
+                {v.price && <div className="mb-2 text-xs text-gray-500">{v.price}</div>}
+                {v.desc && <p className="mb-3 line-clamp-2 text-xs text-gray-500 leading-relaxed">{v.desc}</p>}
+                <span className="inline-flex rounded-full bg-gradient-to-r from-insta-pink to-insta-purple px-3 py-1.5 text-xs font-medium text-white">
+                  상세보기 →
+                </span>
+              </div>
             </Link>
           ))}
         </div>

@@ -14,43 +14,57 @@ interface LiveFeedSectionProps {
 }
 
 export default function LiveFeedSection({ items }: LiveFeedSectionProps) {
-  const list = (items?.length ? items : FALLBACK_ITEMS);
-
-  /** pill_class가 p-{slug}이면 tag-{slug}로 매핑 (DB 지역 slug와 동기화) */
-  const regionToTag = (pill: string, pillClass?: string) => {
-    const fromSlug = pillClass?.match(/^p-([a-z0-9-]+)$/i)?.[1];
-    if (fromSlug) return `tag-${fromSlug}`;
-    if (pill.includes("강남")) return "tag-gangnam";
-    if (pill.includes("수원")) return "tag-suwon";
-    if (pill.includes("동탄")) return "tag-dongtan";
-    if (pill.includes("제주")) return "tag-jeju";
-    if (pill.includes("잠실")) return "tag-jamsil";
-    return "tag-default";
-  };
+  const list = items?.length ? items : FALLBACK_ITEMS;
 
   return (
-    <section className="section">
-      <div className="section-inner">
-        <div className="section-head-row">
-          <div>
-            <div className="live-header">
-              <span className="live-badge">
-                <span className="live-dot" />LIVE
-              </span>
-              <h2 className="section-h2" style={{ marginBottom: 0 }}>실시간 최신 업데이트</h2>
+    <section className="w-full bg-gradient-to-b from-pink-50/50 via-white to-purple-50/30 py-10 md:py-14" id="updates">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4 md:mb-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-pink-50 to-purple-50 text-lg">
+              ⏱️
+            </div>
+            <div>
+              <div className="mb-1 flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-pink-600">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-pink-500" />
+                  Live
+                </span>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900 md:text-xl">실시간 최신 업데이트</h2>
+              <p className="mt-0.5 text-xs text-gray-500 md:text-sm">20분마다 자동 업데이트되는 최신 리뷰</p>
             </div>
           </div>
-          <Link href="/reviews" className="view-all">전체 피드 보기 →</Link>
+          <Link href="/reviews" className="text-sm font-semibold text-insta-pink hover:text-insta-purple">
+            전체 피드 보기 →
+          </Link>
         </div>
-        <div className="feed-list" role="feed" aria-label="최신 리뷰 피드">
+
+        <div className="space-y-3" role="feed" aria-label="최신 리뷰 피드">
           {list.map((item) => (
-            <Link key={item.id} href={item.href} className="feed-item">
-              <span className={`feed-region ${regionToTag(item.pill, item.pill_class)}`}>{item.pill}</span>
-              <span className="feed-title">{item.title}</span>
-              <span className="feed-meta">
-                <span className="feed-stars">{item.stars}</span>
-                <span className="feed-time">{item.time}</span>
-              </span>
+            <Link
+              key={item.id}
+              href={item.href}
+              className="group block rounded-xl border border-gray-100 bg-white p-4 transition-all duration-300 hover:border-pink-100 hover:shadow-md hover:shadow-pink-50/50 md:p-5"
+            >
+              <div className="flex items-start gap-3 md:gap-4">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-100 to-purple-100 text-base md:h-12 md:w-12">
+                  📝
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-pink-50 px-2 py-0.5 text-xs font-medium text-pink-600">
+                      {item.pill}
+                    </span>
+                    <span className="text-xs text-gray-400">{item.time}</span>
+                    <span className="text-xs text-amber-500">{item.stars}</span>
+                  </div>
+                  <h3 className="mb-1 truncate text-sm font-semibold text-gray-900 md:text-base group-hover:text-insta-pink">
+                    {item.title}
+                  </h3>
+                  {item.sub && <p className="line-clamp-1 text-sm text-gray-500">{item.sub}</p>}
+                </div>
+              </div>
             </Link>
           ))}
         </div>

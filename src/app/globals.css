@@ -2,26 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800;900&display=swap');
 
 :root {
-  --black: #070707;
-  --deep: #0d0d0d;
-  --card: #131313;
-  --card2: #181818;
-  --border: #1e1e1e;
-  --border2: #252525;
-  --gold: #c8a84b;
-  --gold-lt: #e6c96e;
-  --gold-dim: #6e5220;
-  --gold-bg: rgba(200, 168, 75, 0.07);
+  --black: #f8fafc;
+  --deep: #ffffff;
+  --card: #ffffff;
+  --card2: #f8fafc;
+  --border: #e5e7eb;
+  --border2: #e2e8f0;
+  --gold: #ec4899;
+  --gold-lt: #a855f7;
+  --gold-dim: #c026d3;
+  --gold-bg: rgba(236, 72, 153, 0.08);
   --red: #e63946;
   --blue: #3a7bd5;
   --green: #2ecc71;
   --purple: #9b59b6;
-  --text: #e4e4e4;
-  --muted: #7a7a7a;
-  --dim: #3a3a3a;
+  --text: #111827;
+  --muted: #6b7280;
+  --dim: #9ca3af;
   --radius: 8px;
   --radius-lg: 14px;
   --max: 1200px;
@@ -69,7 +69,7 @@ body::after {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.5;
+  opacity: 0.08;
 }
 
 /* Header */
@@ -78,7 +78,7 @@ body::after {
   top: 0;
   z-index: 800;
   height: 54px;
-  background: rgba(7, 7, 7, 0.95);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   padding: 0 16px;
@@ -104,7 +104,7 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 13px;
   color: #000;
   flex-shrink: 0;
@@ -112,7 +112,7 @@ body::after {
 }
 
 .logo-text {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 17px;
   color: var(--gold);
   letter-spacing: -0.01em;
@@ -260,7 +260,7 @@ body::after {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   padding: 6px 0;
   z-index: 900;
 }
@@ -479,7 +479,7 @@ body::after {
   100% { background-position: -200% 0; }
 }
 .hero-h1 {
-  font-family: "Black Han Sans", sans-serif;
+  font-family: "Noto Sans KR", sans-serif;
   font-size: clamp(36px, 6vw, 68px);
   line-height: 1.05;
   letter-spacing: -0.02em;
@@ -494,7 +494,7 @@ body::after {
 }
 .hero-sub {
   font-size: clamp(14px, 1.6vw, 16px);
-  color: #9a9080;
+  color: #6b7280;
   line-height: 1.9;
   margin-bottom: 32px;
   max-width: 460px;
@@ -516,7 +516,7 @@ body::after {
   text-align: center;
 }
 .stat-num {
-  font-family: "Black Han Sans", sans-serif;
+  font-family: "Noto Sans KR", sans-serif;
   font-size: clamp(20px, 2.5vw, 28px);
   color: var(--gold);
   line-height: 1;
@@ -576,7 +576,7 @@ body::after {
 }
 .map-tooltip {
   position: absolute;
-  background: rgba(13, 11, 2, 0.95);
+  background: rgba(255, 255, 255, 0.98);
   border: 1px solid var(--gold-dim);
   border-radius: var(--radius);
   padding: 10px 14px;
@@ -729,7 +729,7 @@ body::after {
 }
 
 .sec-title {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: clamp(18px, 3.5vw, 24px);
   font-weight: 700;
   line-height: 1.3;
@@ -827,7 +827,7 @@ body::after {
 }
 
 .seo-card h3 {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 15px;
   font-weight: 700;
   color: var(--text);
@@ -843,7 +843,7 @@ body::after {
 }
 
 .seo-card p strong {
-  color: #c8c8c8;
+  color: #4b5563;
 }
 
 .seo-region-tabs {
@@ -897,7 +897,7 @@ body::after {
 }
 
 .seo-region-panel h3 {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 17px;
   font-weight: 700;
   color: var(--text);
@@ -925,7 +925,7 @@ body::after {
 }
 
 .seo-region-col p strong {
-  color: #c8c8c8;
+  color: #4b5563;
 }
 
 .seo-region-col h4 {
@@ -1070,10 +1070,10 @@ body::after {
   display: block;
 }
 .section-h2 {
-  font-family: "Noto Serif KR", serif;
+  font-family: "Noto Sans KR", sans-serif;
   font-size: clamp(22px, 3vw, 30px);
   font-weight: 700;
-  color: #f0ece0;
+  color: #111827;
   line-height: 1.3;
   margin-bottom: 6px;
 }
@@ -1116,10 +1116,10 @@ body::after {
   margin-bottom: 12px;
 }
 .about-feat-title {
-  font-family: "Noto Serif KR", serif;
+  font-family: "Noto Sans KR", sans-serif;
   font-size: 15px;
   font-weight: 600;
-  color: #f0e8d0;
+  color: #111827;
   margin-bottom: 8px;
 }
 .about-feat-desc {
@@ -1164,10 +1164,10 @@ body::after {
   font-size: 24px;
 }
 .cat-name {
-  font-family: "Noto Serif KR", serif;
+  font-family: "Noto Sans KR", sans-serif;
   font-size: 14px;
   font-weight: 600;
-  color: #f0e8d0;
+  color: #111827;
 }
 .cat-desc {
   font-size: 10px;
@@ -1244,10 +1244,10 @@ body::after {
   margin-bottom: 8px;
 }
 .venue-card .vc-name {
-  font-family: "Noto Serif KR", serif;
+  font-family: "Noto Sans KR", sans-serif;
   font-size: 16px;
   font-weight: 700;
-  color: #f0e8d0;
+  color: #111827;
 }
 .venue-card .vc-star {
   font-size: 12px;
@@ -1311,7 +1311,7 @@ body::after {
 }
 .rf-region { font-size: 9px; color: var(--muted); }
 .rf-date { font-size: 10px; color: var(--dim); margin-left: 8px; }
-.rf-title { font-family: "Noto Serif KR", serif; font-size: 17px; font-weight: 600; color: #f0e8d0; margin: 10px 0 8px; }
+.rf-title { font-family: "Noto Sans KR", sans-serif; font-size: 17px; font-weight: 600; color: #111827; margin: 10px 0 8px; }
 .rf-excerpt { font-size: 12px; color: var(--muted); line-height: 1.6; }
 .rf-footer { display: flex; gap: 12px; margin-top: 12px; font-size: 11px; }
 .rf-stars { color: var(--gold); }
@@ -1391,10 +1391,10 @@ body::after {
   }
 }
 .cta-text h2 {
-  font-family: "Noto Serif KR", serif;
+  font-family: "Noto Sans KR", sans-serif;
   font-size: clamp(18px, 2.5vw, 24px);
   font-weight: 700;
-  color: #f0e8d0;
+  color: #111827;
   margin-bottom: 6px;
 }
 .cta-text p {
@@ -1502,9 +1502,9 @@ body::after {
   opacity: 0.7;
 }
 .rc-name {
-  font-family: "Black Han Sans", sans-serif;
+  font-family: "Noto Sans KR", sans-serif;
   font-size: 22px;
-  color: #f0e8d0;
+  color: #111827;
   position: relative;
   z-index: 1;
 }
@@ -1604,7 +1604,7 @@ body::after {
 
 .rc-bg-text {
   position: absolute;
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 36px;
   color: rgba(255, 255, 255, 0.04);
   user-select: none;
@@ -1619,7 +1619,7 @@ body::after {
 .rc-name {
   position: relative;
   z-index: 1;
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 17px;
   color: rgba(255, 255, 255, 0.88);
 }
@@ -2068,7 +2068,7 @@ body::after {
 }
 
 .v-rank {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 14px;
   color: var(--dim);
   width: 18px;
@@ -2339,7 +2339,7 @@ body::after {
 }
 
 .rp-region {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 15px;
   color: var(--gold);
 }
@@ -2475,7 +2475,7 @@ body::after {
 }
 
 .map-cell-name {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 12px;
   color: var(--text);
   display: block;
@@ -2620,7 +2620,7 @@ body::after {
 }
 
 .sb-num {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 24px;
   color: var(--gold);
   line-height: 1;
@@ -2658,7 +2658,7 @@ body::after {
 }
 
 .cta-strip h2 {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: clamp(16px, 3.5vw, 22px);
   font-weight: 700;
   margin-bottom: 7px;
@@ -2821,7 +2821,7 @@ body::after {
 }
 
 .pv-name-big {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 17px;
   font-weight: 700;
   color: #fff;
@@ -2851,7 +2851,7 @@ body::after {
 }
 
 .pv-card-header .pv-name {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 16px;
   font-weight: 700;
   color: #fff;
@@ -3033,7 +3033,7 @@ body::after {
 }
 
 .fr-num {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 22px;
   color: var(--gold-dim);
   line-height: 1;
@@ -3111,7 +3111,7 @@ body::after {
 }
 
 .fr-title {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.4;
@@ -3148,7 +3148,7 @@ body::after {
 
 .fr-body {
   font-size: 12px;
-  color: #aaa;
+  color: #111827;
   line-height: 1.85;
   border-top: 1px solid var(--border);
   padding-top: 10px;
@@ -3158,6 +3158,7 @@ body::after {
 
 .fr-body p {
   margin-bottom: 8px;
+  color: #111827;
 }
 
 .fr-body p:last-child {
@@ -3210,7 +3211,7 @@ footer {
 }
 
 .footer-logo {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 18px;
   color: var(--gold);
   display: flex;
@@ -3338,7 +3339,7 @@ footer {
   margin-bottom: 22px;
 }
 .admin-title {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 32px;
   letter-spacing: 1px;
 }
@@ -3446,7 +3447,7 @@ select.admin-form-control {
   padding: 16px;
 }
 .stat-card-num {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 32px;
   line-height: 1;
   margin-bottom: 2px;
@@ -3606,7 +3607,7 @@ select.admin-form-control {
 }
 .ph-kpi-item strong {
   display: block;
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 22px;
   color: var(--gold);
   line-height: 1;
@@ -3836,7 +3837,7 @@ select.admin-form-control {
   color: var(--gold-lt);
 }
 .ah-title {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: clamp(18px, 3.5vw, 28px);
   font-weight: 700;
   line-height: 1.4;
@@ -3855,7 +3856,7 @@ select.admin-form-control {
   letter-spacing: 2px;
 }
 .ah-rating {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 20px;
   color: var(--gold);
 }
@@ -3878,7 +3879,7 @@ select.admin-form-control {
   margin-left: auto;
 }
 .art-body h2 {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 17px;
   font-weight: 700;
   color: var(--text);
@@ -3889,7 +3890,7 @@ select.admin-form-control {
 }
 .art-body p {
   font-size: 14px;
-  color: #b8b8b8;
+  color: #111827;
   line-height: 2;
   margin-bottom: 14px;
   word-break: keep-all;
@@ -3920,7 +3921,7 @@ select.admin-form-control {
 }
 .summary-contact-banner .summary-contact-num {
   display: block;
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: clamp(22px, 5vw, 32px);
   font-weight: 700;
   color: var(--gold);
@@ -4006,7 +4007,7 @@ select.admin-form-control {
   margin-bottom: 3px;
 }
 .vlc-name {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 16px;
   font-weight: 700;
   color: var(--text);
@@ -4116,7 +4117,7 @@ select.admin-form-control {
   display: block;
 }
 .vm-name {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 15px;
   font-weight: 700;
   margin-bottom: 6px;
@@ -4173,9 +4174,9 @@ select.admin-form-control {
   margin-top: 12px;
   padding: 14px 16px;
 }
-.sw-phone-banner .hb-phone-num { font-size: clamp(18px, 3vw, 24px); }
-.sw-phone-banner a.hb-phone-num { text-decoration: none; color: inherit; cursor: pointer; }
-.sw-phone-banner a.hb-phone-num:hover { opacity: 0.9; }
+.sw-phone-banner .hb-phone-num { font-size: clamp(18px, 3vw, 24px); color: #f5d87a; }
+.sw-phone-banner a.hb-phone-num { text-decoration: none; color: #f5d87a; cursor: pointer; }
+.sw-phone-banner a.hb-phone-num:hover { color: #ffe9a0; opacity: 1; }
 .rel-list {
   display: flex;
   flex-direction: column;
@@ -4335,7 +4336,7 @@ select.admin-form-control {
 }
 .rh-kpi-item strong {
   display: block;
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 22px;
   color: var(--gold);
   line-height: 1;
@@ -4473,7 +4474,7 @@ select.admin-form-control {
   margin-bottom: 10px;
 }
 .vc-rank {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 20px;
   color: var(--gold-dim);
   line-height: 1;
@@ -4528,7 +4529,7 @@ select.admin-form-control {
   color: var(--dim);
 }
 .vc-name {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 15px;
   font-weight: 700;
   margin-bottom: 5px;
@@ -4768,7 +4769,7 @@ select.admin-form-control {
   }
 }
 .seo-col h3 {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 15px;
   font-weight: 700;
   color: var(--text);
@@ -5010,7 +5011,7 @@ select.admin-form-control {
   color: #000;
 }
 .vh-name {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: clamp(22px, 4.5vw, 36px);
   font-weight: 700;
   line-height: 1.15;
@@ -5030,7 +5031,7 @@ select.admin-form-control {
   letter-spacing: 2px;
 }
 .vh-rating-num {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 22px;
   color: var(--gold);
   line-height: 1;
@@ -5335,7 +5336,7 @@ select.admin-form-control {
   background: linear-gradient(135deg, #1a1206, #0e0c04);
 }
 .rs-score-num {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 52px;
   color: var(--gold);
   line-height: 1;
@@ -5556,7 +5557,7 @@ select.admin-form-control {
   text-align: center;
 }
 .stat-val {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 20px;
   color: var(--gold);
   line-height: 1;
@@ -5589,7 +5590,7 @@ select.admin-form-control {
   padding-left: 3px;
 }
 .nv-rank {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 16px;
   color: var(--gold-dim);
   flex-shrink: 0;
@@ -5702,7 +5703,7 @@ select.admin-form-control {
   color: var(--gold);
 }
 .sim-name {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 14px;
   font-weight: 700;
   margin-bottom: 6px;
@@ -5786,7 +5787,7 @@ select.admin-form-control {
   flex-wrap: wrap;
 }
 .fr-num {
-  font-family: 'Black Han Sans', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 22px;
   color: var(--gold-dim);
   line-height: 1;
@@ -5813,7 +5814,7 @@ select.admin-form-control {
   flex-shrink: 0;
 }
 .fr-title {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.4;
@@ -5837,7 +5838,7 @@ select.admin-form-control {
 }
 .fr-body {
   font-size: 12px;
-  color: #aaa;
+  color: #111827;
   line-height: 1.85;
   border-top: 1px solid var(--border);
   padding-top: 10px;
@@ -5846,6 +5847,7 @@ select.admin-form-control {
 }
 .fr-body p {
   margin-bottom: 8px;
+  color: #111827;
 }
 .fr-body p:last-child {
   margin-bottom: 0;
@@ -5928,8 +5930,8 @@ select.admin-form-control {
 .review-write-preview-card { background: var(--deep); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
 .review-write-pv-label, .review-write-pv-num, .review-write-pv-rpill, .review-write-pv-type, .review-write-pv-vtag, .review-write-pv-date { margin-bottom: 0; }
 .review-write-pv-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-.review-write-pv-num { font-family: 'Black Han Sans', sans-serif; font-size: 18px; color: var(--gold-dim); }
-.review-write-pv-title { font-size: 13px; font-weight: 700; line-height: 1.4; margin-bottom: 8px; font-family: 'Noto Serif KR', serif; }
+.review-write-pv-num { font-family: 'Noto Sans KR', sans-serif; font-size: 18px; color: var(--gold-dim); }
+.review-write-pv-title { font-size: 13px; font-weight: 700; line-height: 1.4; margin-bottom: 8px; font-family: 'Noto Sans KR', sans-serif; }
 .review-write-pv-stars { color: var(--gold); font-size: 11px; margin-bottom: 8px; }
 .review-write-pv-body { font-size: 11px; color: #999; line-height: 1.8; border-top: 1px solid var(--border); padding-top: 8px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .review-write-pv-footer { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
@@ -6004,7 +6006,7 @@ select.admin-form-control {
 .hb-badge-region { background: var(--region-dim); color: var(--region); border: 1px solid var(--region-border); }
 .hb-badge-type { background: rgba(255, 255, 255, 0.05); color: var(--muted); border: 1px solid var(--border); }
 .hb-name {
-  font-family: 'Noto Serif KR', serif;
+  font-family: 'Noto Sans KR', sans-serif;
   font-size: clamp(24px, 4.5vw, 38px);
   font-weight: 700;
   line-height: 1.15;
@@ -6015,10 +6017,10 @@ select.admin-form-control {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-.hb-tagline { font-size: 13px; color: #9a9080; line-height: 1.65; margin-bottom: 10px; }
+.hb-tagline { font-size: 13px; color: #6b7280; line-height: 1.65; margin-bottom: 10px; }
 .hb-rating { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .hb-stars { color: var(--gold); font-size: 15px; letter-spacing: 2px; }
-.hb-rnum { font-family: 'Black Han Sans', sans-serif; font-size: 20px; color: var(--gold); }
+.hb-rnum { font-family: 'Noto Sans KR', sans-serif; font-size: 20px; color: var(--gold); }
 .hb-rmax { font-size: 12px; color: var(--dim); }
 .hb-rcnt { font-size: 11px; color: var(--dim); border-left: 1px solid var(--border); padding-left: 8px; }
 .hb-live { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--green); }
@@ -6052,10 +6054,10 @@ select.admin-form-control {
   pointer-events: none;
 }
 .hb-phone-left { flex: 1; min-width: 180px; }
-.hb-phone-label { font-size: 9px; letter-spacing: 0.16em; color: var(--gold-dim); text-transform: uppercase; margin-bottom: 5px; }
-.hb-phone-num { font-family: 'Black Han Sans', sans-serif; font-size: clamp(22px, 4vw, 34px); font-weight: 700; color: var(--gold-lt); letter-spacing: 0.05em; line-height: 1; }
-.hb-phone-banner a.hb-phone-num { text-decoration: none; color: inherit; cursor: pointer; display: inline-block; }
-.hb-phone-banner a.hb-phone-num:hover { opacity: 0.9; }
+.hb-phone-label { font-size: 9px; letter-spacing: 0.16em; color: #d4b86a; text-transform: uppercase; margin-bottom: 5px; }
+.hb-phone-num { font-family: 'Noto Sans KR', sans-serif; font-size: clamp(22px, 4vw, 34px); font-weight: 700; color: #f5d87a; letter-spacing: 0.05em; line-height: 1; }
+.hb-phone-banner a.hb-phone-num { text-decoration: none; color: #f5d87a; cursor: pointer; display: inline-block; }
+.hb-phone-banner a.hb-phone-num:hover { color: #ffe9a0; opacity: 1; }
 .hb-phone-sub { font-size: 11px; color: #6a6255; margin-top: 6px; line-height: 1.6; }
 .hb-phone-right { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 .btn-call-hero {
@@ -6125,12 +6127,12 @@ select.admin-form-control {
 .art-section { padding: 40px 0; border-bottom: 1px solid var(--border); position: relative; scroll-margin-top: 108px; }
 .art-section:last-child { border-bottom: none; }
 .sec-label { font-size: 10px; letter-spacing: 0.18em; color: var(--gold); text-transform: uppercase; margin-bottom: 10px; display: block; }
-.art-h2 { font-family: 'Noto Serif KR', serif; font-size: clamp(20px, 3.5vw, 26px); font-weight: 700; color: #f0ece0; line-height: 1.35; margin-bottom: 16px; }
+.art-h2 { font-family: 'Noto Sans KR', sans-serif; font-size: clamp(20px, 3.5vw, 26px); font-weight: 700; color: #111827; line-height: 1.35; margin-bottom: 16px; }
 .art-h2 em { font-style: normal; color: var(--gold); }
-.art-lead { font-size: clamp(15px, 2.2vw, 17px); font-weight: 500; color: #d0c9b8; line-height: 1.85; margin-bottom: 20px; word-break: keep-all; }
-.art-p { font-size: 14px; color: #a0a0a0; line-height: 2.1; margin-bottom: 16px; word-break: keep-all; }
+.art-lead { font-size: clamp(15px, 2.2vw, 17px); font-weight: 500; color: #374151; line-height: 1.85; margin-bottom: 20px; word-break: keep-all; }
+.art-p { font-size: 14px; color: #111827; line-height: 2.1; margin-bottom: 16px; word-break: keep-all; }
 .art-p:last-child { margin-bottom: 0; }
-.art-p strong { color: #d4d4d4; font-weight: 600; }
+.art-p strong { color: #111827; font-weight: 600; }
 .art-p em { font-style: normal; color: var(--gold); }
 
 .art-quote {
@@ -6141,14 +6143,14 @@ select.admin-form-control {
   margin: 24px 0;
   position: relative;
 }
-.art-quote::before { content: '"'; position: absolute; top: -8px; left: 14px; font-family: 'Noto Serif KR', serif; font-size: 48px; color: var(--gold-dim); line-height: 1; }
-.art-quote p { font-family: 'Noto Serif KR', serif; font-size: 15px; color: #d0c9b8; line-height: 1.85; font-weight: 600; padding-left: 20px; word-break: keep-all; }
+.art-quote::before { content: '"'; position: absolute; top: -8px; left: 14px; font-family: 'Noto Sans KR', sans-serif; font-size: 48px; color: var(--gold-dim); line-height: 1; }
+.art-quote p { font-family: 'Noto Sans KR', sans-serif; font-size: 15px; color: #d0c9b8; line-height: 1.85; font-weight: 600; padding-left: 20px; word-break: keep-all; }
 
 .art-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 24px 0; }
 @media (min-width: 500px) { .art-info-grid { grid-template-columns: repeat(4, 1fr); } }
 .art-info-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; text-align: center; }
 .art-info-card .aic-label { font-size: 10px; color: var(--dim); letter-spacing: 0.06em; margin-bottom: 5px; }
-.art-info-card .aic-val { font-family: 'Black Han Sans', sans-serif; font-size: 18px; color: var(--gold); line-height: 1.1; margin-bottom: 2px; }
+.art-info-card .aic-val { font-family: 'Noto Sans KR', sans-serif; font-size: 18px; color: var(--gold); line-height: 1.1; margin-bottom: 2px; }
 .art-info-card .aic-val.green { color: var(--green); }
 .art-info-card .aic-sub { font-size: 10px; color: var(--muted); }
 
@@ -6160,7 +6162,7 @@ select.admin-form-control {
 .price-table td { padding: 13px 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: #aaa; vertical-align: middle; }
 .price-table tr:last-child td { border-bottom: none; }
 .price-table .pt-name { font-weight: 600; color: var(--text); }
-.price-table .pt-price { font-family: 'Black Han Sans', sans-serif; font-size: 16px; color: var(--gold); white-space: nowrap; }
+.price-table .pt-price { font-family: 'Noto Sans KR', sans-serif; font-size: 16px; color: var(--gold); white-space: nowrap; }
 .price-table .pt-badge { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 3px; display: inline-block; }
 .pt-badge.recommend { background: rgba(200, 168, 75, 0.15); color: var(--gold); border: 1px solid var(--gold-dim); }
 .pt-badge.popular { background: rgba(230, 57, 70, 0.15); color: var(--red); border: 1px solid rgba(230, 57, 70, 0.3); }
@@ -6215,3 +6217,25 @@ select.admin-form-control {
 .mf-cancel:hover { border-color: var(--border2); color: var(--text); }
 .mf-save { padding: 9px 22px; border-radius: 6px; background: var(--gold); border: none; color: #000; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; transition: background 0.2s; }
 .mf-save:hover { background: var(--gold-lt); }
+
+
+/* Readdy style global override */
+body {
+  background: #f8fafc;
+  color: #111827;
+  font-family: "Noto Sans KR", sans-serif;
+}
+h1, h2, h3, h4, h5, h6, .section-h2, .sec-title, .hero-h1, .logo-text, .cat-name, .about-feat-title, .venue-card .vc-name {
+  font-family: "Noto Sans KR", sans-serif !important;
+  letter-spacing: -0.01em;
+}
+.bg-deep, .section.bg-deep, .seo-section, .ticker, .ticker-bar {
+  background: #ffffff !important;
+}
+.ticker-item {
+  color: #6b7280;
+}
+.gold-divider {
+  background: linear-gradient(90deg, transparent, #f9a8d4, transparent);
+  opacity: 0.55;
+}

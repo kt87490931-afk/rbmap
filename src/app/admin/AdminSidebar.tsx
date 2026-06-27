@@ -6,6 +6,7 @@ import { signOut } from 'next-auth/react'
 
 const NAV_ITEMS = [
   { href: '/admin', icon: '📊', label: '대시보드' },
+  { href: '/admin/analytics', icon: '📈', label: '통계' },
   { href: '/admin/site', icon: '📄', label: '메인 페이지 설정' },
   { href: '/admin/regions', icon: '🗺', label: '지역 관리' },
   { href: '/admin/partners', icon: '🤝', label: '제휴업체 관리' },
@@ -17,7 +18,6 @@ const NAV_ITEMS = [
   { href: '/admin/reviews/generate', icon: '🤖', label: '리뷰생성' },
   { href: '/admin/reviews/write', icon: '✍️', label: '리뷰 작성' },
   { href: '/admin/seo', icon: '🔍', label: 'Google SEO' },
-  { href: '/admin/analytics', icon: '📈', label: '통계' },
   { href: '/admin/visit-logs', icon: '📋', label: '접속자 로그' },
   { href: '/admin/threats', icon: '🚨', label: '위험 감지' },
   { href: '/admin/cron-health', icon: '💓', label: '크론헬스' },

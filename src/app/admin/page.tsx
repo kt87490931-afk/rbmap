@@ -185,6 +185,7 @@ export default function AdminDashboard() {
           <a href="/admin/live-feed" className="btn-save" style={{ textDecoration: 'none' }}>📡 Live Feed 관리</a>
           <a href="/admin/reviews" className="btn-success" style={{ textDecoration: 'none' }}>⭐ 리뷰 관리</a>
           <a href="/admin/seo" className="btn-save" style={{ textDecoration: 'none' }}>🔍 SEO</a>
+          <a href="/admin/analytics" className="btn-success" style={{ textDecoration: 'none' }}>📈 통계</a>
           <a href="/admin/visit-logs" className="btn-save" style={{ textDecoration: 'none' }}>📋 접속자 로그</a>
           <a href="/admin/threats" className="btn-save" style={{ textDecoration: 'none' }}>🚨 위험 감지</a>
           <button

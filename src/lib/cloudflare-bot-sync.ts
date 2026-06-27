@@ -182,6 +182,7 @@ export async function syncCloudflareBotEvents(): Promise<SyncResult> {
         user_agent: ua,
         path,
         visitor_type: 'bot',
+        device_type: 'unknown',
         referrer: ref,
         dedupeKey,
         action,

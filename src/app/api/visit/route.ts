@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { notifyThreat } from "@/lib/telegram";
+import { detectDeviceType } from "@/lib/device-type";
 
 const ATTACK_PATHS = [
   "/.env",
@@ -52,6 +53,8 @@ export async function POST(request: Request) {
     path = trimmed ? `/${trimmed}` : "/";
     const rawReferrer = (body.referrer as string) || "";
     const referrer = rawReferrer.length > 2000 ? rawReferrer.slice(0, 2000) : rawReferrer;
+    const visitorId = typeof body.visitor_id === "string" ? body.visitor_id.slice(0, 64) : "";
+    const clientDevice = typeof body.device_type === "string" ? body.device_type.slice(0, 16) : "";
 
     const forwarded = headersList.get("x-forwarded-for");
     const realIp = headersList.get("x-real-ip");
@@ -61,6 +64,10 @@ export async function POST(request: Request) {
     const botPattern =
       /bot|crawler|spider|slurp|googlebot|bingbot|yandex|duckduckbot|baidu|facebookexternalhit|facebot|twitterbot|kakaotalk|oai-searchbot|semrush|ahrefs|mj12bot|dotbot|petalbot|bytespider/i;
     const visitorType = botPattern.test(userAgent) ? "bot" : "visitor";
+    const deviceType =
+      clientDevice === "desktop" || clientDevice === "mobile" || clientDevice === "tablet"
+        ? clientDevice
+        : detectDeviceType(userAgent);
 
     await supabaseAdmin.from("visit_logs").insert({
       ip,
@@ -68,6 +75,8 @@ export async function POST(request: Request) {
       path: path.substring(0, 500),
       visitor_type: visitorType,
       referrer: referrer || null,
+      visitor_id: visitorId || null,
+      device_type: deviceType,
       created_at: new Date().toISOString(),
     });
 

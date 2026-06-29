@@ -20,12 +20,10 @@ function extFromFilename(filename: string): string {
 }
 
 export function resolveImageMime(filename: string, declaredType: string): string | null {
-  if (declaredType && IMAGE_MIME[declaredType]) return declaredType
   const ext = extFromFilename(filename)
-  if (IMAGE_EXT[ext] && (declaredType === 'application/octet-stream' || !declaredType)) {
-    return IMAGE_EXT[ext]
-  }
-  return IMAGE_EXT[ext] ?? null
+  if (IMAGE_EXT[ext]) return IMAGE_EXT[ext]
+  if (declaredType && IMAGE_MIME[declaredType]) return declaredType
+  return null
 }
 
 export function resolveVideoMime(filename: string, declaredType: string): string | null {

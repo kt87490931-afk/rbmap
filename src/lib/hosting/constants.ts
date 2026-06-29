@@ -3,7 +3,7 @@ import { join, resolve } from 'path'
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com').replace(/\/$/, '')
 
-export const IMAGE_MAX_BYTES = 10 * 1024 * 1024
+export const IMAGE_MAX_BYTES = 20 * 1024 * 1024
 export const VIDEO_MAX_BYTES = 50 * 1024 * 1024
 
 export const IMAGE_MIME: Record<string, string> = {

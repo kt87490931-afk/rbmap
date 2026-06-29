@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (file.size > IMAGE_MAX_BYTES) {
-    return NextResponse.json({ error: '이미지는 10MB 이하만 업로드할 수 있습니다.' }, { status: 400 })
+    return NextResponse.json({ error: '이미지는 20MB 이하만 업로드할 수 있습니다.' }, { status: 400 })
   }
 
   const buffer = Buffer.from(await file.arrayBuffer())

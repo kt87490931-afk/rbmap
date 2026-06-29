@@ -86,13 +86,13 @@ export default function AdminHostingImagesPage() {
     if (!files?.length) return
     setUploading(true)
     setMsg('')
-    const folder = newFolder.trim() || currentFolder
     let ok = 0
     let replaced = 0
+    const errors: string[] = []
     for (const file of Array.from(files)) {
       const fd = new FormData()
       fd.append('file', file)
-      fd.append('folder', folder)
+      fd.append('folder', currentFolder)
       const res = await fetch('/api/admin/hosting/images/upload', {
         method: 'POST',
         credentials: 'include',
@@ -104,10 +104,15 @@ export default function AdminHostingImagesPage() {
         if (data.overwritten) replaced += 1
       } else {
         const err = await res.json().catch(() => ({}))
-        setMsg(err.error || '업로드 실패')
+        errors.push(`${file.name}: ${err.error || `업로드 실패 (${res.status})`}`)
       }
     }
     if (ok > 0) {
+      await fetchItems()
+    }
+    if (errors.length > 0) {
+      setMsg(errors.join(' / '))
+    } else if (ok > 0) {
       if (replaced > 0 && replaced === ok) {
         setMsg(`${replaced}개 덮어쓰기 완료`)
       } else if (replaced > 0) {
@@ -115,20 +120,6 @@ export default function AdminHostingImagesPage() {
       } else {
         setMsg(`${ok}개 업로드 완료`)
       }
-      if (newFolder.trim()) {
-        const res = await fetch('/api/admin/hosting/images/folders', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newFolder.trim() }),
-        }).catch(() => null)
-        if (res?.ok) {
-          const data = await res.json()
-          setCurrentFolder(data.folder || currentFolder)
-        }
-      }
-      setNewFolder('')
-      await fetchItems()
     }
     setUploading(false)
     if (fileRef.current) fileRef.current.value = ''
@@ -154,7 +145,7 @@ export default function AdminHostingImagesPage() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>📷 이미지 호스팅</h1>
         <p style={{ color: 'var(--muted)', fontSize: 13 }}>
-          디스크엔처럼 이미지(jpg, png, gif)를 업로드하고 게시판에 붙여넣을 URL·HTML 코드를 복사합니다. 홈페이지에는 노출되지 않습니다.
+          디스크엔처럼 이미지(jpg, png, gif, 최대 20MB)를 업로드하고 게시판에 붙여넣을 URL·HTML 코드를 복사합니다. 홈페이지에는 노출되지 않습니다.
         </p>
       </div>
 

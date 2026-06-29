@@ -88,6 +88,7 @@ export default function AdminHostingImagesPage() {
     setMsg('')
     const folder = newFolder.trim() || currentFolder
     let ok = 0
+    let replaced = 0
     for (const file of Array.from(files)) {
       const fd = new FormData()
       fd.append('file', file)
@@ -97,14 +98,23 @@ export default function AdminHostingImagesPage() {
         credentials: 'include',
         body: fd,
       })
-      if (res.ok) ok += 1
-      else {
+      if (res.ok) {
+        ok += 1
+        const data = await res.json().catch(() => ({}))
+        if (data.overwritten) replaced += 1
+      } else {
         const err = await res.json().catch(() => ({}))
         setMsg(err.error || '업로드 실패')
       }
     }
     if (ok > 0) {
-      setMsg(`${ok}개 업로드 완료`)
+      if (replaced > 0 && replaced === ok) {
+        setMsg(`${replaced}개 덮어쓰기 완료`)
+      } else if (replaced > 0) {
+        setMsg(`${ok}개 처리 (${replaced}개 덮어쓰기)`)
+      } else {
+        setMsg(`${ok}개 업로드 완료`)
+      }
       if (newFolder.trim()) {
         const res = await fetch('/api/admin/hosting/images/folders', {
           method: 'POST',

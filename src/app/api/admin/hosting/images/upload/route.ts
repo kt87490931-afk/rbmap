@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       mimeType,
       buffer,
     })
-    return NextResponse.json(record, { status: 201 })
+    return NextResponse.json(record, { status: record.overwritten ? 200 : 201 })
   } catch (e) {
     const msg = e instanceof Error ? e.message : '업로드 실패'
     return NextResponse.json({ error: msg }, { status: 500 })

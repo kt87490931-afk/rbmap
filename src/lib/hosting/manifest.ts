@@ -134,39 +134,79 @@ export async function getHostingImage(id: string): Promise<HostingImageRecord | 
   return manifest.images.find((item) => item.id === id) ?? null
 }
 
+function basenameFilename(name: string): string {
+  const n = (name || '').replace(/\\/g, '/')
+  const i = n.lastIndexOf('/')
+  return i >= 0 ? n.slice(i + 1) : n
+}
+
 export async function addHostingImage(input: {
   folder: string
   originalFilename: string
   mimeType: string
   buffer: Buffer
-}): Promise<HostingImageRecord> {
+}): Promise<HostingImageRecord & { overwritten: boolean }> {
   const ext = IMAGE_MIME[input.mimeType]
   if (!ext) throw new Error('지원하지 않는 이미지 형식입니다.')
 
   await ensureStorageDir()
   const folder = sanitizeFolderName(input.folder)
+  const displayName = basenameFilename(input.originalFilename) || `image${ext}`
+
+  const manifest = await readJsonFile<ImagesManifest>(imagesManifestPath(), { images: [] })
+  const existingIdx = manifest.images.findIndex(
+    (item) =>
+      item.folder === folder && basenameFilename(item.filename).toLowerCase() === displayName.toLowerCase()
+  )
+
+  await mkdir(join(getImagesDir(), folder), { recursive: true })
+
+  if (existingIdx >= 0) {
+    const existing = manifest.images[existingIdx]
+    const oldAbs = absFromStoragePath(existing.storagePath)
+    const storedName = `${existing.id}${ext}`
+    const storagePath = `h/${folder}/${storedName}`
+    const absPath = join(getImagesDir(), folder, storedName)
+
+    if (oldAbs !== absPath && existsSync(oldAbs)) {
+      await unlink(oldAbs).catch(() => {})
+    }
+
+    await writeFile(absPath, input.buffer)
+
+    const record: HostingImageRecord = {
+      ...existing,
+      filename: displayName,
+      storagePath,
+      mimeType: input.mimeType,
+      sizeBytes: input.buffer.length,
+      createdAt: new Date().toISOString(),
+    }
+    manifest.images[existingIdx] = record
+    await writeJsonFile(imagesManifestPath(), manifest)
+    return { ...record, overwritten: true }
+  }
+
   const id = randomUUID()
   const storedName = `${id}${ext}`
   const storagePath = `h/${folder}/${storedName}`
   const absPath = join(getImagesDir(), folder, storedName)
 
-  await mkdir(join(getImagesDir(), folder), { recursive: true })
   await writeFile(absPath, input.buffer)
 
   const record: HostingImageRecord = {
     id,
     folder,
-    filename: input.originalFilename || storedName,
+    filename: displayName,
     storagePath,
     mimeType: input.mimeType,
     sizeBytes: input.buffer.length,
     createdAt: new Date().toISOString(),
   }
 
-  const manifest = await readJsonFile<ImagesManifest>(imagesManifestPath(), { images: [] })
   manifest.images.push(record)
   await writeJsonFile(imagesManifestPath(), manifest)
-  return record
+  return { ...record, overwritten: false }
 }
 
 export async function deleteHostingImage(id: string): Promise<boolean> {

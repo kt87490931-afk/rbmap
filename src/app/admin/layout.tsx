@@ -1,12 +1,13 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { isSetupModeEffective, hasDevAdminCookie } from '@/lib/admin-auth'
 import { isOtpEnforced } from '@/lib/otp-config'
+import { hasAdminPasswordSession, isAdminPasswordEnabled } from '@/lib/admin-password'
 import { AdminShell } from './AdminShell'
 import type { Metadata } from 'next'
 
@@ -20,6 +21,17 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
+  const pathname = (await headers()).get('x-pathname') || ''
+  const isLoginPage = pathname === '/admin/login' || pathname.startsWith('/admin/login/')
+
+  if (isLoginPage) {
+    return (
+      <AdminShell bare>
+        {children}
+      </AdminShell>
+    )
+  }
+
   if (await hasDevAdminCookie()) {
     return (
       <AdminShell disabled={false}>
@@ -27,6 +39,18 @@ export default async function AdminLayout({
       </AdminShell>
     )
   }
+
+  if (isAdminPasswordEnabled()) {
+    if (!(await hasAdminPasswordSession())) {
+      redirect('/admin/login')
+    }
+    return (
+      <AdminShell disabled={false} passwordMode>
+        {children}
+      </AdminShell>
+    )
+  }
+
   if (isSetupModeEffective()) {
     return (
       <AdminShell disabled={false} setupMode>

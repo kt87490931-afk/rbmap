@@ -3,6 +3,10 @@ import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 import { isOtpEnforced } from '@/lib/otp-config'
 
+function isAdminPasswordEnabled(): boolean {
+  return !!(process.env.ADMIN_PASSWORD || '').trim()
+}
+
 /** env + DB blocked_ips 병합 */
 async function getBlockedIps(request: NextRequest): Promise<string[]> {
   const fromEnv = (process.env.BLOCKED_IPS || '').split(',').map((s) => s.trim()).filter(Boolean)
@@ -37,10 +41,36 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 2. /admin/* 접근 시 OTP 세션 쿠키 검사
+  // 2. /admin/* 접근 시 인증 검사
   if (!pathname.startsWith('/admin')) {
     return NextResponse.next({ request: { headers: requestHeaders } })
   }
+  if (pathname.startsWith('/admin/login')) {
+    return NextResponse.next({ request: { headers: requestHeaders } })
+  }
+
+  if (isAdminPasswordEnabled()) {
+    const pwdCookie = request.cookies.get('admin_password_session')
+    if (!pwdCookie?.value) {
+      const loginUrl = new URL('/admin/login', request.url)
+      loginUrl.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+    try {
+      const secret = process.env.NEXTAUTH_SECRET
+      if (!secret) {
+        return NextResponse.redirect(new URL('/admin/login', request.url))
+      }
+      const key = new TextEncoder().encode(secret)
+      await jwtVerify(pwdCookie.value, key)
+      return NextResponse.next({ request: { headers: requestHeaders } })
+    } catch {
+      const response = NextResponse.redirect(new URL('/admin/login', request.url))
+      response.cookies.delete('admin_password_session')
+      return response
+    }
+  }
+
   if (pathname.includes('/setup-otp') || pathname.includes('/verify-otp')) {
     return NextResponse.next({ request: { headers: requestHeaders } })
   }

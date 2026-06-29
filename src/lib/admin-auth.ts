@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { verifyOtpSession } from '@/lib/otp'
 import { isOtpEnforced } from '@/lib/otp-config'
+import { hasAdminPasswordSession, isAdminPasswordEnabled } from '@/lib/admin-password'
 import { cookies } from 'next/headers'
 
 /**
@@ -51,6 +52,10 @@ export type AuthErrorCode = 'no-session' | 'not-admin' | 'otp-required'
  */
 export async function requireAdminOrSetup(): Promise<NextResponse | null> {
   if (await hasDevAdminCookie()) return null
+  if (isAdminPasswordEnabled()) {
+    if (await hasAdminPasswordSession()) return null
+    return NextResponse.json({ error: '로그인이 필요합니다.', code: 'no-session' as AuthErrorCode }, { status: 403 })
+  }
   if (isSetupModeEffective()) {
     return null
   }

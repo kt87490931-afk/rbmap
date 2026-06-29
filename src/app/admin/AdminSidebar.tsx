@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { href: '/admin/hosting/videos', icon: '🎬', label: '영상 호스팅' },
 ]
 
-export function AdminSidebar({ disabled, setupMode }: { disabled?: boolean; setupMode?: boolean }) {
+export function AdminSidebar({ disabled, setupMode, passwordMode }: { disabled?: boolean; setupMode?: boolean; passwordMode?: boolean }) {
   const pathname = usePathname()
 
   return (
@@ -66,6 +66,10 @@ export function AdminSidebar({ disabled, setupMode }: { disabled?: boolean; setu
             type="button"
             onClick={async () => {
               await fetch('/api/admin/logout', { method: 'POST' }).catch(() => {})
+              if (passwordMode) {
+                window.location.href = '/admin/login'
+                return
+              }
               signOut({ callbackUrl: '/' })
             }}
             className="admin-nav-item"

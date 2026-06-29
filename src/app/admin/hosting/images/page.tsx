@@ -100,7 +100,7 @@ export default function AdminHostingImagesPage() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>📷 이미지 호스팅</h1>
         <p style={{ color: 'var(--muted)', fontSize: 13 }}>
-          디스크엔처럼 이미지를 업로드하고 게시판에 붙여넣을 URL·HTML 코드를 복사합니다. 홈페이지에는 노출되지 않습니다.
+          디스크엔처럼 이미지(jpg, png, gif)를 업로드하고 게시판에 붙여넣을 URL·HTML 코드를 복사합니다. 홈페이지에는 노출되지 않습니다.
         </p>
       </div>
 
@@ -136,7 +136,7 @@ export default function AdminHostingImagesPage() {
           <input
             ref={fileRef}
             type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
+            accept="image/jpeg,image/png,image/gif,.jpg,.jpeg,.png,.gif"
             multiple
             style={{ display: 'none' }}
             onChange={(e) => uploadFiles(e.target.files)}

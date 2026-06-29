@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminOrSetup } from '@/lib/admin-auth'
-import { addHostingImage, IMAGE_MAX_BYTES, IMAGE_MIME } from '@/lib/hosting'
+import { addHostingImage, IMAGE_MAX_BYTES } from '@/lib/hosting'
+import { resolveImageMime } from '@/lib/hosting/mime'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,9 +17,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '파일이 없습니다.' }, { status: 400 })
   }
 
-  const mimeType = file.type || ''
-  if (!IMAGE_MIME[mimeType]) {
-    return NextResponse.json({ error: 'jpg, png, gif, webp만 업로드할 수 있습니다.' }, { status: 400 })
+  const mimeType = resolveImageMime(file.name, file.type || '')
+  if (!mimeType) {
+    return NextResponse.json({ error: 'jpg, png, gif만 업로드할 수 있습니다.' }, { status: 400 })
   }
 
   if (file.size > IMAGE_MAX_BYTES) {

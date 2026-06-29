@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { HostingCopyField } from '@/components/admin/HostingCopyField'
-import { CELL_HEIGHT, CELL_WIDTH, GRID_WIDTH } from '@/lib/hosting/layout-constants'
+import { VideoSlotPreviewCell } from '@/components/admin/VideoSlotPreviewCell'
+import {
+  ADMIN_PREVIEW_WIDTH,
+  CELL_WIDTH,
+  GRID_WIDTH,
+} from '@/lib/hosting/layout-constants'
 
 interface VideoSlotItem {
   slot: number
@@ -20,6 +25,7 @@ export default function AdminHostingVideosPage() {
   const [loading, setLoading] = useState(true)
   const [uploadingSlot, setUploadingSlot] = useState<number | null>(null)
   const [msg, setMsg] = useState('')
+  const [msgIsError, setMsgIsError] = useState(false)
   const fileRefs = useRef<Record<number, HTMLInputElement | null>>({})
 
   const fetchData = useCallback(async () => {
@@ -32,6 +38,7 @@ export default function AdminHostingVideosPage() {
       setPreviewUrl(data.previewUrl || 'https://rbbmap.com/4m')
     } catch {
       setMsg('불러오기 실패')
+      setMsgIsError(true)
     }
     setLoading(false)
   }, [])
@@ -45,6 +52,7 @@ export default function AdminHostingVideosPage() {
     if (!file) return
     setUploadingSlot(slot)
     setMsg('')
+    setMsgIsError(false)
     const fd = new FormData()
     fd.append('file', file)
     fd.append('slot', String(slot))
@@ -55,10 +63,12 @@ export default function AdminHostingVideosPage() {
     })
     if (res.ok) {
       setMsg(`슬롯 ${slot} 업로드 완료`)
+      setMsgIsError(false)
       await fetchData()
     } else {
       const err = await res.json().catch(() => ({}))
-      setMsg(err.error || '업로드 실패')
+      setMsg(err.error || `슬롯 ${slot} 업로드 실패`)
+      setMsgIsError(true)
     }
     setUploadingSlot(null)
     const ref = fileRefs.current[slot]
@@ -73,9 +83,11 @@ export default function AdminHostingVideosPage() {
     })
     if (res.ok) {
       setMsg(`슬롯 ${slot} 삭제 완료`)
+      setMsgIsError(false)
       await fetchData()
     } else {
       setMsg('삭제 실패')
+      setMsgIsError(true)
     }
   }
 
@@ -84,12 +96,21 @@ export default function AdminHostingVideosPage() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>🎬 영상 호스팅 (4m)</h1>
         <p style={{ color: 'var(--muted)', fontSize: 13 }}>
-          794px 2×2 릴스 4칸 영상을 관리합니다. 자동재생·음소거·반복이며, 게시판용 HTML 코드를 복사해 사용하세요.
+          794px 2×2 릴스 4칸 영상을 관리합니다. 게시판 삽입 시 embed 코드는 실제 크기({GRID_WIDTH}px)로 출력됩니다.
         </p>
       </div>
 
       {msg && (
-        <div className="admin-section" style={{ marginBottom: 16, padding: '10px 14px', fontSize: 13 }}>
+        <div
+          className="admin-section"
+          style={{
+            marginBottom: 16,
+            padding: '10px 14px',
+            fontSize: 13,
+            borderColor: msgIsError ? '#e57373' : undefined,
+            color: msgIsError ? '#c62828' : undefined,
+          }}
+        >
           {msg}
         </div>
       )}
@@ -97,13 +118,18 @@ export default function AdminHostingVideosPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, alignItems: 'start' }}>
         <div>
           <div className="admin-section" style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>미리보기 ({GRID_WIDTH}px)</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
+              미리보기 (축소 · 실제 embed {GRID_WIDTH}px)
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>
+              ▶ 버튼을 누르면 재생됩니다.
+            </p>
             <div
               style={{
-                width: GRID_WIDTH,
+                width: ADMIN_PREVIEW_WIDTH,
                 maxWidth: '100%',
                 display: 'grid',
-                gridTemplateColumns: `${CELL_WIDTH}px ${CELL_WIDTH}px`,
+                gridTemplateColumns: '1fr 1fr',
                 gap: 0,
                 lineHeight: 0,
                 background: '#111',
@@ -114,27 +140,17 @@ export default function AdminHostingVideosPage() {
               {[1, 2, 3, 4].map((slotNum) => {
                 const slot = slots.find((s) => s.slot === slotNum)
                 return (
-                  <div key={slotNum} style={{ position: 'relative', background: '#222' }}>
-                    {slot?.url ? (
-                      <video
-                        src={slot.url}
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
-                        style={{ width: CELL_WIDTH, maxWidth: '100%', height: CELL_HEIGHT, objectFit: 'cover', display: 'block' }}
-                      />
-                    ) : (
-                      <div style={{ width: CELL_WIDTH, maxWidth: '100%', height: CELL_HEIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: 12 }}>
-                        슬롯 {slotNum}
-                      </div>
-                    )}
-                  </div>
+                  <VideoSlotPreviewCell
+                    key={slotNum}
+                    slotNum={slotNum}
+                    url={slot?.url ?? null}
+                  />
                 )
               })}
             </div>
             <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>
               공개 URL: <a href={previewUrl} target="_blank" rel="noopener noreferrer">{previewUrl}</a>
+              {' · '}셀당 {CELL_WIDTH}px (embed 기준)
             </p>
           </div>
 
@@ -156,7 +172,7 @@ export default function AdminHostingVideosPage() {
                       <input
                         ref={(el) => { fileRefs.current[slotNum] = el }}
                         type="file"
-                        accept="video/mp4,video/webm"
+                        accept="video/mp4,video/webm,.mp4,.webm"
                         style={{ display: 'none' }}
                         onChange={(e) => uploadSlot(slotNum, e.target.files)}
                       />

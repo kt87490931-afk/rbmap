@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminOrSetup } from '@/lib/admin-auth'
-import { upsertVideoSlot, VIDEO_MAX_BYTES, VIDEO_MIME } from '@/lib/hosting'
+import { upsertVideoSlot, VIDEO_MAX_BYTES } from '@/lib/hosting'
+import { resolveVideoMime } from '@/lib/hosting/mime'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,8 +20,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '슬롯은 1~4 사이여야 합니다.' }, { status: 400 })
   }
 
-  const mimeType = file.type || ''
-  if (!VIDEO_MIME[mimeType]) {
+  const mimeType = resolveVideoMime(file.name, file.type || '')
+  if (!mimeType) {
     return NextResponse.json({ error: 'mp4, webm만 업로드할 수 있습니다.' }, { status: 400 })
   }
   if (file.size > VIDEO_MAX_BYTES) {

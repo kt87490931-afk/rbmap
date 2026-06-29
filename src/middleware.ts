@@ -84,6 +84,6 @@ export const config = {
      * IP 차단: 전체 경로. /api/internal 제외 (자기 자신 fetch 시 루프 방지)
      * /admin 은 OTP 검사 추가 적용
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/internal|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/internal|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|webm)$).*)',
   ],
 }

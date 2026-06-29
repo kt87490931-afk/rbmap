@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { isSetupModeEffective, hasDevAdminCookie } from '@/lib/admin-auth'
+import { isOtpEnforced } from '@/lib/otp-config'
 import { AdminShell } from './AdminShell'
 import type { Metadata } from 'next'
 
@@ -70,7 +71,7 @@ export default async function AdminLayout({
 
   const cookieStore = await cookies()
   const otpCookie = cookieStore.get('admin_otp_session')
-  const isOtpVerified = !!otpCookie?.value
+  const isOtpVerified = !isOtpEnforced() || !!otpCookie?.value
 
   return (
     <AdminShell disabled={!isOtpVerified} setupMode={false}>

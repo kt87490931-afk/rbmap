@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
+import { isOtpEnforced } from '@/lib/otp-config'
 
 /** env + DB blocked_ips 병합 */
 async function getBlockedIps(request: NextRequest): Promise<string[]> {
@@ -41,6 +42,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } })
   }
   if (pathname.includes('/setup-otp') || pathname.includes('/verify-otp')) {
+    return NextResponse.next({ request: { headers: requestHeaders } })
+  }
+
+  if (!isOtpEnforced()) {
     return NextResponse.next({ request: { headers: requestHeaders } })
   }
 

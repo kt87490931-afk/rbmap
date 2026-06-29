@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { getOtpSecret } from '@/lib/otp'
+import { isOtpEnforced } from '@/lib/otp-config'
 import Link from 'next/link'
 import { SetupOtpForm } from './SetupOtpForm'
 
@@ -29,6 +30,10 @@ export default async function SetupOtpPage() {
         </div>
       </div>
     )
+  }
+
+  if (!isOtpEnforced()) {
+    redirect('/admin')
   }
 
   const existingSecret = await getOtpSecret(session.user.id)

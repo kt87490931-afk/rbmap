@@ -3,6 +3,7 @@ import { toDataURL } from 'qrcode'
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { supabaseAdmin } from './supabase-server'
+import { isOtpEnforced } from './otp-config'
 
 const OTP_COOKIE_NAME = 'admin_otp_session'
 const OTP_SESSION_DURATION_MIN = 1440
@@ -77,6 +78,7 @@ export async function setOtpSessionCookie(userId: string): Promise<void> {
 }
 
 export async function verifyOtpSession(userId: string): Promise<boolean> {
+  if (!isOtpEnforced()) return true
   try {
     const cookieStore = await cookies()
     const cookie = cookieStore.get(OTP_COOKIE_NAME)

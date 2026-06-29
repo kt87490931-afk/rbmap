@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { verifyOtpSession } from '@/lib/otp'
+import { isOtpEnforced } from '@/lib/otp-config'
 import { cookies } from 'next/headers'
 
 /**
@@ -59,6 +60,9 @@ export async function requireAdminOrSetup(): Promise<NextResponse | null> {
   }
   if (session.user.role !== 'admin') {
     return NextResponse.json({ error: '관리자 권한이 없습니다.', code: 'not-admin' as AuthErrorCode }, { status: 403 })
+  }
+  if (!isOtpEnforced()) {
+    return null
   }
   const verified = await verifyOtpSession(session.user.id)
   if (!verified) {

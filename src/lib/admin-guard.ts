@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from './auth'
 import { getOtpSecret, verifyOtpSession } from './otp'
+import { isOtpEnforced } from './otp-config'
 
 export type AdminCheckResult =
   | { ok: true; userId: string }
@@ -22,6 +23,10 @@ export async function checkAdminOtp(callbackPath: string): Promise<AdminCheckRes
 
   if (session.user.role !== 'admin') {
     return { ok: false, reason: 'not-admin', redirect: null }
+  }
+
+  if (!isOtpEnforced()) {
+    return { ok: true, userId: session.user.id }
   }
 
   const otpSecret = await getOtpSecret(session.user.id)

@@ -24,6 +24,17 @@ npm run build
 # 3. standalone 정리
 echo "[3/6] standalone 정리..."
 cp -r .next/static .next/standalone/.next/static 2>/dev/null || true
+# 호스팅 업로드: standalone 잔여 → 루트 public/storage 병합 (배포 시 유실 방지)
+mkdir -p public/h public/4m storage/hosting
+if [ -d .next/standalone/public/h ]; then
+  cp -rn .next/standalone/public/h/. public/h/ 2>/dev/null || true
+fi
+if [ -d .next/standalone/public/4m ]; then
+  cp -rn .next/standalone/public/4m/. public/4m/ 2>/dev/null || true
+fi
+if [ -d .next/standalone/storage/hosting ]; then
+  cp -rn .next/standalone/storage/hosting/. storage/hosting/ 2>/dev/null || true
+fi
 if [ -d public ]; then
   cp -r public .next/standalone/public 2>/dev/null || true
 fi

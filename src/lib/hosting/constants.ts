@@ -1,5 +1,5 @@
 import { existsSync } from 'fs'
-import { basename, join } from 'path'
+import { join, resolve } from 'path'
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com').replace(/\/$/, '')
 
@@ -21,30 +21,31 @@ export const GRID_WIDTH = 794
 export const CELL_WIDTH = 397
 export const CELL_HEIGHT = Math.round((CELL_WIDTH * 16) / 9)
 
+/** package.json + next.config 가 있는 저장소 루트 (standalone 하위에서도 /var/www/rbmap 탐색) */
+export function resolveRepoRoot(): string {
+  let dir = resolve(process.cwd())
+  for (let i = 0; i < 10; i++) {
+    if (
+      existsSync(join(dir, 'package.json')) &&
+      (existsSync(join(dir, 'next.config.mjs')) || existsSync(join(dir, 'next.config.js')))
+    ) {
+      return dir
+    }
+    const parent = join(dir, '..')
+    if (parent === dir) break
+    dir = parent
+  }
+  return resolve(process.cwd())
+}
+
 export function getProjectRoot(): string {
-  const cwd = process.cwd()
-  const parent = join(cwd, '..')
-
-  // PM2 standalone: 업로드·manifest는 저장소 루트에 두어 deploy 시 덮어쓰기 방지
-  if (
-    basename(cwd) === 'standalone' &&
-    existsSync(join(parent, 'package.json')) &&
-    existsSync(join(parent, '.next'))
-  ) {
-    return parent
-  }
-
-  const candidates = [cwd, parent]
-  for (const root of candidates) {
-    if (existsSync(join(root, 'package.json'))) return root
-  }
-  return cwd
+  return resolveRepoRoot()
 }
 
 export function getHostingDataRoot(): string {
   const fromEnv = (process.env.HOSTING_DATA_DIR || '').trim()
-  if (fromEnv) return fromEnv
-  return join(getProjectRoot(), 'data', 'hosting')
+  if (fromEnv) return resolve(fromEnv)
+  return join(resolveRepoRoot(), 'data', 'hosting')
 }
 
 export function getPublicRoot(): string {

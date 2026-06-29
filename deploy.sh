@@ -19,29 +19,28 @@ npm ci
 
 # 2. 빌드
 echo "[2/6] npm run build..."
+# 호스팅 백업·잘못된 경로 병합 (빌드 전 .next 삭제 대비)
+HOSTING_DIR="$(pwd)/data/hosting"
+mkdir -p "$HOSTING_DIR/images" "$HOSTING_DIR/videos"
+if [ -d data/hosting/images ] && [ "$(find data/hosting/images -type f ! -name '.gitkeep' 2>/dev/null | head -1)" ]; then
+  BACKUP="data/hosting-backup-$(date +%Y%m%d%H%M%S).tar.gz"
+  tar -czf "$BACKUP" -C data hosting 2>/dev/null || true
+  ls -t data/hosting-backup-*.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm -f
+  echo "호스팅 백업: $BACKUP"
+fi
+if [ -d .next/standalone/data/hosting ]; then
+  cp -a .next/standalone/data/hosting/. "$HOSTING_DIR/" 2>/dev/null || true
+  echo "standalone/data/hosting → data/hosting 병합"
+fi
 npm run build
 
 # 3. standalone 정리
 echo "[3/6] standalone 정리..."
 # 호스팅 데이터: data/hosting (build·public 복사와 무관하게 유지)
-mkdir -p data/hosting/images data/hosting/videos
-if [ -d public/h ]; then
-  cp -rn public/h/. data/hosting/images/ 2>/dev/null || true
-fi
-if [ -d public/4m ]; then
-  cp -rn public/4m/. data/hosting/videos/ 2>/dev/null || true
-fi
-if [ -d storage/hosting ]; then
-  cp -rn storage/hosting/. data/hosting/ 2>/dev/null || true
-fi
-if [ -d .next/standalone/public/h ]; then
-  cp -rn .next/standalone/public/h/. data/hosting/images/ 2>/dev/null || true
-fi
-if [ -d .next/standalone/public/4m ]; then
-  cp -rn .next/standalone/public/4m/. data/hosting/videos/ 2>/dev/null || true
-fi
-if [ -d .next/standalone/storage/hosting ]; then
-  cp -rn .next/standalone/storage/hosting/. data/hosting/ 2>/dev/null || true
+HOSTING_DIR="$(pwd)/data/hosting"
+mkdir -p "$HOSTING_DIR/images" "$HOSTING_DIR/videos"
+if [ -d .next/standalone/data/hosting ]; then
+  cp -a .next/standalone/data/hosting/. "$HOSTING_DIR/" 2>/dev/null || true
 fi
 cp -r .next/static .next/standalone/.next/static 2>/dev/null || true
 if [ -d public ]; then

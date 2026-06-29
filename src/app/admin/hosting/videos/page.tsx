@@ -67,7 +67,11 @@ export default function AdminHostingVideosPage() {
       await fetchData()
     } else {
       const err = await res.json().catch(() => ({}))
-      setMsg(err.error || `슬롯 ${slot} 업로드 실패`)
+      if (res.status === 413) {
+        setMsg('파일이 너무 큽니다. 영상은 50MB 이하만 업로드할 수 있습니다.')
+      } else {
+        setMsg(err.error || `슬롯 ${slot} 업로드 실패`)
+      }
       setMsgIsError(true)
     }
     setUploadingSlot(null)

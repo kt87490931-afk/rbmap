@@ -37,7 +37,8 @@ next-env.d.ts
 /backups/
 
 # 호스팅 업로드 파일·메타 (서버 로컬 전용, deploy/build 와 분리)
-/data/hosting/
+/data/hosting/**
+!/data/hosting/.gitkeep
 /storage/hosting/
 /public/h/**
 !/public/h/.gitkeep

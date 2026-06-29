@@ -32,3 +32,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# DB 백업 (로컬 전용, 커밋 금지)
+/backups/
+
+# 호스팅 업로드 파일·메타 (서버 로컬 전용)
+/storage/hosting/
+/public/h/**
+!/public/h/.gitkeep
+/public/4m/**
+!/public/4m/.gitkeep

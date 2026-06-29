@@ -21,6 +21,8 @@ const NAV_ITEMS = [
   { href: '/admin/visit-logs', icon: '📋', label: '접속자 로그' },
   { href: '/admin/threats', icon: '🚨', label: '위험 감지' },
   { href: '/admin/cron-health', icon: '💓', label: '크론헬스' },
+  { href: '/admin/hosting/images', icon: '📷', label: '이미지 호스팅' },
+  { href: '/admin/hosting/videos', icon: '🎬', label: '영상 호스팅' },
 ]
 
 export function AdminSidebar({ disabled, setupMode }: { disabled?: boolean; setupMode?: boolean }) {

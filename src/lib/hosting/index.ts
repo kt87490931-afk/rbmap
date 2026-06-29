@@ -24,6 +24,7 @@ export type { HostingImageRecord, HostingVideoSlot } from './manifest'
 export {
   listHostingImages,
   listHostingFolders,
+  createHostingFolder,
   getHostingImage,
   addHostingImage,
   deleteHostingImage,

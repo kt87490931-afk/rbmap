@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, unlink } from 'fs/promises'
+import { mkdir, readFile, writeFile, unlink, readdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
@@ -98,10 +98,35 @@ export async function listHostingImages(folder?: string): Promise<HostingImageRe
 }
 
 export async function listHostingFolders(): Promise<string[]> {
+  await ensureStorageDir()
   const manifest = await readJsonFile<ImagesManifest>(imagesManifestPath(), { images: [] })
   const set = new Set<string>(['default'])
   for (const item of manifest.images) set.add(item.folder)
+
+  const imagesDir = getImagesDir()
+  if (existsSync(imagesDir)) {
+    const entries = await readdir(imagesDir, { withFileTypes: true }).catch(() => [])
+    for (const entry of entries) {
+      if (entry.isDirectory()) set.add(entry.name)
+    }
+  }
+
   return Array.from(set).sort()
+}
+
+export async function createHostingFolder(raw: string): Promise<string> {
+  const trimmed = raw.trim()
+  if (!trimmed) throw new Error('폴더 이름을 입력해 주세요.')
+
+  const folder = sanitizeFolderName(trimmed)
+  const normalized = trimmed.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '')
+  if (!normalized || normalized !== folder) {
+    throw new Error('폴더 이름은 영문, 숫자, -, _ 만 사용할 수 있습니다.')
+  }
+
+  await ensureStorageDir()
+  await mkdir(join(getImagesDir(), folder), { recursive: true })
+  return folder
 }
 
 export async function getHostingImage(id: string): Promise<HostingImageRecord | null> {

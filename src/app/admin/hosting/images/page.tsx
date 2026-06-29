@@ -19,6 +19,7 @@ export default function AdminHostingImagesPage() {
   const [folders, setFolders] = useState<string[]>(['default'])
   const [currentFolder, setCurrentFolder] = useState('default')
   const [newFolder, setNewFolder] = useState('')
+  const [creatingFolder, setCreatingFolder] = useState(false)
   const [items, setItems] = useState<ImageItem[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -49,6 +50,38 @@ export default function AdminHostingImagesPage() {
     fetchItems()
   }, [fetchItems])
 
+  async function createFolder() {
+    const name = newFolder.trim()
+    if (!name) {
+      setMsg('폴더 이름을 입력해 주세요.')
+      return
+    }
+    setCreatingFolder(true)
+    setMsg('')
+    try {
+      const res = await fetch('/api/admin/hosting/images/folders', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setMsg(data.error || '폴더 생성 실패')
+        return
+      }
+      setFolders(Array.isArray(data.folders) ? data.folders : folders)
+      setCurrentFolder(data.folder || name)
+      setNewFolder('')
+      setMsg(`폴더 "${data.folder}" 생성 완료`)
+      await fetchItems()
+    } catch {
+      setMsg('폴더 생성 중 오류가 발생했습니다.')
+    } finally {
+      setCreatingFolder(false)
+    }
+  }
+
   async function uploadFiles(files: FileList | null) {
     if (!files?.length) return
     setUploading(true)
@@ -72,7 +105,18 @@ export default function AdminHostingImagesPage() {
     }
     if (ok > 0) {
       setMsg(`${ok}개 업로드 완료`)
-      if (newFolder.trim()) setCurrentFolder(newFolder.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'default')
+      if (newFolder.trim()) {
+        const res = await fetch('/api/admin/hosting/images/folders', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newFolder.trim() }),
+        }).catch(() => null)
+        if (res?.ok) {
+          const data = await res.json()
+          setCurrentFolder(data.folder || currentFolder)
+        }
+      }
       setNewFolder('')
       await fetchItems()
     }
@@ -125,14 +169,28 @@ export default function AdminHostingImagesPage() {
             </select>
           </label>
           <label style={{ fontSize: 12 }}>
-            새 폴더 (업로드 시)
+            새 폴더
             <input
               value={newFolder}
               onChange={(e) => setNewFolder(e.target.value)}
-              placeholder="예: sample"
+              placeholder="예: product, banner"
               style={{ display: 'block', marginTop: 4, minWidth: 160, padding: '8px 10px', borderRadius: 8 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  void createFolder()
+                }
+              }}
             />
           </label>
+          <button
+            type="button"
+            className="btn-save"
+            disabled={creatingFolder || !newFolder.trim()}
+            onClick={() => createFolder()}
+          >
+            {creatingFolder ? '생성 중…' : '폴더 만들기'}
+          </button>
           <input
             ref={fileRef}
             type="file"

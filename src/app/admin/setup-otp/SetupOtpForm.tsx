@@ -122,10 +122,11 @@ export function SetupOtpForm() {
         <input
           type="text"
           inputMode="numeric"
-          pattern="[0-9]{6}"
+          autoComplete="one-time-code"
           maxLength={6}
           value={token}
-          onChange={(e) => setToken(e.target.value.replace(/\D/g, ''))}
+          onChange={(e) => setToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          onInput={(e) => setToken(e.currentTarget.value.replace(/\D/g, '').slice(0, 6))}
           placeholder="000000"
           className="form-input"
           style={{
@@ -158,14 +159,14 @@ export function SetupOtpForm() {
 
       <button
         type="submit"
-        disabled={submitting || token.length !== 6}
+        disabled={submitting}
         className="btn-save"
         style={{
           width: '100%',
           padding: '14px 20px',
           fontSize: 15,
-          opacity: (submitting || token.length !== 6) ? 0.5 : 1,
-          cursor: (submitting || token.length !== 6) ? 'not-allowed' : 'pointer',
+          opacity: submitting ? 0.6 : 1,
+          cursor: submitting ? 'wait' : 'pointer',
         }}
       >
         {submitting ? '확인 중...' : '✅ OTP 설정 완료'}

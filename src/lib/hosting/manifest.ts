@@ -4,7 +4,6 @@ import { join } from 'path'
 import { randomUUID } from 'crypto'
 import {
   getImagesDir,
-  getPublicRoot,
   getStorageRoot,
   getVideosDir,
   sanitizeFolderName,
@@ -12,6 +11,7 @@ import {
   IMAGE_MIME,
   VIDEO_MIME,
 } from './constants'
+import { prepareHostingStorage } from './migrate'
 
 export interface HostingImageRecord {
   id: string
@@ -49,13 +49,18 @@ function videosManifestPath(): string {
 }
 
 function absFromStoragePath(storagePath: string): string {
-  return join(getPublicRoot(), ...storagePath.split('/'))
+  const parts = storagePath.split('/')
+  if (parts[0] === 'h') {
+    return join(getImagesDir(), ...parts.slice(1))
+  }
+  if (parts[0] === '4m') {
+    return join(getVideosDir(), ...parts.slice(1))
+  }
+  return join(getImagesDir(), ...parts)
 }
 
 async function ensureStorageDir(): Promise<void> {
-  await mkdir(getStorageRoot(), { recursive: true })
-  await mkdir(getImagesDir(), { recursive: true })
-  await mkdir(getVideosDir(), { recursive: true })
+  await prepareHostingStorage()
 }
 
 async function readJsonFile<T>(path: string, fallback: T): Promise<T> {

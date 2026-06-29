@@ -41,20 +41,27 @@ export function getProjectRoot(): string {
   return cwd
 }
 
+export function getHostingDataRoot(): string {
+  const fromEnv = (process.env.HOSTING_DATA_DIR || '').trim()
+  if (fromEnv) return fromEnv
+  return join(getProjectRoot(), 'data', 'hosting')
+}
+
 export function getPublicRoot(): string {
   return join(getProjectRoot(), 'public')
 }
 
+/** manifest(images.json, videos.json) 경로 */
 export function getStorageRoot(): string {
-  return join(getProjectRoot(), 'storage', 'hosting')
+  return getHostingDataRoot()
 }
 
 export function getImagesDir(): string {
-  return join(getPublicRoot(), 'h')
+  return join(getHostingDataRoot(), 'images')
 }
 
 export function getVideosDir(): string {
-  return join(getPublicRoot(), '4m')
+  return join(getHostingDataRoot(), 'videos')
 }
 
 export function publicUrl(storagePath: string, version?: string | number): string {

@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   ])
 
   const items = images.map((item) => {
-    const url = publicUrl(item.storagePath, Date.parse(item.createdAt))
+    const url = publicUrl(item.storagePath)
     return {
       ...item,
       url,

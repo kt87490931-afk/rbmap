@@ -180,7 +180,6 @@ export async function addHostingImage(input: {
       storagePath,
       mimeType: input.mimeType,
       sizeBytes: input.buffer.length,
-      createdAt: new Date().toISOString(),
     }
     manifest.images[existingIdx] = record
     await writeJsonFile(imagesManifestPath(), manifest)

@@ -145,7 +145,7 @@ export default function AdminHostingImagesPage() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>📷 이미지 호스팅</h1>
         <p style={{ color: 'var(--muted)', fontSize: 13 }}>
-          디스크엔처럼 이미지(jpg, png, gif, 최대 20MB)를 업로드하고 게시판에 붙여넣을 URL·HTML 코드를 복사합니다. 홈페이지에는 노출되지 않습니다.
+          디스크엔처럼 이미지(jpg, png, gif, 최대 20MB)를 업로드하고 게시판에 붙여넣을 URL·HTML 코드를 복사합니다. 같은 파일명으로 덮어쓰면 주소·삽입코드는 그대로이고 이미지만 교체됩니다. 썸네일 더블클릭 시 원본을 볼 수 있습니다.
         </p>
       </div>
 
@@ -223,6 +223,8 @@ export default function AdminHostingImagesPage() {
                   key={item.id}
                   type="button"
                   onClick={() => setSelectedId(item.id)}
+                  onDoubleClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}
+                  title="클릭: 선택 · 더블클릭: 원본 보기"
                   style={{
                     border: selectedId === item.id ? '2px solid var(--gold)' : '1px solid var(--border)',
                     borderRadius: 8,
@@ -233,7 +235,11 @@ export default function AdminHostingImagesPage() {
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.url} alt="" style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 4, display: 'block' }} />
+                  <img
+                    src={`${item.url}?_=${item.sizeBytes}`}
+                    alt=""
+                    style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+                  />
                   <div style={{ fontSize: 11, marginTop: 6, wordBreak: 'break-all', color: 'var(--text)' }}>{item.filename}</div>
                 </button>
               ))}
@@ -245,6 +251,21 @@ export default function AdminHostingImagesPage() {
           <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12 }}>외부링크 코드</div>
           {selected ? (
             <>
+              <div style={{ marginBottom: 12, textAlign: 'center' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${selected.url}?_=${selected.sizeBytes}`}
+                  alt={selected.filename}
+                  style={{ maxWidth: '100%', maxHeight: 220, objectFit: 'contain', borderRadius: 8, cursor: 'pointer' }}
+                  onClick={() => window.open(selected.url, '_blank', 'noopener,noreferrer')}
+                  title="클릭하면 새 탭에서 원본 보기"
+                />
+              </div>
+              <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10, textAlign: 'center' }}>
+                <a href={selected.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)' }}>
+                  새 탭에서 원본 보기
+                </a>
+              </p>
               <HostingCopyField label="파일 주소" value={selected.url} />
               <HostingCopyField label="Html 삽입코드" value={selected.html} />
               <HostingCopyField label="Html (가로 100%)" value={selected.htmlFullWidth} />

@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation'
+import { redirectToReviews } from '@/lib/legacy-redirects'
 
-/** /karaoke → /gangnam (가라오케 메인 지역으로 리다이렉트) */
-export default async function KaraokeRedirectPage() {
-  redirect('/gangnam')
+/** /karaoke → /reviews 301 */
+export default function KaraokeRedirectPage() {
+  return redirectToReviews()
 }

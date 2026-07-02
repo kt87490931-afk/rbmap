@@ -1,232 +1,99 @@
-import { MetadataRoute } from "next";
-import { getValidRegionSlugs } from "@/lib/data/regions";
-import { buildReviewUrl } from "@/lib/data/review-posts";
-import { supabaseAdmin } from "@/lib/supabase-server";
+import { MetadataRoute } from 'next'
+import { getFlatSlugIndex } from '@/lib/data/review-flat'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://rbbmap.com";
-const CATEGORIES = ["karaoke", "highpublic", "shirtroom", "public", "jjomoh", "room-salon", "bar"] as const;
-const REVIEW_BATCH = 500;
+const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
+const REVIEW_BATCH = 500
 
 type SitemapReviewRow = {
-  region: string;
-  type: string;
-  venue_slug: string;
-  slug: string;
-  updated_at?: string | null;
-  published_at?: string | null;
-  created_at?: string | null;
-};
-
-type SitemapPartnerRow = {
-  href: string | null;
-};
+  id: string
+  updated_at?: string | null
+  published_at?: string | null
+  created_at?: string | null
+}
 
 export type SitemapDiagnostics = {
-  generated_at: string;
-  total_url_count: number;
-  static_url_count: number;
-  region_url_count: number;
-  category_url_count: number;
-  partner_url_count: number;
-  review_url_count: number;
-  dynamic_type_url_count: number;
-  region_count: number;
-  partner_count: number;
-  review_count: number;
-  review_batches: number;
-  partial: boolean;
-  errors: string[];
-};
+  generated_at: string
+  total_url_count: number
+  static_url_count: number
+  review_url_count: number
+  review_count: number
+  review_batches: number
+  partial: boolean
+  errors: string[]
+}
 
-/** 모든 published 리뷰를 배치로 조회 (오류 시 throw) */
-async function getAllPublishedReviewsStrict(): Promise<SitemapReviewRow[]> {
-  const list: SitemapReviewRow[] = [];
-  let offset = 0;
-  let chunk: SitemapReviewRow[] = [];
+async function getAllPublishedReviewIdsStrict(): Promise<SitemapReviewRow[]> {
+  const list: SitemapReviewRow[] = []
+  let offset = 0
+  let chunk: SitemapReviewRow[] = []
   do {
     const { data, error } = await supabaseAdmin
-      .from("review_posts")
-      .select("region, type, venue_slug, slug, updated_at, published_at, created_at")
-      .eq("status", "published")
-      .order("published_at", { ascending: false })
-      .range(offset, offset + REVIEW_BATCH - 1);
+      .from('review_posts')
+      .select('id, updated_at, published_at, created_at')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .range(offset, offset + REVIEW_BATCH - 1)
     if (error) {
-      throw new Error(`review_posts 조회 실패(offset=${offset}): ${error.message}`);
+      throw new Error(`review_posts 조회 실패(offset=${offset}): ${error.message}`)
     }
-    chunk = (data ?? []) as SitemapReviewRow[];
-    list.push(...chunk);
-    offset += REVIEW_BATCH;
-  } while (chunk.length === REVIEW_BATCH);
-  return list;
+    chunk = (data ?? []) as SitemapReviewRow[]
+    list.push(...chunk)
+    offset += REVIEW_BATCH
+  } while (chunk.length === REVIEW_BATCH)
+  return list
 }
 
 export async function generateSitemapPayload(): Promise<{
-  urls: MetadataRoute.Sitemap;
-  diagnostics: SitemapDiagnostics;
+  urls: MetadataRoute.Sitemap
+  diagnostics: SitemapDiagnostics
 }> {
   const urls: MetadataRoute.Sitemap = [
-    { url: BASE, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
-    { url: `${BASE}/reviews`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-    { url: `${BASE}/regions`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
-    { url: `${BASE}/ranking`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
-    { url: `${BASE}/guide`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-    { url: `${BASE}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
-  ];
+    { url: BASE, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
+    { url: `${BASE}/reviews`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
+  ]
   const diagnostics: SitemapDiagnostics = {
     generated_at: new Date().toISOString(),
     total_url_count: 0,
     static_url_count: urls.length,
-    region_url_count: 0,
-    category_url_count: 0,
-    partner_url_count: 0,
     review_url_count: 0,
-    dynamic_type_url_count: 0,
-    region_count: 0,
-    partner_count: 0,
     review_count: 0,
     review_batches: 0,
     partial: false,
     errors: [],
-  };
-
-  // DB regions 테이블 기준. 준비중(coming) 지역 제외 → "발견됨-색인안됨" 방지
-  let regionSlugs: string[] = [];
-  try {
-    regionSlugs = await getValidRegionSlugs();
-    if (regionSlugs.length === 0) {
-      diagnostics.errors.push("regions 조회 후 유효 지역(준비중 제외) 없음");
-    }
-  } catch (e) {
-    diagnostics.errors.push(`regions 조회 실패: ${e instanceof Error ? e.message : "unknown"}`);
-    diagnostics.partial = true;
-  }
-  diagnostics.region_count = regionSlugs.length;
-  const allTypes = new Set<string>(CATEGORIES);
-
-  for (const slug of regionSlugs) {
-    urls.push({
-      url: `${BASE}/${slug}`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.9,
-    });
-    for (const cat of allTypes) {
-      urls.push({
-        url: `${BASE}/${slug}/category/${cat}`,
-        lastModified: new Date(),
-        changeFrequency: "daily" as const,
-        priority: 0.8,
-      });
-    }
-  }
-  diagnostics.region_url_count = regionSlugs.length;
-  diagnostics.category_url_count = regionSlugs.length * allTypes.size + allTypes.size;
-
-  for (const cat of allTypes) {
-    urls.push({
-      url: `${BASE}/category/${cat}`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.8,
-    });
-  }
-
-  const seenPaths = new Set<string>();
-
-  try {
-    const { data: partners, error } = await supabaseAdmin
-      .from("partners")
-      .select("href")
-      .eq("is_active", true)
-      .order("updated_at", { ascending: false })
-      .limit(1000);
-    if (error) {
-      throw new Error(error.message);
-    }
-    const list = (partners ?? []) as SitemapPartnerRow[];
-    diagnostics.partner_count = list.length;
-    for (const p of list) {
-      const href = (p.href || "").trim().replace(/\/$/, "");
-      if (href.startsWith("/") && href.length > 2 && !seenPaths.has(href)) {
-        seenPaths.add(href);
-        urls.push({
-          url: `${BASE}${href}`,
-          lastModified: new Date(),
-          changeFrequency: "weekly" as const,
-          priority: 0.8,
-        });
-      }
-    }
-    diagnostics.partner_url_count = seenPaths.size;
-  } catch (e) {
-    diagnostics.errors.push(`partners 조회 실패: ${e instanceof Error ? e.message : "unknown"}`);
-    diagnostics.partial = true;
   }
 
   try {
-    const reviews = await getAllPublishedReviewsStrict();
-    diagnostics.review_count = reviews.length;
-    diagnostics.review_batches = Math.ceil(reviews.length / REVIEW_BATCH);
+    const [reviews, index] = await Promise.all([
+      getAllPublishedReviewIdsStrict(),
+      getFlatSlugIndex(),
+    ])
+    diagnostics.review_count = reviews.length
+    diagnostics.review_batches = Math.ceil(reviews.length / REVIEW_BATCH)
+
     for (const r of reviews) {
-      allTypes.add(r.type);
-
-      const venuePath = `/${r.region}/${r.type}/${r.venue_slug}`;
-      if (!seenPaths.has(venuePath)) {
-        seenPaths.add(venuePath);
-        urls.push({
-          url: `${BASE}${venuePath}`,
-          lastModified: new Date(),
-          changeFrequency: "weekly" as const,
-          priority: 0.8,
-        });
-      }
-
-      const reviewPath = buildReviewUrl(r.region, r.type, r.venue_slug, r.slug);
-      const lastMod = r.updated_at || r.published_at || r.created_at;
-      const fullReviewUrl = `${BASE}${reviewPath}`;
+      const flatSlug = index.idToFlat.get(r.id)
+      if (!flatSlug) continue
+      const lastMod = r.updated_at || r.published_at || r.created_at
+      const reviewPath = `/reviews/${encodeURIComponent(flatSlug)}`
       urls.push({
-        url: encodeURI(fullReviewUrl),
+        url: `${BASE}${reviewPath}`,
         lastModified: lastMod ? new Date(lastMod) : new Date(),
-        changeFrequency: "weekly" as const,
-        priority: 0.7,
-      });
-    }
-    diagnostics.review_url_count = reviews.length;
-
-    let dynamicTypeCount = 0;
-    for (const type of allTypes) {
-      if (CATEGORIES.includes(type as (typeof CATEGORIES)[number])) continue;
-      dynamicTypeCount += 1;
-      urls.push({
-        url: `${BASE}/category/${type}`,
-        lastModified: new Date(),
-        changeFrequency: "daily" as const,
+        changeFrequency: 'weekly' as const,
         priority: 0.8,
-      });
-      for (const slug of regionSlugs) {
-        const catPath = `/${slug}/category/${type}`;
-        if (!seenPaths.has(catPath)) {
-          seenPaths.add(catPath);
-          urls.push({
-            url: `${BASE}${catPath}`,
-            lastModified: new Date(),
-            changeFrequency: "daily" as const,
-            priority: 0.8,
-          });
-        }
-      }
+      })
     }
-    diagnostics.dynamic_type_url_count = dynamicTypeCount;
+    diagnostics.review_url_count = urls.length - diagnostics.static_url_count
   } catch (e) {
-    diagnostics.errors.push(`reviews 조회 실패: ${e instanceof Error ? e.message : "unknown"}`);
-    diagnostics.partial = true;
+    diagnostics.errors.push(`reviews 조회 실패: ${e instanceof Error ? e.message : 'unknown'}`)
+    diagnostics.partial = true
   }
 
-  diagnostics.total_url_count = urls.length;
-  return { urls, diagnostics };
+  diagnostics.total_url_count = urls.length
+  return { urls, diagnostics }
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const payload = await generateSitemapPayload();
-  return payload.urls;
+  const payload = await generateSitemapPayload()
+  return payload.urls
 }

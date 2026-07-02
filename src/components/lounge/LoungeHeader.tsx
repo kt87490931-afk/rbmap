@@ -1,16 +1,41 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useRef, useState } from 'react'
+
+/** 로고 5회 연속 클릭 시 어드민 로그인으로 이동 (숨겨진 관리자 진입점) */
+const ADMIN_TAP_COUNT = 5
+const ADMIN_TAP_RESET_MS = 1500
 
 export function LoungeHeader() {
   const [open, setOpen] = useState(false)
+  const router = useRouter()
+  const tapCount = useRef(0)
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    setOpen(false)
+    tapCount.current += 1
+    if (tapTimer.current) clearTimeout(tapTimer.current)
+
+    if (tapCount.current >= ADMIN_TAP_COUNT) {
+      e.preventDefault()
+      tapCount.current = 0
+      router.push('/admin/login')
+      return
+    }
+
+    tapTimer.current = setTimeout(() => {
+      tapCount.current = 0
+    }, ADMIN_TAP_RESET_MS)
+  }
 
   return (
     <>
       <header>
         <nav className="nav container" aria-label="주요 메뉴">
-          <Link href="/" className="brand" onClick={() => setOpen(false)}>
+          <Link href="/" className="brand" onClick={handleLogoClick}>
             룸빵<em>여지도</em>
           </Link>
           <ul className="nav-links" role="menubar">

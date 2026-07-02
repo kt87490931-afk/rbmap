@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { requireAdminOrSetup } from '@/lib/admin-auth'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { SECTION_FALLBACKS } from '@/lib/data/site'
@@ -9,7 +10,7 @@ const VALID_KEYS = [
   'hero', 'ticker', 'header', 'about', 'region_guide', 'category_guide',
   'widgets_a', 'widgets_b', 'stats', 'cta', 'footer', 'region_preview',
   'partners_config', 'feed_config', 'review_config', 'region_sidebar', 'seo',
-  'visitor_config', 'cron_control', 'faq',
+  'visitor_config', 'cron_control', 'faq', 'lounge_home',
 ] as const
 
 function isEmptyObj(obj: unknown): boolean {
@@ -92,5 +93,9 @@ export async function PATCH(
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  if (key === 'lounge_home') {
+    revalidatePath('/')
+    revalidatePath('/reviews')
+  }
   return NextResponse.json(data.content)
 }

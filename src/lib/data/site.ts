@@ -1,4 +1,5 @@
 import { supabase } from '../supabase'
+import { LOUNGE_HOME_DEFAULTS } from './lounge-home'
 
 export type SiteSectionKey =
   | 'hero'
@@ -21,6 +22,7 @@ export type SiteSectionKey =
   | 'visitor_config'
   | 'cron_control'
   | 'faq'
+  | 'lounge_home'
 
 const FALLBACKS: Record<SiteSectionKey, unknown> = {
   hero: {
@@ -231,6 +233,7 @@ const FALLBACKS: Record<SiteSectionKey, unknown> = {
       { href: '/jeju', region: '제주', count: '28개 업소 등록', venues: [{ vname: '제니스 클럽', type: '가라오케', star: '★4.8' }] },
     ],
   },
+  lounge_home: LOUNGE_HOME_DEFAULTS,
 }
 
 export const SECTION_FALLBACKS = FALLBACKS

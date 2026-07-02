@@ -1,6 +1,13 @@
+'use client'
+
 import Link from 'next/link'
+import { EditableText } from '@/components/lounge/edit/EditableText'
+import { useLoungeContent, useLoungeEdit } from '@/components/lounge/edit/LoungeEditContext'
 
 export function LoungeFooter() {
+  const c = useLoungeContent()
+  const { editMode } = useLoungeEdit()
+
   return (
     <footer>
       <div className="container footer-grid">
@@ -8,8 +15,8 @@ export function LoungeFooter() {
           <Link href="/" className="brand">
             룸빵<em>여지도</em>
           </Link>
-          <p style={{ color: 'var(--ink-muted)', fontSize: 13, marginTop: 12 }}>
-            프라이빗 라운지 이용 후기와 정보를 제공합니다.
+          <p className="editable-block" style={{ fontSize: 13, marginTop: 12 }}>
+            <EditableText path="footer.desc" value={c.footer.desc} block />
           </p>
         </div>
         <div className="footer-block">
@@ -30,7 +37,14 @@ export function LoungeFooter() {
         </div>
       </div>
       <div className="container footer-legal">
-        <span>© {new Date().getFullYear()} 룸빵여지도. All rights reserved.</span>
+        <span className="editable">
+          <EditableText path="footer.copyright" value={c.footer.copyright} />
+        </span>
+        {(c.footer.bizNo || editMode) && (
+          <span className="editable" style={!c.footer.bizNo ? { opacity: 0.45 } : undefined}>
+            <EditableText path="footer.bizNo" value={c.footer.bizNo || '사업자등록번호 입력'} />
+          </span>
+        )}
       </div>
     </footer>
   )

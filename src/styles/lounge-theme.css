@@ -1061,3 +1061,169 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ---- 인라인 편집 (index_13, 어드민 전용 연필) ---- */
+.lounge-site.lounge-site .editable {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lounge-site.lounge-site .edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brass-soft);
+  border: 1px solid var(--brass-line);
+  color: var(--brass);
+  font-size: 11px;
+  opacity: 0.75;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  padding: 0;
+}
+
+.lounge-site.lounge-site .edit-btn:hover {
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+.lounge-site.lounge-site h1 .editable,
+.lounge-site.lounge-site h2 .editable {
+  display: inline-flex;
+}
+
+.lounge-site.lounge-site .editable-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.lounge-site.lounge-site .hero-badge-pill,
+.lounge-site.lounge-site .hero-badges .editable.hero-badge-pill {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  border: 1px solid var(--brass-line);
+  padding: 5px 10px;
+  color: var(--brass);
+  border-radius: var(--radius);
+}
+
+.lounge-site.lounge-site .hero-badges .edit-btn {
+  width: 16px;
+  height: 16px;
+}
+
+.lounge-site.lounge-site .ph.has-image {
+  background-size: cover;
+  background-position: center;
+}
+
+.lounge-site.lounge-site .ph.has-image span {
+  display: none;
+}
+
+.lounge-site.lounge-site .img-edit-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(15, 13, 16, 0.82);
+  border: 1px solid var(--brass-line);
+  color: var(--brass);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.lounge-site.lounge-site .modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(6, 5, 7, 0.72);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.lounge-site.lounge-site .modal-overlay.open {
+  display: flex;
+}
+
+.lounge-site.lounge-site .modal {
+  background: var(--bg-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.lounge-site.lounge-site .modal h3 {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.lounge-site.lounge-site .modal .modal-sub {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+}
+
+.lounge-site.lounge-site .modal textarea {
+  min-height: 110px;
+}
+
+.lounge-site.lounge-site .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.lounge-site.lounge-site .image-preview-box {
+  aspect-ratio: 16/10;
+  border: 1px dashed var(--brass-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: 12px;
+  background: var(--card);
+  border-radius: var(--radius);
+}
+
+.lounge-site.lounge-site .image-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lounge-site.lounge-site .menu-row .name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lounge-site.lounge-site .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lounge-site.lounge-site .cta-band .eyebrow {
+  display: inline-flex;
+}

@@ -100,6 +100,24 @@ export async function getFlatSlugForPostId(postId: string): Promise<string | nul
   return index.idToFlat.get(postId) ?? null
 }
 
+/**
+ * 슬러그 끝의 고정 ID 꼬리(예: `...-mosaxb53`)로 현재 슬러그를 역추적한다.
+ * 키워드 부분만 바뀐 옛 URL(예: 노네방 → 노래방)을 현재 정식 슬러그로 연결하기 위한 폴백.
+ * 정식 키가 그대로 존재하면 null을 반환(리다이렉트 불필요).
+ */
+export async function resolveFlatSlugBySuffix(flatSlug: string): Promise<string | null> {
+  const key = normalizeFlatKey(flatSlug)
+  const index = await getFlatSlugIndex()
+  if (index.flatToId.has(key)) return null
+  const m = key.match(/-([a-z0-9]{6,})$/i)
+  if (!m) return null
+  const suffix = `-${m[1]}`
+  for (const flat of index.flatToId.keys()) {
+    if (flat !== key && flat.endsWith(suffix)) return flat
+  }
+  return null
+}
+
 export async function getPublishedReviewByFlatSlug(flatSlug: string): Promise<ReviewPost | null> {
   const key = normalizeFlatKey(flatSlug)
   const index = await getFlatSlugIndex()

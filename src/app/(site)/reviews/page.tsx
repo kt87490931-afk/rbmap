@@ -57,7 +57,6 @@ export default async function ReviewsListPage({
 
   return (
     <>
-      <a href="#main" className="skip-link">본문 바로가기</a>
       <LoungeHeader />
 
       <main id="main">

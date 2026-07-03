@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
 import { LoungeHeader } from '@/components/lounge/LoungeHeader'
 import { LoungeFooter } from '@/components/lounge/LoungeFooter'
@@ -9,6 +9,7 @@ import {
   formatReviewDate,
   getPrevNextFlatReviews,
   getPublishedReviewByFlatSlug,
+  resolveFlatSlugBySuffix,
 } from '@/lib/data/review-flat'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
@@ -20,7 +21,12 @@ type Params = { slug: string }
 export default async function FlatReviewPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params
   const post = await getPublishedReviewByFlatSlug(slug)
-  if (!post) notFound()
+  if (!post) {
+    // 키워드만 바뀐 옛 URL이면 꼬리 ID로 현재 슬러그를 찾아 영구 리다이렉트
+    const fallback = await resolveFlatSlugBySuffix(slug)
+    if (fallback) permanentRedirect(buildFlatReviewPath(fallback))
+    notFound()
+  }
 
   const { prev, next } = post.published_at
     ? await getPrevNextFlatReviews(post.published_at, post.id)
@@ -52,7 +58,6 @@ export default async function FlatReviewPage({ params }: { params: Promise<Param
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <a href="#main" className="skip-link">본문 바로가기</a>
       <LoungeHeader />
 
       <main id="main" className="article-wrap">

@@ -18,7 +18,6 @@ export function LoungeHomePage({ latestReviews, totalCount, avgStar, webSiteSche
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteSchema) }} />
-      <a href="#main" className="skip-link">본문 바로가기</a>
       <LoungeHeader />
       <LoungeHomeSections latestReviews={latestReviews} totalCount={totalCount} avgStar={avgStar} />
       <LoungeFooter />

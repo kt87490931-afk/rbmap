@@ -34,22 +34,30 @@ function shortId(id: string): string {
 
 /** published 리뷰 전체에 대해 flat slug 인덱스 생성 (요청 단위 캐시) */
 export const getFlatSlugIndex = cache(async (): Promise<FlatSlugIndex> => {
-  const { data, error } = await supabaseAdmin
-    .from('review_posts')
-    .select('id, slug, region, type, venue_slug, published_at')
-    .eq('status', 'published')
-    .order('published_at', { ascending: true })
-
   const idToFlat = new Map<string, string>()
   const flatToId = new Map<string, string>()
   const legacyToFlat = new Map<string, string>()
   const used = new Set<string>()
 
-  if (error || !data) {
-    return { idToFlat, flatToId, legacyToFlat }
+  // Supabase는 요청당 최대 1000행만 반환하므로 range로 전체 발행글을 반복 조회한다.
+  // (id 보조 정렬로 동점 published_at 에서도 slug 배정이 결정적이게 한다.)
+  const PAGE = 1000
+  const rows: Record<string, unknown>[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabaseAdmin
+      .from('review_posts')
+      .select('id, slug, region, type, venue_slug, published_at')
+      .eq('status', 'published')
+      .order('published_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) break
+    if (!data || data.length === 0) break
+    rows.push(...(data as Record<string, unknown>[]))
+    if (data.length < PAGE) break
   }
 
-  for (const row of data) {
+  for (const row of rows) {
     const id = String(row.id)
     const baseRaw = String(row.slug || '').trim()
     const base = baseRaw || `review-${shortId(id)}`

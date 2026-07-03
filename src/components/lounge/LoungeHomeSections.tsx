@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { EditableText } from '@/components/lounge/edit/EditableText'
 import { EditableImage } from '@/components/lounge/edit/EditableImage'
 import { useLoungeContent, useLoungeEdit } from '@/components/lounge/edit/LoungeEditContext'
+import { loungeImageSrc } from '@/lib/data/lounge-home'
 import {
   buildFlatReviewPath,
   formatReviewDate,
@@ -21,6 +23,11 @@ type Props = {
 export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props) {
   const c = useLoungeContent()
   const { editMode } = useLoungeEdit()
+  const [lightbox, setLightbox] = useState<string | null>(null)
+
+  const galleryVisible = c.gallery.images
+    .map((img) => loungeImageSrc(img))
+    .filter((src): src is string => !!src)
 
   return (
     <main id="main">
@@ -129,17 +136,34 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
               <EditableText path="gallery.note" value={c.gallery.note} block />
             </p>
           </div>
-          <div className="gallery-grid">
-            {c.gallery.images.map((img, i) => (
-              <EditableImage
-                key={i}
-                path={`gallery.images.${i}`}
-                url={img}
-                placeholder={String(i + 1)}
-                slot={`gallery-${i + 1}`}
-              />
-            ))}
-          </div>
+          {editMode ? (
+            <div className="gallery-grid">
+              {c.gallery.images.map((img, i) => (
+                <EditableImage
+                  key={i}
+                  path={`gallery.images.${i}`}
+                  url={img}
+                  placeholder={String(i + 1)}
+                  slot={`gallery-${i + 1}`}
+                />
+              ))}
+            </div>
+          ) : galleryVisible.length > 0 ? (
+            <div className="gallery-grid">
+              {galleryVisible.map((src, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className="ph has-image gallery-thumb"
+                  style={{ backgroundImage: `url(${src})` }}
+                  onClick={() => setLightbox(src)}
+                  aria-label="이미지 원본 보기"
+                >
+                  <span>{i + 1}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -302,6 +326,27 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
           </form>
         </div>
       </section>
+
+      {lightbox && (
+        <div
+          className="lounge-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="이미지 원본 보기"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            type="button"
+            className="lounge-lightbox-close"
+            aria-label="닫기"
+            onClick={() => setLightbox(null)}
+          >
+            ×
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightbox} alt="원본 이미지" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </main>
   )
 }

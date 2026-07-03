@@ -101,7 +101,7 @@ export const LOUNGE_HOME_DEFAULTS: LoungeHomeContent = {
   gallery: {
     title: '공간 둘러보기',
     note: '이미지는 추후 업로드됩니다.',
-    images: ['', '', '', ''],
+    images: ['', '', '', '', '', '', '', ''],
   },
   menu: {
     title: '이용 요금 안내',
@@ -186,9 +186,16 @@ export function deepMergeLoungeHome<T>(base: T, patch: Partial<T> | null | undef
   return out as T
 }
 
+/** 공간 둘러보기 갤러리 슬롯 수 (가로 4 × 2줄) */
+export const LOUNGE_GALLERY_SLOTS = 8
+
 export async function getLoungeHomeContent(): Promise<LoungeHomeContent> {
   const db = await getSiteSection<Partial<LoungeHomeContent>>('lounge_home')
-  return deepMergeLoungeHome(LOUNGE_HOME_DEFAULTS, db)
+  const merged = deepMergeLoungeHome(LOUNGE_HOME_DEFAULTS, db)
+  const imgs = merged.gallery.images.slice(0, LOUNGE_GALLERY_SLOTS)
+  while (imgs.length < LOUNGE_GALLERY_SLOTS) imgs.push('')
+  merged.gallery = { ...merged.gallery, images: imgs }
+  return merged
 }
 
 /** dot 경로로 값 설정 (예: hero.badge1, gallery.images.0) */

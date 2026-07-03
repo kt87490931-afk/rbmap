@@ -180,10 +180,11 @@
   display: none;
 }
 
-.lounge-site.lounge-site .nav-cta {
+.lounge-site.lounge-site .lounge-nav-cta {
   display: flex;
   align-items: center;
   gap: 8px;
+  background: transparent;
 }
 
 /* 헤더 버튼(후기/문의)은 모바일·데스크톱 모두 개별 노출 */

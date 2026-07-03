@@ -49,7 +49,7 @@ export function LoungeHeader() {
             <li role="menuitem"><Link href="/reviews">후기</Link></li>
             <li role="menuitem"><Link href="/#contact">문의</Link></li>
           </ul>
-          <div className="nav-cta">
+          <div className="lounge-nav-cta">
             <Link href="/reviews" className="btn btn-primary btn-sm nav-btn">후기</Link>
             {contactHref ? (
               <a

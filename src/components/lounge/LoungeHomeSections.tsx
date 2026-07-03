@@ -56,6 +56,15 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
       <section className="hero" id="top">
         <div className="container hero-inner">
           <div className="hero-text">
+            {(c.hero.topText || editMode) && (
+              <span className="hero-eyebrow editable-block">
+                <EditableText
+                  path="hero.topText"
+                  value={c.hero.topText || (editMode ? '상단 문구를 입력하세요' : '')}
+                  block
+                />
+              </span>
+            )}
             <div className="hero-badges">
               <EditableText path="hero.badge1" value={c.hero.badge1} className="hero-badge-pill" />
               <EditableText path="hero.badge2" value={c.hero.badge2} className="hero-badge-pill" />

@@ -277,6 +277,20 @@
   padding: 28px 0 24px;
 }
 
+.lounge-site.lounge-site .hero-text {
+  padding-top: 12px;
+}
+
+.lounge-site.lounge-site .hero-eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin-bottom: 20px;
+}
+
 .lounge-site.lounge-site .hero-badges {
   display: flex;
   gap: 8px;
@@ -964,6 +978,11 @@
 
   .lounge-site.lounge-site .hero-text {
     order: 1;
+    padding-top: 28px;
+  }
+
+  .lounge-site.lounge-site .hero-eyebrow {
+    margin-bottom: 28px;
   }
 
   .lounge-site.lounge-site .hero-media {

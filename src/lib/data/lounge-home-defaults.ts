@@ -10,6 +10,7 @@ export type LoungeInfoItem = { key: string; value: string }
 
 export type LoungeHomeContent = {
   hero: {
+    topText: string
     badge1: string
     badge2: string
     badge3: string
@@ -75,6 +76,7 @@ export type LoungeHomeContent = {
 
 export const LOUNGE_HOME_DEFAULTS: LoungeHomeContent = {
   hero: {
+    topText: '',
     badge1: '프라이빗 라운지',
     badge2: '이용 후기',
     badge3: '정보 안내',

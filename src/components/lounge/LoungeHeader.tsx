@@ -43,7 +43,6 @@ export function LoungeHeader() {
             <li role="menuitem"><Link href="/#gallery">공간</Link></li>
             <li role="menuitem"><Link href="/#menu">이용요금</Link></li>
             <li role="menuitem"><Link href="/reviews">후기</Link></li>
-            <li role="menuitem"><Link href="/#location">오시는 길</Link></li>
             <li role="menuitem"><Link href="/#contact">문의</Link></li>
           </ul>
           <div className="nav-cta">
@@ -65,7 +64,6 @@ export function LoungeHeader() {
             <li><Link href="/#gallery" onClick={() => setOpen(false)}>공간</Link></li>
             <li><Link href="/#menu" onClick={() => setOpen(false)}>이용요금</Link></li>
             <li><Link href="/reviews" onClick={() => setOpen(false)}>후기</Link></li>
-            <li><Link href="/#location" onClick={() => setOpen(false)}>오시는 길</Link></li>
             <li><Link href="/#contact" onClick={() => setOpen(false)}>문의</Link></li>
           </ul>
         </div>

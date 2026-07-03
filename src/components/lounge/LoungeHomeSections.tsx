@@ -254,30 +254,6 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
         </div>
       </section>
 
-      <section className="section" id="location">
-        <div className="container location-grid">
-          <div className="location-map">
-            <EditableImage path="location.mapImage" url={c.location.mapImage} placeholder="지도 임베드 자리" slot="map" />
-          </div>
-          <div>
-            <span className="eyebrow">Location</span>
-            <h2 style={{ marginBottom: 18 }} className="editable-block">
-              <EditableText path="location.title" value={c.location.title} block />
-            </h2>
-            <ul className="info-list">
-              {c.location.items.map((item, i) => (
-                <li key={i}>
-                  <span className="k">{item.key}</span>
-                  <span className="editable">
-                    <EditableText path={`location.items.${i}.value`} value={item.value} className="v" />
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
       <section className="cta-band">
         <div className="container">
           <span className="eyebrow">

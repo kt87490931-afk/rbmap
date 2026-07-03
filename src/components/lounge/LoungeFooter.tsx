@@ -25,7 +25,6 @@ export function LoungeFooter() {
             <li><Link href="/#about">소개</Link></li>
             <li><Link href="/#menu">이용요금</Link></li>
             <li><Link href="/reviews">후기</Link></li>
-            <li><Link href="/#location">오시는 길</Link></li>
           </ul>
         </div>
         <div className="footer-block">

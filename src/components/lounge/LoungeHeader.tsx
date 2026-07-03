@@ -50,17 +50,17 @@ export function LoungeHeader() {
             <li role="menuitem"><Link href="/#contact">문의</Link></li>
           </ul>
           <div className="nav-cta">
-            <Link href="/reviews" className="btn btn-primary btn-sm">후기 보기</Link>
+            <Link href="/reviews" className="btn btn-primary btn-sm nav-btn">후기</Link>
             {contactHref ? (
               <a
                 href={contactHref}
-                className="btn btn-ghost btn-sm nav-inquiry"
+                className="btn btn-primary btn-sm nav-btn"
                 {...(contactHref.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               >
-                문의하기
+                문의
               </a>
             ) : (
-              <Link href="/#contact" className="btn btn-ghost btn-sm nav-inquiry">문의하기</Link>
+              <Link href="/#contact" className="btn btn-primary btn-sm nav-btn">문의</Link>
             )}
             <button
               type="button"

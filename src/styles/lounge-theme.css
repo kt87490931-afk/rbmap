@@ -167,12 +167,12 @@
 .lounge-site.lounge-site .nav-cta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-/* 헤더 "문의하기"는 데스크톱에서만 노출 (모바일은 하단 메뉴의 "문의" 사용) */
-.lounge-site.lounge-site .nav-inquiry {
-  display: none;
+/* 헤더 버튼(후기/문의)은 모바일·데스크톱 모두 개별 노출 */
+.lounge-site.lounge-site .nav-btn {
+  flex: 0 0 auto;
 }
 
 .lounge-site.lounge-site .btn {
@@ -218,12 +218,17 @@
 }
 
 .lounge-site.lounge-site .nav-toggle {
-  background: none;
-  border: 1px solid var(--line);
-  color: var(--ink);
+  background: var(--brass);
+  border: 1px solid var(--brass);
+  color: #161116;
   font-size: 18px;
   padding: 8px 12px;
   border-radius: var(--radius);
+  min-height: 38px;
+}
+
+.lounge-site.lounge-site .nav-toggle:hover {
+  background: #d7ad5e;
 }
 
 .lounge-site.lounge-site .mobile-nav {
@@ -932,10 +937,6 @@
 
   .lounge-site.lounge-site .nav-toggle {
     display: none;
-  }
-
-  .lounge-site.lounge-site .nav-inquiry {
-    display: inline-flex;
   }
 
   .lounge-site.lounge-site .mobile-nav {

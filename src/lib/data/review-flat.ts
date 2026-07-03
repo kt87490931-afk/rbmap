@@ -87,8 +87,18 @@ export const getFlatSlugIndex = cache(async (): Promise<FlatSlugIndex> => {
   return { idToFlat, flatToId, legacyToFlat }
 })
 
+/** 이미 인코딩된 값이 들어와도 안전하게 한 번만 디코딩 (이중 인코딩 방지) */
+function safeDecodeOnce(s: string): string {
+  try {
+    return decodeURIComponent(s)
+  } catch {
+    return s
+  }
+}
+
 export function buildFlatReviewPath(flatSlug: string): string {
-  return `/reviews/${encodeURIComponent(flatSlug)}`
+  // 입력이 디코딩된 슬러그든 인코딩된 슬러그든 항상 단일 인코딩으로 통일
+  return `/reviews/${encodeURIComponent(safeDecodeOnce(flatSlug))}`
 }
 
 export function buildFlatReviewUrl(flatSlug: string): string {

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getPublishedReviewByFlatSlug } from '@/lib/data/review-flat'
+import { buildFlatReviewUrl, getPublishedReviewByFlatSlug } from '@/lib/data/review-flat'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
 const META_DESC_MAX = 160
@@ -22,7 +22,7 @@ export async function generateMetadata({
     `${post.title} 이용 후기`
   if (desc.length > META_DESC_MAX) desc = desc.slice(0, META_DESC_MAX)
 
-  const canonicalUrl = `${SITE_URL}/reviews/${encodeURIComponent(slug)}`
+  const canonicalUrl = buildFlatReviewUrl(slug)
   const ogImage = `${SITE_URL}/og/og-home.png`
   const keywords =
     post.meta_keywords?.trim() ||

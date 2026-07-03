@@ -44,3 +44,4 @@ next-env.d.ts
 !/public/h/.gitkeep
 /public/4m/**
 !/public/4m/.gitkeep
+tmp-start.*

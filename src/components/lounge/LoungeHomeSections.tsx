@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { EditableText } from '@/components/lounge/edit/EditableText'
 import { EditableImage } from '@/components/lounge/edit/EditableImage'
 import { useLoungeContent, useLoungeEdit } from '@/components/lounge/edit/LoungeEditContext'
@@ -28,6 +28,23 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
 
   const contactRaw = (c.hero.contact || '').trim()
   const contactHref = buildContactHref(contactRaw)
+
+  // 헤더/네비의 "문의하기"(/#contact)로 진입하면 문의 모달을 자동으로 연다
+  useEffect(() => {
+    const openIfHash = () => {
+      if (window.location.hash === '#contact') setContactOpen(true)
+    }
+    openIfHash()
+    window.addEventListener('hashchange', openIfHash)
+    return () => window.removeEventListener('hashchange', openIfHash)
+  }, [])
+
+  const closeContact = () => {
+    setContactOpen(false)
+    if (window.location.hash === '#contact') {
+      history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+  }
 
   const galleryVisible = c.gallery.images
     .map((img) => loungeImageSrc(img))
@@ -299,14 +316,14 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
           role="dialog"
           aria-modal="true"
           aria-label="문의하기"
-          onClick={() => setContactOpen(false)}
+          onClick={closeContact}
         >
           <div className="lounge-contact-modal" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               className="lounge-contact-close"
               aria-label="닫기"
-              onClick={() => setContactOpen(false)}
+              onClick={closeContact}
             >
               ×
             </button>

@@ -170,6 +170,11 @@
   gap: 10px;
 }
 
+/* 헤더 "문의하기"는 데스크톱에서만 노출 (모바일은 하단 메뉴의 "문의" 사용) */
+.lounge-site.lounge-site .nav-inquiry {
+  display: none;
+}
+
 .lounge-site.lounge-site .btn {
   display: inline-flex;
   align-items: center;
@@ -913,6 +918,10 @@
 
   .lounge-site.lounge-site .nav-toggle {
     display: none;
+  }
+
+  .lounge-site.lounge-site .nav-inquiry {
+    display: inline-flex;
   }
 
   .lounge-site.lounge-site .mobile-nav {

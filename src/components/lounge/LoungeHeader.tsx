@@ -47,6 +47,7 @@ export function LoungeHeader() {
           </ul>
           <div className="nav-cta">
             <Link href="/reviews" className="btn btn-primary btn-sm">후기 보기</Link>
+            <Link href="/#contact" className="btn btn-ghost btn-sm nav-inquiry">문의하기</Link>
             <button
               type="button"
               className="nav-toggle"

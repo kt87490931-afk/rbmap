@@ -145,7 +145,7 @@ export default function AdminHostingImagesPage() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>📷 이미지 호스팅</h1>
         <p style={{ color: 'var(--muted)', fontSize: 13 }}>
-          디스크엔처럼 이미지(jpg, png, gif, 최대 20MB)를 업로드하고 게시판에 붙여넣을 URL·HTML 코드를 복사합니다. 같은 파일명으로 덮어쓰면 주소·삽입코드는 그대로이고 이미지만 교체됩니다. 썸네일 더블클릭 시 원본을 볼 수 있습니다.
+          디스크엔처럼 이미지(jpg, png, gif, 최대 30MB)를 업로드하고 게시판에 붙여넣을 URL·HTML 코드를 복사합니다. 같은 파일명으로 덮어쓰면 주소·삽입코드는 그대로이고 이미지만 교체됩니다. 썸네일 더블클릭 시 원본을 볼 수 있습니다.
         </p>
       </div>
 

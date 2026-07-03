@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next'
-import { getFlatSlugIndex } from '@/lib/data/review-flat'
+import { buildFlatReviewPath, getFlatSlugIndex } from '@/lib/data/review-flat'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
@@ -75,7 +75,7 @@ export async function generateSitemapPayload(): Promise<{
       const flatSlug = index.idToFlat.get(r.id)
       if (!flatSlug) continue
       const lastMod = r.updated_at || r.published_at || r.created_at
-      const reviewPath = `/reviews/${encodeURIComponent(flatSlug)}`
+      const reviewPath = buildFlatReviewPath(flatSlug)
       urls.push({
         url: `${BASE}${reviewPath}`,
         lastModified: lastMod ? new Date(lastMod) : new Date(),

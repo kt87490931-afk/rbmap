@@ -769,6 +769,25 @@
   color: var(--brass);
 }
 
+.lounge-site.lounge-site .article-lead {
+  margin-top: 16px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink-muted);
+}
+
+.lounge-site.lounge-site .related-reviews {
+  margin: 36px 0 8px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.lounge-site.lounge-site .related-reviews h2 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: var(--brass);
+}
+
 .lounge-site.lounge-site .article-body h2 {
   font-size: 18px;
   margin: 28px 0 12px;

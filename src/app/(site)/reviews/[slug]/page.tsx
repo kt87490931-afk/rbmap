@@ -7,9 +7,13 @@ import {
   buildFlatReviewPath,
   buildFlatReviewUrl,
   formatReviewDate,
+  getFlatSlugForPostId,
   getPrevNextFlatReviews,
   getPublishedReviewByFlatSlug,
+  getRelatedFlatReviews,
+  normalizeFlatSlug,
   resolveFlatSlugBySuffix,
+  reviewExcerpt,
 } from '@/lib/data/review-flat'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
@@ -28,11 +32,19 @@ export default async function FlatReviewPage({ params }: { params: Promise<Param
     notFound()
   }
 
-  const { prev, next } = post.published_at
-    ? await getPrevNextFlatReviews(post.published_at, post.id)
-    : { prev: null, next: null }
+  const flatSlug = (await getFlatSlugForPostId(post.id)) ?? post.slug
+  if (normalizeFlatSlug(slug) !== flatSlug) {
+    permanentRedirect(buildFlatReviewPath(flatSlug))
+  }
 
-  const canonicalUrl = buildFlatReviewUrl(slug)
+  const [{ prev, next }, related] = await Promise.all([
+    post.published_at
+      ? getPrevNextFlatReviews(post.published_at, post.id)
+      : Promise.resolve({ prev: null, next: null }),
+    getRelatedFlatReviews(post.region, post.type, post.id, 5),
+  ])
+
+  const canonicalUrl = buildFlatReviewUrl(flatSlug)
   const totalChars =
     post.sec_overview.length +
     post.sec_lineup.length +
@@ -42,17 +54,31 @@ export default async function FlatReviewPage({ params }: { params: Promise<Param
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'Review',
-    name: post.title,
-    url: canonicalUrl,
-    mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
-    author: { '@type': 'Organization', name: '룸빵여지도', url: SITE_URL },
-    publisher: { '@type': 'Organization', name: '룸빵여지도', url: SITE_URL },
-    reviewBody: post.sec_overview || post.sec_summary,
-    reviewRating: { '@type': 'Rating', ratingValue: String(post.star), bestRating: '5' },
-    itemReviewed: { '@type': 'LocalBusiness', name: post.venue || post.title },
-    datePublished: post.published_at || post.visit_date,
-    dateModified: post.updated_at || post.published_at || post.visit_date,
+    '@graph': [
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: '룸빵여지도', item: SITE_URL },
+          { '@type': 'ListItem', position: 2, name: '이용 후기', item: `${SITE_URL}/reviews` },
+          { '@type': 'ListItem', position: 3, name: post.title, item: canonicalUrl },
+        ],
+      },
+      {
+        '@type': 'Review',
+        name: post.title,
+        url: canonicalUrl,
+        headline: post.title,
+        description: post.meta_description || post.sec_overview?.slice(0, 160) || post.title,
+        mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
+        author: { '@type': 'Organization', name: '룸빵여지도', url: SITE_URL },
+        publisher: { '@type': 'Organization', name: '룸빵여지도', url: SITE_URL },
+        reviewBody: post.sec_overview || post.sec_summary,
+        reviewRating: { '@type': 'Rating', ratingValue: String(post.star), bestRating: '5' },
+        itemReviewed: { '@type': 'LocalBusiness', name: post.venue || post.title },
+        datePublished: post.published_at || post.visit_date,
+        dateModified: post.updated_at || post.published_at || post.visit_date,
+      },
+    ],
   }
 
   return (
@@ -76,7 +102,11 @@ export default async function FlatReviewPage({ params }: { params: Promise<Param
               <div className="article-meta">
                 <span>{formatReviewDate(post.published_at)}</span>
                 <span>약 {totalChars}자</span>
+                {post.venue && <span>{post.venue}</span>}
               </div>
+              {post.meta_description && (
+                <p className="article-lead">{post.meta_description}</p>
+              )}
             </header>
 
             <div className="article-body">
@@ -143,6 +173,25 @@ export default async function FlatReviewPage({ params }: { params: Promise<Param
                 </div>
               )}
             </div>
+
+            {related.length > 0 && (
+              <section className="related-reviews" aria-label="같은 지역·업종 후기">
+                <h2>같은 지역·업종 후기</h2>
+                <ul className="review-list">
+                  {related.map((r) => (
+                    <li key={r.id}>
+                      <Link href={buildFlatReviewPath(r.flatSlug)} className="review-item">
+                        <div className="top">
+                          <span className="name">{r.title}</span>
+                          <span className="date">{formatReviewDate(r.published_at)}</span>
+                        </div>
+                        <p>{reviewExcerpt(r, 100)}</p>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             <nav className="article-nav" aria-label="이전·다음 후기">
               {prev ? (

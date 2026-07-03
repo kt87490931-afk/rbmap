@@ -15,17 +15,37 @@ import {
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rbbmap.com'
 const PER_PAGE = 20
 
-export const metadata: Metadata = {
-  title: '이용 후기 | 룸빵여지도',
-  description: '프라이빗 라운지 이용 후기 모음. 실제 방문 경험을 바탕으로 한 상세 후기를 최신순으로 확인하세요.',
-  alternates: { canonical: `${SITE_URL}/reviews` },
-  openGraph: {
-    url: `${SITE_URL}/reviews`,
-    type: 'website',
-    title: '이용 후기 | 룸빵여지도',
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}): Promise<Metadata> {
+  const params = await searchParams
+  const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1)
+  const total = await getPublishedReviewCount()
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE))
+  const safePage = Math.min(page, totalPages)
+  const canonical = safePage <= 1 ? `${SITE_URL}/reviews` : `${SITE_URL}/reviews?page=${safePage}`
+  const title = safePage <= 1 ? '이용 후기 | 룸빵여지도' : `이용 후기 ${safePage}페이지 | 룸빵여지도`
+
+  return {
+    title,
     description: '프라이빗 라운지 이용 후기 모음. 실제 방문 경험을 바탕으로 한 상세 후기를 최신순으로 확인하세요.',
-  },
-  robots: { index: true, follow: true },
+    alternates: {
+      canonical,
+      ...(safePage > 1
+        ? { prev: safePage === 2 ? `${SITE_URL}/reviews` : `${SITE_URL}/reviews?page=${safePage - 1}` }
+        : {}),
+      ...(safePage < totalPages ? { next: `${SITE_URL}/reviews?page=${safePage + 1}` } : {}),
+    },
+    openGraph: {
+      url: canonical,
+      type: 'website',
+      title,
+      description: '프라이빗 라운지 이용 후기 모음. 실제 방문 경험을 바탕으로 한 상세 후기를 최신순으로 확인하세요.',
+    },
+    robots: { index: true, follow: true },
+  }
 }
 
 export const revalidate = 300

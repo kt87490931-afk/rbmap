@@ -34,6 +34,27 @@ export async function PATCH(
   const { id } = await params
   const body = await request.json()
 
+  const { data: existing, error: fetchErr } = await supabaseAdmin
+    .from('review_posts')
+    .select('id, status, slug, region, type, venue_slug, venue')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 })
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // 발행된 글은 URL에 영향을 주는 식별 필드(slug·지역·업종·업소) 변경 금지
+  if (existing.status === 'published') {
+    const locked = ['slug', 'region', 'type', 'venue_slug', 'venue'] as const
+    const attempted = locked.filter((k) => body[k] !== undefined && body[k] !== existing[k])
+    if (attempted.length > 0) {
+      return NextResponse.json(
+        { error: `발행된 후기는 ${attempted.join(', ')} 변경이 불가합니다. URL 색인 보호를 위해 슬러그는 불변입니다.` },
+        { status: 400 }
+      )
+    }
+  }
+
   const update: Record<string, unknown> = {}
   const keys = [
     'title', 'star', 'status', 'published_at', 'visit_date',

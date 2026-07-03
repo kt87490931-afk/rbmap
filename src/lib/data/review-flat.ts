@@ -110,6 +110,37 @@ export async function getFlatSlugForPostId(postId: string): Promise<string | nul
   return index.idToFlat.get(postId) ?? null
 }
 
+/** URL·canonical 비교용 슬러그 정규화 */
+export function normalizeFlatSlug(slug: string): string {
+  return normalizeFlatKey(slug)
+}
+
+/** 같은 지역·업종의 다른 후기 (내부링크·색인 보강) */
+export async function getRelatedFlatReviews(
+  region: string,
+  type: string,
+  excludeId: string,
+  limit = 5
+): Promise<(ReviewPost & { flatSlug: string })[]> {
+  const { data, error } = await supabaseAdmin
+    .from('review_posts')
+    .select('*')
+    .eq('status', 'published')
+    .eq('region', region)
+    .eq('type', type)
+    .neq('id', excludeId)
+    .order('published_at', { ascending: false })
+    .limit(limit)
+
+  if (error || !data?.length) return []
+
+  const index = await getFlatSlugIndex()
+  return (data as Record<string, unknown>[]).map((row) => {
+    const post = mapRow(row)
+    return { ...post, flatSlug: index.idToFlat.get(post.id) ?? post.slug }
+  })
+}
+
 /**
  * 슬러그 끝의 고정 ID 꼬리(예: `...-mosaxb53`)로 현재 슬러그를 역추적한다.
  * 키워드 부분만 바뀐 옛 URL(예: 노네방 → 노래방)을 현재 정식 슬러그로 연결하기 위한 폴백.

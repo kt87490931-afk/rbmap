@@ -285,37 +285,6 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
         </div>
       </section>
 
-      <section className="section" id="contact" style={{ borderBottom: 'none' }}>
-        <div className="container contact-grid">
-          <div>
-            <span className="eyebrow">Contact</span>
-            <h2 style={{ marginBottom: 18 }} className="editable-block">
-              <EditableText path="contact.title" value={c.contact.title} block />
-            </h2>
-            <ul className="contact-info">
-              {c.contact.items.map((item, i) => (
-                <li key={i}>
-                  <span className="k">{item.key}</span>
-                  <span className="editable">
-                    <EditableText path={`contact.items.${i}.value`} value={item.value} className="v" />
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <form className="form-grid" aria-label="문의 폼">
-            <div className="form-row">
-              <div><label htmlFor="name">이름</label><input id="name" name="name" type="text" placeholder="이름" /></div>
-              <div><label htmlFor="phone">연락처</label><input id="phone" name="phone" type="tel" placeholder="010-0000-0000" /></div>
-            </div>
-            <div><label htmlFor="message">문의 내용</label><textarea id="message" name="message" placeholder="문의 내용을 남겨주세요" /></div>
-            <button type="button" className="btn btn-primary btn-block">
-              <EditableText path="contact.formBtn" value={c.contact.formBtn} />
-            </button>
-          </form>
-        </div>
-      </section>
-
       {lightbox && (
         <div
           className="lounge-lightbox"

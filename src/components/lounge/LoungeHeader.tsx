@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
+import { useLoungeContent } from '@/components/lounge/edit/LoungeEditContext'
+import { buildContactHref } from '@/lib/lounge/contact'
 
 /** 로고 5회 연속 클릭 시 어드민 로그인으로 이동 (숨겨진 관리자 진입점) */
 const ADMIN_TAP_COUNT = 5
@@ -11,6 +13,8 @@ const ADMIN_TAP_RESET_MS = 1500
 export function LoungeHeader() {
   const [open, setOpen] = useState(false)
   const router = useRouter()
+  const content = useLoungeContent()
+  const contactHref = buildContactHref((content.hero.contact || '').trim())
   const tapCount = useRef(0)
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -47,7 +51,17 @@ export function LoungeHeader() {
           </ul>
           <div className="nav-cta">
             <Link href="/reviews" className="btn btn-primary btn-sm">후기 보기</Link>
-            <Link href="/#contact" className="btn btn-ghost btn-sm nav-inquiry">문의하기</Link>
+            {contactHref ? (
+              <a
+                href={contactHref}
+                className="btn btn-ghost btn-sm nav-inquiry"
+                {...(contactHref.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              >
+                문의하기
+              </a>
+            ) : (
+              <Link href="/#contact" className="btn btn-ghost btn-sm nav-inquiry">문의하기</Link>
+            )}
             <button
               type="button"
               className="nav-toggle"

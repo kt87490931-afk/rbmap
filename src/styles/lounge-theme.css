@@ -735,7 +735,7 @@
 }
 
 .lounge-site.lounge-site .article-wrap {
-  padding: 40px 0 56px;
+  padding: calc(58px + 32px) 0 56px;
   max-width: none;
   margin: 0;
 }

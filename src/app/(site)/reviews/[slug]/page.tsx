@@ -7,7 +7,6 @@ import {
   buildFlatReviewPath,
   buildFlatReviewUrl,
   formatReviewDate,
-  formatStars,
   getPrevNextFlatReviews,
   getPublishedReviewByFlatSlug,
 } from '@/lib/data/review-flat'
@@ -70,8 +69,6 @@ export default async function FlatReviewPage({ params }: { params: Promise<Param
             <header className="article-header">
               <h1>{post.title}</h1>
               <div className="article-meta">
-                <span className="stars">{formatStars(post.star)}</span>
-                <span>{post.star}.0 / 5.0</span>
                 <span>{formatReviewDate(post.published_at)}</span>
                 <span>약 {totalChars}자</span>
               </div>

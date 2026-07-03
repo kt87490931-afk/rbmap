@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import { LOUNGE_HOME_DEFAULTS } from './lounge-home'
+import { LOUNGE_HOME_DEFAULTS } from './lounge-home-defaults'
 
 export type SiteSectionKey =
   | 'hero'

@@ -310,6 +310,11 @@
   gap: 10px;
 }
 
+.lounge-site.lounge-site .hero-inquiry-btn {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
 .lounge-site.lounge-site .quickbar {
   background: var(--bg-alt);
   border-top: 1px solid var(--line);
@@ -1149,6 +1154,68 @@
   border: 1px solid var(--brass-line);
   color: var(--brass);
   font-size: 22px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.lounge-site.lounge-site .lounge-contact-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: rgba(6, 5, 7, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.lounge-site.lounge-site .lounge-contact-modal {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: var(--panel, #17141a);
+  border: 1px solid var(--brass-line);
+  border-radius: 14px;
+  padding: 28px 24px 24px;
+  text-align: center;
+}
+
+.lounge-site.lounge-site .lounge-contact-modal h3 {
+  margin: 6px 0 8px;
+  font-size: 22px;
+  color: #fff;
+}
+
+.lounge-site.lounge-site .lounge-contact-desc {
+  font-size: 13px;
+  color: var(--muted, #a79eae);
+  margin-bottom: 18px;
+}
+
+.lounge-site.lounge-site .lounge-contact-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--brass);
+  letter-spacing: 0.5px;
+  margin-bottom: 18px;
+  word-break: break-all;
+}
+
+.lounge-site.lounge-site .lounge-contact-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--brass-line);
+  color: var(--brass);
+  font-size: 20px;
   line-height: 1;
   display: flex;
   align-items: center;

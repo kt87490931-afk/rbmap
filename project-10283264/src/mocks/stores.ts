@@ -1,0 +1,18 @@
+export const stores = [
+  { id: 1, name: "강남 룸살롱 더 프라임", region: "서울", category: "룸살롱", address: "서울 강남구 테헤란로 123", rating: 4.8, reviewCount: 156, image: "", tags: ["VIP룸", "주차가능", "24시간"] },
+  { id: 2, name: "부산 해운대 노래방 플러스", region: "부산", category: "노래방", address: "부산 해운대구 해운대해변로 321", rating: 4.5, reviewCount: 89, image: "", tags: ["최신곡", "단체환영", "주차가능"] },
+  { id: 3, name: "대구 동성로 룸바 탑", region: "대구", category: "룸바", address: "대구 중구 동성로 456", rating: 4.3, reviewCount: 67, image: "", tags: ["분위기좋음", "예약필수", "프라이빗"] },
+  { id: 4, name: "인천 부개동 룸살롱 엠", region: "인천", category: "룸살롱", address: "인천 부평구 부개로 789", rating: 4.6, reviewCount: 112, image: "", tags: ["신규오픈", "주차가능", "이벤트중"] },
+  { id: 5, name: "광주 상무지구 노래방 뮤직", region: "광주", category: "노래방", address: "광주 서구 상무중앙로 234", rating: 4.2, reviewCount: 45, image: "", tags: ["최신곡", "단체가능", "24시간"] },
+  { id: 6, name: "대전 둔산동 룸살롱 골드", region: "대전", category: "룸살롱", address: "대전 서구 둔산로 567", rating: 4.7, reviewCount: 134, image: "", tags: ["VIP룸", "분위기좋음", "예약필수"] },
+  { id: 7, name: "수원 인계동 룸바 블루", region: "경기", category: "룸바", address: "경기 수원시 팔달구 인계로 890", rating: 4.4, reviewCount: 78, image: "", tags: ["프라이빗", "주차가능", "분위기좋음"] },
+  { id: 8, name: "울산 삼산동 노래방 보이스", region: "울산", category: "노래방", address: "울산 남구 삼산로 345", rating: 4.1, reviewCount: 56, image: "", tags: ["최신곡", "24시간", "단체가능"] },
+  { id: 9, name: "창원 상남동 룸살롱 로얄", region: "경남", category: "룸살롱", address: "경남 창원시 성산구 상남로 678", rating: 4.5, reviewCount: 92, image: "", tags: ["VIP룸", "주차가능", "이벤트중"] },
+  { id: 10, name: "전주 덕진동 노래방 노래왕", region: "전북", category: "노래방", address: "전북 전주시 덕진구 덕진로 901", rating: 4.3, reviewCount: 71, image: "", tags: ["최신곡", "단체가능", "분위기좋음"] },
+  { id: 11, name: "청주 율량동 룸살롱 스타", region: "충북", category: "룸살롱", address: "충북 청주시 흥덕구 율량로 123", rating: 4.6, reviewCount: 103, image: "", tags: ["신규오픈", "주차가능", "VIP룸"] },
+  { id: 12, name: "제주 연동 노래방 제주보이스", region: "제주", category: "노래방", address: "제주 제주시 연동로 456", rating: 4.7, reviewCount: 145, image: "", tags: ["최신곡", "주차가능", "단체가능"] },
+  { id: 13, name: "강릉 경포동 룸바 오션", region: "강원", category: "룸바", address: "강원 강릉시 경포로 789", rating: 4.4, reviewCount: 82, image: "", tags: ["분위기좋음", "프라이빗", "예약필수"] },
+  { id: 14, name: "포항 영일대 노래방 불타는금요일", region: "경북", category: "노래방", address: "경북 포항시 북구 영일대로 234", rating: 4.2, reviewCount: 63, image: "", tags: ["최신곡", "24시간", "단체가능"] },
+  { id: 15, name: "목포 하당동 룸살롱 프리미엄", region: "전남", category: "룸살롱", address: "전남 목포시 하당로 567", rating: 4.5, reviewCount: 88, image: "", tags: ["VIP룸", "주차가능", "이벤트중"] },
+  { id: 16, name: "세종 조치원 룸바 뉴월드", region: "세종", category: "룸바", address: "세종 조치원읍 조치원로 890", rating: 4.3, reviewCount: 55, image: "", tags: ["신규오픈", "분위기좋음", "프라이빗"] },
+];

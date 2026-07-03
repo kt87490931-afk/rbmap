@@ -13,6 +13,7 @@ export type LoungeHomeContent = {
     h1: string
     sub: string
     image: string
+    contact: string
   }
   quickbar: {
     label1: string
@@ -77,6 +78,7 @@ export const LOUNGE_HOME_DEFAULTS: LoungeHomeContent = {
     h1: '조용한 밤, <em>완전한 프라이버시.</em>',
     sub: '룸 안내와 이용 정보, 실제 방문 후기를 한곳에서 확인하세요.',
     image: '',
+    contact: '',
   },
   quickbar: {
     label1: '후기',

@@ -24,6 +24,10 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
   const c = useLoungeContent()
   const { editMode } = useLoungeEdit()
   const [lightbox, setLightbox] = useState<string | null>(null)
+  const [contactOpen, setContactOpen] = useState(false)
+
+  const contactRaw = (c.hero.contact || '').trim()
+  const contactHref = buildContactHref(contactRaw)
 
   const galleryVisible = c.gallery.images
     .map((img) => loungeImageSrc(img))
@@ -48,6 +52,13 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
             <div className="hero-actions">
               <Link href="/reviews" className="btn btn-primary">후기 보기</Link>
               <Link href="#about" className="btn btn-ghost">소개 보기</Link>
+              <button
+                type="button"
+                className="btn btn-primary hero-inquiry-btn"
+                onClick={() => setContactOpen(true)}
+              >
+                문의하기
+              </button>
             </div>
           </div>
           <div className="hero-media">
@@ -280,7 +291,7 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
           </p>
           <div className="cta-actions">
             <Link href="/reviews" className="btn btn-primary">전체 후기 보기</Link>
-            <Link href="#contact" className="btn btn-ghost">문의하기</Link>
+            <button type="button" className="btn btn-ghost" onClick={() => setContactOpen(true)}>문의하기</button>
           </div>
         </div>
       </section>
@@ -305,6 +316,55 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
           <img src={lightbox} alt="원본 이미지" onClick={(e) => e.stopPropagation()} />
         </div>
       )}
+
+      {contactOpen && (
+        <div
+          className="lounge-contact-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="문의하기"
+          onClick={() => setContactOpen(false)}
+        >
+          <div className="lounge-contact-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="lounge-contact-close"
+              aria-label="닫기"
+              onClick={() => setContactOpen(false)}
+            >
+              ×
+            </button>
+            <span className="eyebrow">Contact</span>
+            <h3>문의하기</h3>
+            <p className="lounge-contact-desc">아래 연락처로 편하게 문의해 주세요.</p>
+            <div className="lounge-contact-value editable-block">
+              <EditableText
+                path="hero.contact"
+                value={contactRaw || (editMode ? '연락처를 입력하세요' : '연락처 준비 중입니다.')}
+                block
+              />
+            </div>
+            {contactHref && (
+              <a
+                href={contactHref}
+                className="btn btn-primary btn-block"
+                {...(contactHref.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              >
+                {contactHref.startsWith('tel:') ? '전화 걸기' : '연결하기'}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   )
+}
+
+/** 연락처 문자열을 tel: 링크 또는 외부 링크(카카오/텔레그램 등)로 변환. 변환 불가 시 null. */
+function buildContactHref(raw: string): string | null {
+  if (!raw) return null
+  if (/^https?:\/\//i.test(raw)) return raw
+  const digits = raw.replace(/[^0-9+]/g, '')
+  if (digits.replace(/\D/g, '').length >= 7) return `tel:${digits}`
+  return null
 }

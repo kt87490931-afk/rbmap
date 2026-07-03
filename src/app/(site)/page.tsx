@@ -48,7 +48,7 @@ export const revalidate = 300
 
 export default async function HomePage() {
   const [latestReviews, totalCount] = await Promise.all([
-    getLatestFlatReviews(4),
+    getLatestFlatReviews(100),
     getPublishedReviewCount(),
   ])
 

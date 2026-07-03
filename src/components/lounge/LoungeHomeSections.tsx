@@ -212,44 +212,33 @@ export function LoungeHomeSections({ latestReviews, totalCount, avgStar }: Props
       </section>
 
       <section className="section" id="reviews">
-        <div className="container review-layout">
-          <div>
-            <span className="eyebrow">Review</span>
-            <h2 style={{ marginBottom: 18 }} className="editable-block">
-              <EditableText path="reviews.title" value={c.reviews.title} block />
-            </h2>
-            <div className="review-summary">
-              <div className="score">{avgStar}</div>
-              <div>
-                <span className="stars">{formatStars(Math.round(Number(avgStar)))}</span>
-                <span className="count">총 {totalCount}건의 후기</span>
-              </div>
-            </div>
-            <p className="editable-block" style={{ fontSize: 13 }}>
-              <EditableText path="reviews.note" value={c.reviews.note} block />
-            </p>
-          </div>
-          <div>
-            <ul className="review-list">
-              {latestReviews.map((r) => (
-                <li key={r.id}>
-                  <Link href={buildFlatReviewPath(r.flatSlug)} className="review-item">
-                    <div className="top">
-                      <span className="name">{r.title}</span>
-                      <span className="date">{formatReviewDate(r.published_at)}</span>
-                    </div>
-                    <span className="stars">{formatStars(r.star)}</span>
-                    <p>{reviewExcerpt(r, 120)}</p>
-                  </Link>
-                </li>
-              ))}
-              {latestReviews.length === 0 && (
-                <li className="review-item"><p>등록된 후기가 없습니다.</p></li>
-              )}
-            </ul>
-            <div className="review-more">
-              <Link href="/reviews" className="btn btn-ghost btn-block">후기 더보기</Link>
-            </div>
+        <div className="container">
+          <span className="eyebrow">Review</span>
+          <h2 style={{ marginBottom: 12 }} className="editable-block">
+            <EditableText path="reviews.title" value={c.reviews.title} block />
+          </h2>
+          <p className="editable-block" style={{ fontSize: 13, marginBottom: 22 }}>
+            <EditableText path="reviews.note" value={c.reviews.note} block />
+          </p>
+          <ul className="review-list">
+            {latestReviews.map((r) => (
+              <li key={r.id}>
+                <Link href={buildFlatReviewPath(r.flatSlug)} className="review-item">
+                  <div className="top">
+                    <span className="name">{r.title}</span>
+                    <span className="date">{formatReviewDate(r.published_at)}</span>
+                  </div>
+                  <span className="stars">{formatStars(r.star)}</span>
+                  <p>{reviewExcerpt(r, 120)}</p>
+                </Link>
+              </li>
+            ))}
+            {latestReviews.length === 0 && (
+              <li className="review-item"><p>등록된 후기가 없습니다.</p></li>
+            )}
+          </ul>
+          <div className="review-more">
+            <Link href="/reviews" className="btn btn-ghost btn-block">후기 더보기</Link>
           </div>
         </div>
       </section>

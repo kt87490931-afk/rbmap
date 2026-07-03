@@ -28,6 +28,22 @@
 
 .lounge-site.lounge-site * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 모바일 탭 시 분홍/자홍 하이라이트 박스 제거 */
+.lounge-site.lounge-site a,
+.lounge-site.lounge-site button,
+.lounge-site.lounge-site .btn,
+.lounge-site.lounge-site .nav-toggle {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* 텍스트 선택 색상도 브랜드 톤으로 (기본 분홍/파랑 방지) */
+.lounge-site.lounge-site ::selection {
+  background: rgba(199, 154, 69, 0.35);
+  color: var(--ink);
 }
 
 .lounge-site.lounge-site img {

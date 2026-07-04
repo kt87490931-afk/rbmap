@@ -74,6 +74,7 @@ fi
 echo "[5/6] Cron 확인..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CRON_SCRIPT="${SCRIPT_DIR}/scripts/cron-generate-reviews.sh"
+PUBLISH_CRON_SCRIPT="${SCRIPT_DIR}/scripts/cron-publish-reviews.sh"
 if [ -f "$CRON_SCRIPT" ]; then
   chmod +x "$CRON_SCRIPT"
   CURRENT=$(crontab -l 2>/dev/null || true)
@@ -89,6 +90,16 @@ if [ -f "$CRON_SCRIPT" ]; then
   else
     ( echo "$CURRENT"; echo "# rbmap 리뷰 자동생성 (20분마다)"; echo "0,20,40 * * * * $CRON_SCRIPT" ) | crontab -
     echo "Cron 추가됨: 20분마다 리뷰 생성 (0,20,40분)"
+  fi
+fi
+if [ -f "$PUBLISH_CRON_SCRIPT" ]; then
+  chmod +x "$PUBLISH_CRON_SCRIPT"
+  CURRENT=$(crontab -l 2>/dev/null || true)
+  if ! echo "$CURRENT" | grep -q "cron-publish-reviews.sh"; then
+    ( echo "$CURRENT"; echo "# rbmap 리뷰 일일 자동공개 (매일 00:00 KST, 랜덤 5건)"; echo "0 0 * * * $PUBLISH_CRON_SCRIPT" ) | crontab -
+    echo "Cron 추가됨: 매일 00:00 리뷰 자동공개 (랜덤 5건)"
+  else
+    echo "리뷰 자동공개 Cron 이미 설정됨."
   fi
 fi
 

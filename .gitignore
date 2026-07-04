@@ -1,5 +1,6 @@
 # dependencies
 /node_modules
+/telegram-attendance-bot/node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
@@ -39,6 +40,9 @@ next-env.d.ts
 # 호스팅 업로드 파일·메타 (서버 로컬 전용, deploy/build 와 분리)
 /data/hosting/**
 !/data/hosting/.gitkeep
+/data/attendance-data.json
+/data/attendance-data.json.tmp
+/data/attendance-data.json.broken-*
 /storage/hosting/
 /public/h/**
 !/public/h/.gitkeep

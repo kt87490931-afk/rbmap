@@ -16,6 +16,11 @@ fi
 # 1. 의존성 설치
 echo "[1/6] npm install..."
 npm ci
+if [ -d telegram-attendance-bot ]; then
+  echo "[1b/6] attendance-bot npm install..."
+  (cd telegram-attendance-bot && npm install --omit=dev)
+fi
+mkdir -p data
 
 # 2. 빌드
 echo "[2/6] npm run build..."
@@ -105,7 +110,7 @@ fi
 
 # 7. 상태 확인
 echo "[6/6] PM2 상태..."
-pm2 status rbmap
+pm2 status rbmap attendance-bot 2>/dev/null || pm2 status rbmap
 
 echo ""
 echo "== 배포 완료 =="

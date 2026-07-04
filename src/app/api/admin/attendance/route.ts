@@ -5,9 +5,7 @@ import {
   saveAttendanceData,
   todayDateStringKST,
   appendAudit,
-  formatTimeKST,
-  parseTimeOnDateKST,
-  isValidTimeString,
+  VALID_ALERTS,
 } from '@/lib/attendance/data'
 
 export const dynamic = 'force-dynamic'
@@ -18,11 +16,8 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const date = searchParams.get('date') || todayDateStringKST()
-
   const data = loadAttendanceData()
-  const checkins = data.checkins
-    .filter((c) => c.date === date)
-    .sort((a, b) => new Date(a.checkin_time).getTime() - new Date(b.checkin_time).getTime())
+  const day = data.days[date] || { ladies: {}, sessions: [], completed_counts: {} }
 
   const adminIds = (process.env.ATTENDANCE_ADMIN_IDS || process.env.ADMIN_IDS || '')
     .split(',')
@@ -30,27 +25,27 @@ export async function GET(request: Request) {
     .filter(Boolean)
 
   return NextResponse.json({
+    version: data.version,
     settings: data.settings,
-    checkins,
+    ladies: data.ladies.filter((l) => l.active),
+    rooms: data.rooms.filter((r) => r.active),
+    day,
     date,
-    dataPath: process.env.ATTENDANCE_DATA_PATH || '(auto)',
     adminIds,
     auditLog: data.audit_log.slice(0, 30),
-    botRunningHint: 'PM2 attendance-bot 프로세스 확인',
+    validAlerts: VALID_ALERTS,
   })
 }
 
 type PatchBody = {
+  store_name?: string
   alert_minutes?: number
-  delegated_ids?: string[]
-  delegated_labels?: Record<string, string>
   add_delegated?: { id: string; label?: string }
   remove_delegated?: string
-  checkin_id?: number
-  checkin_time?: string
-  checkout_time?: string
-  session_start_time?: string
-  delete_checkin_id?: number
+  add_lady?: string
+  remove_lady?: string
+  add_room?: string
+  remove_room?: string
 }
 
 export async function PATCH(request: Request) {
@@ -66,32 +61,26 @@ export async function PATCH(request: Request) {
 
   const data = loadAttendanceData()
 
+  if (body.store_name != null) {
+    data.settings.store_name = body.store_name.trim() || '간지'
+    appendAudit(data, 'store_name', data.settings.store_name)
+  }
+
   if (body.alert_minutes != null) {
-    if (![50, 55, 60].includes(body.alert_minutes)) {
-      return NextResponse.json({ error: '50, 55, 60만 가능' }, { status: 400 })
+    if (!VALID_ALERTS.includes(body.alert_minutes)) {
+      return NextResponse.json({ error: '45, 50, 55만 가능' }, { status: 400 })
     }
     const prev = data.settings.alert_minutes
     data.settings.alert_minutes = body.alert_minutes
     data.settings.last_alert_change = new Date().toISOString()
     data.settings.last_alert_changed_by = 'admin-web'
-    appendAudit(data, 'alert_change', `${prev}분 → ${body.alert_minutes}분`)
-  }
-
-  if (body.delegated_ids != null) {
-    data.settings.delegated_ids = body.delegated_ids.map(String)
-  }
-  if (body.delegated_labels != null) {
-    data.settings.delegated_labels = body.delegated_labels
+    appendAudit(data, 'alert_change', `${prev}→${body.alert_minutes}`)
   }
 
   if (body.add_delegated?.id) {
     const id = String(body.add_delegated.id)
-    if (!data.settings.delegated_ids.includes(id)) {
-      data.settings.delegated_ids.push(id)
-    }
-    if (body.add_delegated.label) {
-      data.settings.delegated_labels[id] = body.add_delegated.label
-    }
+    if (!data.settings.delegated_ids.includes(id)) data.settings.delegated_ids.push(id)
+    if (body.add_delegated.label) data.settings.delegated_labels[id] = body.add_delegated.label
     appendAudit(data, 'delegate_add', id)
   }
 
@@ -102,53 +91,36 @@ export async function PATCH(request: Request) {
     appendAudit(data, 'delegate_remove', id)
   }
 
-  if (body.checkin_id != null && body.checkin_time) {
-    if (!isValidTimeString(body.checkin_time)) {
-      return NextResponse.json({ error: 'HH:MM 형식' }, { status: 400 })
+  if (body.add_lady) {
+    const name = body.add_lady.trim()
+    if (name && !data.ladies.some((l) => l.active && l.name === name)) {
+      data.ladies.push({ id: data.next_lady_id++, name, active: true })
+      appendAudit(data, 'lady_add', name)
     }
-    const row = data.checkins.find((c) => c.id === body.checkin_id)
-    if (!row) return NextResponse.json({ error: '기록 없음' }, { status: 404 })
-    const prev = formatTimeKST(row.checkin_time)
-    row.checkin_time = parseTimeOnDateKST(row.date, body.checkin_time)
-    appendAudit(data, 'checkin_edit', `${row.user_name} ${prev}→${body.checkin_time}`)
   }
 
-  if (body.checkin_id != null && body.checkout_time) {
-    if (!isValidTimeString(body.checkout_time)) {
-      return NextResponse.json({ error: 'HH:MM 형식' }, { status: 400 })
+  if (body.remove_lady) {
+    const lady = data.ladies.find((l) => l.active && l.name === body.remove_lady?.trim())
+    if (lady) {
+      lady.active = false
+      appendAudit(data, 'lady_remove', lady.name)
     }
-    const row = data.checkins.find((c) => c.id === body.checkin_id)
-    if (!row || row.status !== 'DONE') {
-      return NextResponse.json({ error: '퇴근 완료 기록만 수정 가능' }, { status: 400 })
-    }
-    const prev = row.checkout_time ? formatTimeKST(row.checkout_time) : '-'
-    row.checkout_time = parseTimeOnDateKST(row.date, body.checkout_time)
-    appendAudit(data, 'checkout_edit', `${row.user_name} ${prev}→${body.checkout_time}`)
   }
 
-  if (body.checkin_id != null && body.session_start_time) {
-    if (!isValidTimeString(body.session_start_time)) {
-      return NextResponse.json({ error: 'HH:MM 형식' }, { status: 400 })
+  if (body.add_room) {
+    const name = body.add_room.trim()
+    if (name && !data.rooms.some((r) => r.active && r.name === name)) {
+      data.rooms.push({ id: data.next_room_id++, name, active: true })
+      appendAudit(data, 'room_add', name)
     }
-    const row = data.checkins.find((c) => c.id === body.checkin_id)
-    if (!row || row.status !== 'IN_SESSION' || !row.session) {
-      return NextResponse.json({ error: '진행 중 세션만 수정 가능' }, { status: 400 })
-    }
-    const prev = formatTimeKST(row.session.start_time)
-    const iso = parseTimeOnDateKST(row.date, body.session_start_time)
-    const alertMin = data.settings.alert_minutes
-    row.session.start_time = iso
-    row.session.alert_minutes = alertMin
-    row.session.alert_time = new Date(new Date(iso).getTime() + alertMin * 60000).toISOString()
-    row.session.alert_sent = 0
-    appendAudit(data, 'session_edit', `${row.user_name} ${prev}→${body.session_start_time}`)
   }
 
-  if (body.delete_checkin_id != null) {
-    const idx = data.checkins.findIndex((c) => c.id === body.delete_checkin_id)
-    if (idx === -1) return NextResponse.json({ error: '기록 없음' }, { status: 404 })
-    const removed = data.checkins.splice(idx, 1)[0]
-    appendAudit(data, 'record_delete', removed.user_name)
+  if (body.remove_room) {
+    const room = data.rooms.find((r) => r.active && r.name === body.remove_room?.trim())
+    if (room) {
+      room.active = false
+      appendAudit(data, 'room_remove', room.name)
+    }
   }
 
   saveAttendanceData(data)

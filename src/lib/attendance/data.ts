@@ -1,28 +1,40 @@
 import fs from 'fs'
 import path from 'path'
 
-export type AttendanceSession = {
-  hour_count: number
-  start_time: string
-  alert_minutes: number
-  alert_time: string
-  alert_sent: number
+export type Lady = { id: number; name: string; active: boolean }
+export type Room = { id: number; name: string; active: boolean }
+
+export type SessionAssignment = {
+  lady_id: number
+  from_start: boolean
+  joined_at: string
+  removed_at: string | null
 }
 
-export type AttendanceCheckin = {
+export type RoomSession = {
   id: number
+  room_id: number
   chat_id: number
-  user_id: string
-  user_name: string
-  date: string
-  checkin_time: string
-  checkout_time: string | null
-  status: 'WAITING' | 'IN_SESSION' | 'DONE'
-  session: AttendanceSession | null
-  session_history: { start_time: string; end_time: string; hours: number }[]
+  customer_count: number
+  start_time: string
+  hour_count: number
+  end_scheduled: string
+  status: 'active' | 'ended'
+  ended_at: string | null
+  alert_minutes: number
+  alert_time: string
+  alert_sent: boolean
+  assignments: SessionAssignment[]
+}
+
+export type DayData = {
+  ladies: Record<string, { checked_in: boolean; checked_out: boolean; checkin_time: string; checkout_time: string | null }>
+  sessions: RoomSession[]
+  completed_counts: Record<string, number>
 }
 
 export type AttendanceSettings = {
+  store_name: string
   alert_minutes: number
   delegated_ids: string[]
   delegated_labels: Record<string, string>
@@ -30,39 +42,50 @@ export type AttendanceSettings = {
   last_alert_changed_by: string | null
 }
 
-export type AttendanceData = {
+export type AttendanceDataV2 = {
+  version: number
   settings: AttendanceSettings
-  checkins: AttendanceCheckin[]
-  nextId: number
+  ladies: Lady[]
+  rooms: Room[]
+  days: Record<string, DayData>
+  next_lady_id: number
+  next_room_id: number
+  next_session_id: number
   audit_log: { at: string; by: string; action: string; detail: string }[]
 }
 
-const DEFAULT_ALERT = 60
+const VALID_ALERTS = [45, 50, 55]
+const DEFAULT_ALERT = 55
 
 export function getAttendanceDataPath(): string {
   if (process.env.ATTENDANCE_DATA_PATH) return process.env.ATTENDANCE_DATA_PATH
-  // standalone: repo root 기준 (deploy 시 env 권장)
   const fromRoot = path.join(process.cwd(), '..', '..', 'data', 'attendance-data.json')
   if (fs.existsSync(fromRoot)) return fromRoot
   return path.join(process.cwd(), 'data', 'attendance-data.json')
 }
 
-function initialData(): AttendanceData {
+function initialData(): AttendanceDataV2 {
   return {
+    version: 2,
     settings: {
+      store_name: '간지',
       alert_minutes: DEFAULT_ALERT,
       delegated_ids: [],
       delegated_labels: {},
       last_alert_change: null,
       last_alert_changed_by: null,
     },
-    checkins: [],
-    nextId: 1,
+    ladies: [],
+    rooms: [],
+    days: {},
+    next_lady_id: 1,
+    next_room_id: 1,
+    next_session_id: 1,
     audit_log: [],
   }
 }
 
-export function loadAttendanceData(): AttendanceData {
+export function loadAttendanceData(): AttendanceDataV2 {
   const file = getAttendanceDataPath()
   const dir = path.dirname(file)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
@@ -71,15 +94,10 @@ export function loadAttendanceData(): AttendanceData {
     fs.writeFileSync(file, JSON.stringify(init, null, 2))
     return init
   }
-  const raw = fs.readFileSync(file, 'utf8')
-  const data = JSON.parse(raw) as AttendanceData
-  if (!data.settings.delegated_ids) data.settings.delegated_ids = []
-  if (!data.settings.delegated_labels) data.settings.delegated_labels = {}
-  if (!data.audit_log) data.audit_log = []
-  return data
+  return JSON.parse(fs.readFileSync(file, 'utf8')) as AttendanceDataV2
 }
 
-export function saveAttendanceData(data: AttendanceData): void {
+export function saveAttendanceData(data: AttendanceDataV2): void {
   const file = getAttendanceDataPath()
   const dir = path.dirname(file)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
@@ -105,19 +123,8 @@ export function formatTimeKST(iso: string): string {
   return `${String(kst.getHours()).padStart(2, '0')}:${String(kst.getMinutes()).padStart(2, '0')}`
 }
 
-export function parseTimeOnDateKST(dateStr: string, timeStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const [hh, mm] = timeStr.split(':').map(Number)
-  const kstMs = Date.UTC(y, m - 1, d, hh, mm, 0, 0) - 9 * 60 * 60 * 1000
-  return new Date(kstMs).toISOString()
-}
-
-export function isValidTimeString(str: string): boolean {
-  return /^([01]?\d|2[0-3]):[0-5]\d$/.test(str)
-}
-
 export function appendAudit(
-  data: AttendanceData,
+  data: AttendanceDataV2,
   action: string,
   detail: string,
   by = 'admin-web'
@@ -125,3 +132,5 @@ export function appendAudit(
   data.audit_log.unshift({ at: new Date().toISOString(), by, action, detail })
   if (data.audit_log.length > 200) data.audit_log.length = 200
 }
+
+export { VALID_ALERTS, DEFAULT_ALERT }

@@ -1,4 +1,6 @@
-// 한국 시간(KST, UTC+9) 기준 날짜/시각 처리
+// KST 날짜/시각 + 보드용 포맷
+
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
 function nowKST() {
   const now = new Date();
@@ -12,6 +14,22 @@ function todayDateStringKST() {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+function parseDateKST(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
+}
+
+function weekdayKST(dateStr) {
+  const d = parseDateKST(dateStr);
+  return WEEKDAYS[d.getUTCDay()];
+}
+
+function formatDateHeader(dateStr, storeName) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const wd = weekdayKST(dateStr);
+  return `${m}월 ${d}일(${wd}) ${storeName}`;
 }
 
 function formatTimeKST(isoOrDate) {
@@ -31,7 +49,6 @@ function isValidTimeString(str) {
   return /^([01]?\d|2[0-3]):[0-5]\d$/.test(str);
 }
 
-/** YYYY-MM-DD + HH:MM(KST) → ISO UTC 문자열 */
 function parseTimeOnDateKST(dateStr, timeStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const [hh, mm] = timeStr.split(':').map(Number);
@@ -39,20 +56,23 @@ function parseTimeOnDateKST(dateStr, timeStr) {
   return new Date(kstMs).toISOString();
 }
 
-function formatDurationMinutes(startIso, endIso) {
-  const mins = Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000);
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  if (h > 0) return `${h}시간 ${m}분`;
-  return `${m}분`;
+function addMinutesIso(iso, minutes) {
+  return new Date(new Date(iso).getTime() + minutes * 60000).toISOString();
+}
+
+function addHoursIso(iso, hours) {
+  return new Date(new Date(iso).getTime() + hours * 3600000).toISOString();
 }
 
 module.exports = {
   nowKST,
   todayDateStringKST,
+  weekdayKST,
+  formatDateHeader,
   formatTimeKST,
   isValidDateString,
   isValidTimeString,
   parseTimeOnDateKST,
-  formatDurationMinutes,
+  addMinutesIso,
+  addHoursIso,
 };

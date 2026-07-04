@@ -2,65 +2,54 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-type Checkin = {
+type Lady = { id: number; name: string }
+type Room = { id: number; name: string }
+type Session = {
   id: number
-  user_id: string
-  user_name: string
-  date: string
-  checkin_time: string
-  checkout_time: string | null
+  room_id: number
+  customer_count: number
+  start_time: string
+  hour_count: number
   status: string
-  session: { hour_count: number; start_time: string } | null
+  assignments: { lady_id: number; from_start: boolean; removed_at: string | null }[]
 }
 
 type Settings = {
+  store_name: string
   alert_minutes: number
   delegated_ids: string[]
   delegated_labels: Record<string, string>
-  last_alert_change: string | null
-  last_alert_changed_by: string | null
-}
-
-type AuditEntry = { at: string; by: string; action: string; detail: string }
-
-function formatKstTime(iso: string) {
-  const d = new Date(iso)
-  const utc = d.getTime() + d.getTimezoneOffset() * 60000
-  const kst = new Date(utc + 9 * 60 * 60000)
-  return `${String(kst.getHours()).padStart(2, '0')}:${String(kst.getMinutes()).padStart(2, '0')}`
-}
-
-function statusLabel(row: Checkin) {
-  if (row.status === 'DONE') return '퇴근'
-  if (row.status === 'IN_SESSION' && row.session) return `${row.session.hour_count}시간째`
-  return '대기중'
 }
 
 export default function AdminAttendancePage() {
   const [loading, setLoading] = useState(true)
-  const [date, setDate] = useState('')
   const [settings, setSettings] = useState<Settings | null>(null)
-  const [checkins, setCheckins] = useState<Checkin[]>([])
+  const [ladies, setLadies] = useState<Lady[]>([])
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [completed, setCompleted] = useState<Record<string, number>>({})
   const [adminIds, setAdminIds] = useState<string[]>([])
-  const [auditLog, setAuditLog] = useState<AuditEntry[]>([])
   const [msg, setMsg] = useState('')
   const [msgOk, setMsgOk] = useState(true)
+  const [newLady, setNewLady] = useState('')
+  const [newRoom, setNewRoom] = useState('')
   const [newDelegateId, setNewDelegateId] = useState('')
   const [newDelegateLabel, setNewDelegateLabel] = useState('')
-  const [editTimes, setEditTimes] = useState<Record<number, { checkin?: string; checkout?: string; session?: string }>>({})
+  const [storeName, setStoreName] = useState('간지')
 
-  const fetchData = useCallback(async (d?: string) => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const q = d ? `?date=${d}` : ''
-      const res = await fetch(`/api/admin/attendance${q}`, { credentials: 'include' })
+      const res = await fetch('/api/admin/attendance', { credentials: 'include' })
       const json = await res.json()
       if (res.ok) {
         setSettings(json.settings)
-        setCheckins(json.checkins ?? [])
-        setDate(json.date)
+        setStoreName(json.settings?.store_name || '간지')
+        setLadies(json.ladies ?? [])
+        setRooms(json.rooms ?? [])
+        setSessions(json.day?.sessions ?? [])
+        setCompleted(json.day?.completed_counts ?? {})
         setAdminIds(json.adminIds ?? [])
-        setAuditLog(json.auditLog ?? [])
       }
     } catch { /* ignore */ }
     setLoading(false)
@@ -81,7 +70,7 @@ export default function AdminAttendancePage() {
       if (res.ok) {
         setMsgOk(true)
         setMsg('저장되었습니다.')
-        fetchData(date)
+        fetchData()
       } else {
         setMsgOk(false)
         setMsg(json.error ?? '실패')
@@ -93,46 +82,19 @@ export default function AdminAttendancePage() {
     setTimeout(() => setMsg(''), 4000)
   }
 
-  function setAlert(minutes: number) {
-    patch({ alert_minutes: minutes })
+  function ladyName(id: number) {
+    return ladies.find((l) => l.id === id)?.name ?? `#${id}`
   }
 
-  function addDelegate() {
-    if (!newDelegateId.trim()) return
-    patch({
-      add_delegated: { id: newDelegateId.trim(), label: newDelegateLabel.trim() || undefined },
-    })
-    setNewDelegateId('')
-    setNewDelegateLabel('')
-  }
-
-  function removeDelegate(id: string) {
-    if (!confirm(`${id} 권한을 해제할까요?`)) return
-    patch({ remove_delegated: id })
-  }
-
-  function saveCheckinEdit(row: Checkin) {
-    const e = editTimes[row.id]
-    if (!e) return
-    const body: Record<string, unknown> = { checkin_id: row.id }
-    if (e.checkin) body.checkin_time = e.checkin
-    if (e.checkout && row.status === 'DONE') body.checkout_time = e.checkout
-    if (e.session && row.status === 'IN_SESSION') body.session_start_time = e.session
-    patch(body)
-  }
-
-  function deleteRecord(id: number, name: string) {
-    if (!confirm(`${name} 기록을 삭제할까요?`)) return
-    patch({ delete_checkin_id: id })
+  function roomName(id: number) {
+    return rooms.find((r) => r.id === id)?.name ?? `#${id}`
   }
 
   return (
     <>
-      <h1 className="admin-page-title">📋 출근부 · 타이머 관리</h1>
-      <p style={{ fontSize: 13, color: 'var(--text-muted, #888)', marginBottom: 20, lineHeight: 1.6 }}>
-        텔레그램 출근부 봇과 동일 설정을 공유합니다. 알림 50/55/60분 · 위임 직원 · 출근/세션 시각 수정.
-        <br />
-        운영자 ID는 서버 <code style={{ background: 'rgba(0,0,0,0.2)', padding: '1px 5px', borderRadius: 4 }}>ATTENDANCE_ADMIN_IDS</code> (.env)에서 설정합니다.
+      <h1 className="admin-page-title">📋 출근부 · 룸 타이머 (v2)</h1>
+      <p style={{ fontSize: 13, color: 'var(--text-muted, #888)', marginBottom: 16, lineHeight: 1.6 }}>
+        텔레그램 <code>/출근부</code> 와 동일 데이터 · 룸 단위 · 알람 45/50/55분 · 종료 시 완료 +1
       </p>
 
       {msg && (
@@ -145,187 +107,91 @@ export default function AdminAttendancePage() {
         </div>
       )}
 
-      {loading && !settings ? (
-        <p>불러오는 중…</p>
-      ) : (
+      {loading && !settings ? <p>불러오는 중…</p> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* 알림 설정 */}
           <div className="admin-card">
-            <h2 style={{ fontSize: 16, marginBottom: 12 }}>⏰ 알림 기준 (50 / 55 / 60분)</h2>
-            <p style={{ fontSize: 13, marginBottom: 12, opacity: 0.85 }}>
-              현재: <strong>{settings?.alert_minutes ?? 60}분</strong>
-              {settings?.last_alert_change && (
-                <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.7 }}>
-                  (마지막 변경: {new Date(settings.last_alert_change).toLocaleString('ko-KR')} · {settings.last_alert_changed_by})
-                </span>
-              )}
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[50, 55, 60].map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  className={settings?.alert_minutes === m ? 'btn-success' : 'btn-save'}
-                  onClick={() => setAlert(m)}
-                >
-                  {m}분{settings?.alert_minutes === m ? ' ✓' : ''}
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>🏪 매장명</h2>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input className="form-input" value={storeName} onChange={(e) => setStoreName(e.target.value)} style={{ width: 120 }} />
+              <button type="button" className="btn-success" onClick={() => patch({ store_name: storeName })}>저장</button>
+            </div>
+          </div>
+
+          <div className="admin-card">
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>⏰ 알람 (시작 + N분 후 알림)</h2>
+            <p style={{ fontSize: 13, marginBottom: 10 }}>현재: <strong>{settings?.alert_minutes ?? 55}분</strong></p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[45, 50, 55].map((m) => (
+                <button key={m} type="button" className={settings?.alert_minutes === m ? 'btn-success' : 'btn-save'} onClick={() => patch({ alert_minutes: m })}>
+                  {m}분
                 </button>
               ))}
             </div>
-            <p style={{ fontSize: 12, marginTop: 10, opacity: 0.65 }}>
-              텔레그램: 전 직원 <code>/알림확인</code> · 운영자 <code>/알림설정 55</code>
-            </p>
           </div>
 
-          {/* 운영자 / 위임 */}
           <div className="admin-card">
-            <h2 style={{ fontSize: 16, marginBottom: 12 }}>👥 권한 관리</h2>
-            <p style={{ fontSize: 13, marginBottom: 8 }}>
-              <strong>운영자</strong> (텔레그램 ID): {adminIds.length ? adminIds.join(', ') : '(미설정 — .env에 ATTENDANCE_ADMIN_IDS 추가)'}
-            </p>
-            <p style={{ fontSize: 13, marginBottom: 12, opacity: 0.85 }}>
-              <strong>위임 직원</strong> — 출근/타이머 조작 가능
-            </p>
-            {(settings?.delegated_ids ?? []).length === 0 ? (
-              <p style={{ fontSize: 13, opacity: 0.6 }}>지정된 직원 없음</p>
-            ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 12px' }}>
-                {settings!.delegated_ids.map((id) => (
-                  <li key={id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 13 }}>
-                    <span>{id}{settings!.delegated_labels[id] ? ` (${settings!.delegated_labels[id]})` : ''}</span>
-                    <button type="button" className="btn-save" style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => removeDelegate(id)}>제거</button>
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>🙍 아가씨 등록 ({ladies.length}명)</h2>
+            <p style={{ fontSize: 13, marginBottom: 8 }}>{ladies.map((l) => `[🙍${l.name}]`).join(' ') || '(없음)'}</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input className="form-input" placeholder="이름" value={newLady} onChange={(e) => setNewLady(e.target.value)} style={{ width: 100 }} />
+              <button type="button" className="btn-success" onClick={() => { patch({ add_lady: newLady }); setNewLady('') }}>추가</button>
+            </div>
+          </div>
+
+          <div className="admin-card">
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>❤️ 룸 등록 ({rooms.length}개)</h2>
+            <p style={{ fontSize: 13, marginBottom: 8 }}>{rooms.map((r) => `[❤️${r.name}]`).join(' ') || '(없음)'}</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input className="form-input" placeholder="1T" value={newRoom} onChange={(e) => setNewRoom(e.target.value)} style={{ width: 80 }} />
+              <button type="button" className="btn-success" onClick={() => { patch({ add_room: newRoom }); setNewRoom('') }}>추가</button>
+            </div>
+          </div>
+
+          <div className="admin-card">
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>📊 금일 완료 세션</h2>
+            {ladies.length === 0 ? <p style={{ fontSize: 13, opacity: 0.6 }}>등록 없음</p> : (
+              <p style={{ fontSize: 13 }}>{ladies.map((l) => `[${l.name} ${completed[String(l.id)] || 0}]`).join(' ')}</p>
+            )}
+          </div>
+
+          <div className="admin-card">
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>💋 오늘 세션</h2>
+            {sessions.length === 0 ? <p style={{ fontSize: 13, opacity: 0.6 }}>없음 — 텔레그램 /방시작 사용</p> : (
+              <ul style={{ fontSize: 12, lineHeight: 1.8, paddingLeft: 16 }}>
+                {sessions.map((s) => (
+                  <li key={s.id}>
+                    ❤️{roomName(s.room_id)} · 🤵{s.customer_count} · {s.status} · {s.hour_count}h ·{' '}
+                    {s.assignments.filter((a) => !a.removed_at).map((a) => ladyName(a.lady_id)).join(', ')}
                   </li>
                 ))}
               </ul>
             )}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="텔레그램 user ID"
-                value={newDelegateId}
-                onChange={(e) => setNewDelegateId(e.target.value)}
-                className="form-input"
-                style={{ width: 160 }}
-              />
-              <input
-                type="text"
-                placeholder="별칭 (선택)"
-                value={newDelegateLabel}
-                onChange={(e) => setNewDelegateLabel(e.target.value)}
-                className="form-input"
-                style={{ width: 120 }}
-              />
-              <button type="button" className="btn-success" onClick={addDelegate}>추가</button>
-            </div>
-            <p style={{ fontSize: 12, marginTop: 10, opacity: 0.65 }}>
-              텔레그램: <code>/권한추가 ID 별칭</code> · <code>/권한목록</code>
-            </p>
           </div>
 
-          {/* 출근부 */}
           <div className="admin-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: 16, margin: 0 }}>📋 출근부</h2>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => { setDate(e.target.value); fetchData(e.target.value) }}
-                className="form-input"
-                style={{ width: 160 }}
-              />
-              <button type="button" className="btn-save" onClick={() => fetchData(date)}>새로고침</button>
-            </div>
-
-            {checkins.length === 0 ? (
-              <p style={{ fontSize: 13, opacity: 0.6 }}>{date} 기록 없음</p>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                      <th style={{ textAlign: 'left', padding: '8px 6px' }}>이름</th>
-                      <th style={{ textAlign: 'left', padding: '8px 6px' }}>상태</th>
-                      <th style={{ textAlign: 'left', padding: '8px 6px' }}>출근</th>
-                      <th style={{ textAlign: 'left', padding: '8px 6px' }}>세션시작</th>
-                      <th style={{ textAlign: 'left', padding: '8px 6px' }}>퇴근</th>
-                      <th style={{ padding: '8px 6px' }}>수정</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {checkins.map((row) => (
-                      <tr key={row.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                        <td style={{ padding: '8px 6px' }}>{row.user_name}<br /><span style={{ fontSize: 11, opacity: 0.5 }}>{row.user_id}</span></td>
-                        <td style={{ padding: '8px 6px' }}>{statusLabel(row)}</td>
-                        <td style={{ padding: '8px 6px' }}>
-                          <input
-                            type="text"
-                            placeholder={formatKstTime(row.checkin_time)}
-                            className="form-input"
-                            style={{ width: 70, fontSize: 12 }}
-                            value={editTimes[row.id]?.checkin ?? ''}
-                            onChange={(e) => setEditTimes((p) => ({ ...p, [row.id]: { ...p[row.id], checkin: e.target.value } }))}
-                          />
-                        </td>
-                        <td style={{ padding: '8px 6px' }}>
-                          {row.status === 'IN_SESSION' && row.session ? (
-                            <input
-                              type="text"
-                              placeholder={formatKstTime(row.session.start_time)}
-                              className="form-input"
-                              style={{ width: 70, fontSize: 12 }}
-                              value={editTimes[row.id]?.session ?? ''}
-                              onChange={(e) => setEditTimes((p) => ({ ...p, [row.id]: { ...p[row.id], session: e.target.value } }))}
-                            />
-                          ) : '—'}
-                        </td>
-                        <td style={{ padding: '8px 6px' }}>
-                          {row.status === 'DONE' && row.checkout_time ? (
-                            <input
-                              type="text"
-                              placeholder={formatKstTime(row.checkout_time)}
-                              className="form-input"
-                              style={{ width: 70, fontSize: 12 }}
-                              value={editTimes[row.id]?.checkout ?? ''}
-                              onChange={(e) => setEditTimes((p) => ({ ...p, [row.id]: { ...p[row.id], checkout: e.target.value } }))}
-                            />
-                          ) : row.checkout_time ? formatKstTime(row.checkout_time) : '—'}
-                        </td>
-                        <td style={{ padding: '8px 6px', whiteSpace: 'nowrap' }}>
-                          <button type="button" className="btn-save" style={{ fontSize: 11, marginRight: 4 }} onClick={() => saveCheckinEdit(row)}>저장</button>
-                          <button type="button" className="btn-save" style={{ fontSize: 11, opacity: 0.7 }} onClick={() => deleteRecord(row.id, row.user_name)}>삭제</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>👥 권한 (텔레그램 ID)</h2>
+            <p style={{ fontSize: 13, marginBottom: 8 }}>운영자: {adminIds.join(', ') || '(ATTENDANCE_ADMIN_IDS 설정)'}</p>
+            {(settings?.delegated_ids ?? []).map((id) => (
+              <div key={id} style={{ fontSize: 13, marginBottom: 4 }}>
+                {id}{settings!.delegated_labels[id] ? ` (${settings!.delegated_labels[id]})` : ''}
+                <button type="button" className="btn-save" style={{ marginLeft: 8, fontSize: 11, padding: '2px 6px' }} onClick={() => patch({ remove_delegated: id })}>제거</button>
               </div>
-            )}
-            <p style={{ fontSize: 12, marginTop: 10, opacity: 0.65 }}>
-              시간 입력 형식 HH:MM (예: 18:30). 봇 타이머는 약 1분 내 자동 동기화됩니다.
-            </p>
+            ))}
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <input className="form-input" placeholder="텔레그램 ID" value={newDelegateId} onChange={(e) => setNewDelegateId(e.target.value)} style={{ width: 140 }} />
+              <input className="form-input" placeholder="별칭" value={newDelegateLabel} onChange={(e) => setNewDelegateLabel(e.target.value)} style={{ width: 80 }} />
+              <button type="button" className="btn-success" onClick={() => { patch({ add_delegated: { id: newDelegateId, label: newDelegateLabel || undefined } }); setNewDelegateId(''); setNewDelegateLabel('') }}>추가</button>
+            </div>
           </div>
 
-          {/* 감사 로그 */}
-          {auditLog.length > 0 && (
-            <div className="admin-card">
-              <h2 style={{ fontSize: 16, marginBottom: 12 }}>📝 최근 변경 이력</h2>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 12, lineHeight: 1.8 }}>
-                {auditLog.slice(0, 15).map((a, i) => (
-                  <li key={i} style={{ opacity: 0.85 }}>
-                    {new Date(a.at).toLocaleString('ko-KR')} · {a.action} · {a.detail} ({a.by})
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* 텔레그램 명령 안내 */}
           <div className="admin-card">
-            <h2 style={{ fontSize: 16, marginBottom: 12 }}>📱 텔레그램 명령 요약</h2>
-            <pre style={{ fontSize: 12, lineHeight: 1.7, whiteSpace: 'pre-wrap', opacity: 0.9, margin: 0 }}>
-{`[전 직원] /알림확인 · /출근현황 · /출근부목록 · /도움말
-[권한 직원] /출근 [ID] [HH:MM] · /시작 · /퇴근 · /출근수정 · /시작수정 · /퇴근수정
-[운영자] /알림설정 50|55|60 · /권한추가 · /권한제거 · /기록삭제`}
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>📱 텔레그램 명령</h2>
+            <pre style={{ fontSize: 11, lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: 0 }}>
+{`/출근부 — 보드 + [전체][출근][미출근][진행중][종료][진행현황][알람설정]
+/아가씨등록 하나 · /룸등록 1T
+/출근 하나 · /퇴근 하나
+/방시작 1T 3 하나,사랑,이슬 [01:00]
+/방종료 1T · /방연장 1T · /방추가 1T 사월 · /방빼 1T 이슬`}
             </pre>
           </div>
         </div>

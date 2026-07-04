@@ -528,6 +528,8 @@
 .lounge-site.lounge-site .review-list {
   display: grid;
   gap: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .lounge-site.lounge-site .review-item {
@@ -535,9 +537,14 @@
   border-bottom: 1px solid var(--line);
   display: block;
   transition: background 0.15s ease;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  -webkit-tap-highlight-color: rgba(199, 154, 69, 0.2);
 }
 
-.lounge-site.lounge-site a.review-item:hover {
+.lounge-site.lounge-site a.review-item:hover,
+.lounge-site.lounge-site a.review-item:active {
   background: var(--brass-soft);
 }
 
@@ -1294,14 +1301,11 @@
   inset: 0;
   z-index: 300;
   background: rgba(6, 5, 7, 0.72);
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-}
-
-.lounge-site.lounge-site .modal-overlay.open {
-  display: flex;
+  pointer-events: auto;
 }
 
 .lounge-site.lounge-site .modal {

@@ -20,9 +20,21 @@ export function RightClickGuard() {
 
     document.body.classList.add(NO_SELECT_CLASS)
 
-    const handleContextMenu = (e: MouseEvent) => e.preventDefault()
-    const handleSelectStart = (e: Event) => e.preventDefault()
-    const handleDragStart = (e: Event) => e.preventDefault()
+    const handleContextMenu = (e: MouseEvent) => {
+      const t = e.target
+      if (t instanceof Element && t.closest('a, button, input, textarea, select, [role="button"]')) return
+      e.preventDefault()
+    }
+    const handleSelectStart = (e: Event) => {
+      const t = e.target
+      if (t instanceof Element && t.closest('a, button, input, textarea, select, [role="button"], .review-item')) return
+      e.preventDefault()
+    }
+    const handleDragStart = (e: Event) => {
+      const t = e.target
+      if (t instanceof Element && t.closest('a, button, input, textarea, select, [role="button"], .review-item')) return
+      e.preventDefault()
+    }
 
     document.addEventListener('contextmenu', handleContextMenu)
     document.addEventListener('selectstart', handleSelectStart)

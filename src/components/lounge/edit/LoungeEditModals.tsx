@@ -45,8 +45,9 @@ export function LoungeEditModals() {
 
   return (
     <>
+      {textModal && (
       <div
-        className={`modal-overlay${textModal ? ' open' : ''}`}
+        className="modal-overlay open"
         onClick={(e) => {
           if (e.target === e.currentTarget) closeTextModal()
         }}
@@ -74,9 +75,11 @@ export function LoungeEditModals() {
           </div>
         </div>
       </div>
+      )}
 
+      {imageModal && (
       <div
-        className={`modal-overlay${imageModal ? ' open' : ''}`}
+        className="modal-overlay open"
         onClick={(e) => {
           if (e.target === e.currentTarget) closeImageModal()
         }}
@@ -121,6 +124,7 @@ export function LoungeEditModals() {
           </div>
         </div>
       </div>
+      )}
     </>
   )
 }

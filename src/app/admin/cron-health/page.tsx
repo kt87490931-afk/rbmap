@@ -47,9 +47,10 @@ export default function AdminCronHealthPage() {
   const PAGE_SIZE = 20
   const [data, setData] = useState<CronHealthResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'generate-reviews' | 'sitemap-ping'>('generate-reviews')
+  const [activeTab, setActiveTab] = useState<'generate-reviews' | 'sitemap-ping' | 'publish-reviews'>('generate-reviews')
   const [reviewPage, setReviewPage] = useState(1)
   const [sitemapPage, setSitemapPage] = useState(1)
+  const [publishPage, setPublishPage] = useState(1)
   const [partners, setPartners] = useState<PartnerOption[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [running, setRunning] = useState(false)
@@ -62,13 +63,13 @@ export default function AdminCronHealthPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const currentPage = activeTab === 'generate-reviews' ? reviewPage : sitemapPage
+      const currentPage = activeTab === 'generate-reviews' ? reviewPage : activeTab === 'sitemap-ping' ? sitemapPage : publishPage
       const res = await fetch(`/api/admin/cron-health?job=${activeTab}&limit=${PAGE_SIZE}&page=${currentPage}`, { credentials: 'include' })
       const json = await res.json()
       setData(json)
     } catch { setData({ jobs: {} }) }
     setLoading(false)
-  }, [activeTab, reviewPage, sitemapPage])
+  }, [activeTab, reviewPage, sitemapPage, publishPage])
 
   const fetchPartners = useCallback(async () => {
     try {
@@ -182,6 +183,44 @@ export default function AdminCronHealthPage() {
 
   const [sitemapRunning, setSitemapRunning] = useState(false)
   const [sitemapMsg, setSitemapMsg] = useState('')
+  const [publishRunning, setPublishRunning] = useState(false)
+  const [publishTestRunning, setPublishTestRunning] = useState(false)
+  const [publishMsg, setPublishMsg] = useState('')
+  const [publishOk, setPublishOk] = useState(true)
+
+  async function runPublishReviews(test: boolean) {
+    if (test) setPublishTestRunning(true)
+    else setPublishRunning(true)
+    setPublishMsg('')
+    try {
+      const res = await fetch('/api/admin/cron-health/run-publish-reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ test }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setPublishOk(json.ok !== false)
+        const title = json.results?.[0]?.title as string | undefined
+        setPublishMsg(
+          test
+            ? `테스트 완료: ${json.published ?? 0}건 공개${title ? ` · ${title.slice(0, 30)}…` : ''}`
+            : `수동 실행 완료: ${json.published ?? 0}/${json.picked ?? 0}건`
+        )
+        fetchData()
+      } else {
+        setPublishOk(false)
+        setPublishMsg(json?.error ?? '실행 실패')
+      }
+    } catch {
+      setPublishOk(false)
+      setPublishMsg('요청 실패')
+    }
+    if (test) setPublishTestRunning(false)
+    else setPublishRunning(false)
+    setTimeout(() => setPublishMsg(''), 6000)
+  }
 
   async function runSitemapPing() {
     setSitemapRunning(true)
@@ -211,6 +250,7 @@ export default function AdminCronHealthPage() {
   const emptyJob: CronJobData = { items: [], summary: { lastSuccess: null, lastFailure: null, totalRuns: 0 }, pagination: { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1, hasPrev: false, hasNext: false } }
   const reviewsJob = jobs['generate-reviews'] ?? emptyJob
   const sitemapJob = jobs['sitemap-ping'] ?? emptyJob
+  const publishJob = jobs['publish-reviews'] ?? emptyJob
   const hasError = !!data?.error
   const partnerNameMap = new Map(partners.map((p) => [p.id, p.name]))
 
@@ -448,6 +488,17 @@ export default function AdminCronHealthPage() {
         >
           🗺️ 사이트맵
         </button>
+        <button
+          type="button"
+          className="btn-save"
+          style={{ opacity: activeTab === 'publish-reviews' ? 1 : 0.4 }}
+          onClick={() => {
+            setActiveTab('publish-reviews')
+            setPublishPage(1)
+          }}
+        >
+          📤 00시 리뷰공개
+        </button>
       </div>
 
       {activeTab === 'generate-reviews' && renderJobSection(
@@ -575,6 +626,47 @@ export default function AdminCronHealthPage() {
               {sitemapRunning ? '실행 중...' : '수동 실행'}
             </button>
             {sitemapMsg && <span style={{ marginLeft: 12, fontSize: 13, color: sitemapMsg.includes('성공') ? 'var(--green)' : 'var(--red)' }}>{sitemapMsg}</span>}
+          </div>
+        )
+      )}
+
+      {activeTab === 'publish-reviews' && renderJobSection(
+        '📤 00:00 리뷰 자동 공개',
+        '매일 00:00 KST 크론 실행. draft(비공개) 중 랜덤 5건을 published로 전환합니다. 메인·리스트·사이트맵에 자동 반영됩니다.',
+        publishJob,
+        (items) => (
+          <>
+            {renderHistoryTable(items, (r) => Array.isArray(r.results) && (r.results as { title?: string }[]).some((x) => x.title))}
+            {renderPagination(
+              publishJob,
+              () => setPublishPage((p) => Math.max(1, p - 1)),
+              () => setPublishPage((p) => p + 1)
+            )}
+          </>
+        ),
+        () => (
+          <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => runPublishReviews(true)}
+              disabled={publishTestRunning || publishRunning}
+              className="btn-save"
+              style={{ padding: '8px 20px', fontSize: 13 }}
+            >
+              {publishTestRunning ? '테스트 중...' : '🧪 테스트 (1건 공개)'}
+            </button>
+            <button
+              type="button"
+              onClick={() => runPublishReviews(false)}
+              disabled={publishRunning || publishTestRunning}
+              className="btn-secondary"
+              style={{ padding: '8px 20px', fontSize: 13 }}
+            >
+              {publishRunning ? '실행 중...' : '수동 5건 공개'}
+            </button>
+            {publishMsg && (
+              <span style={{ fontSize: 13, color: publishOk ? 'var(--green)' : 'var(--red)' }}>{publishMsg}</span>
+            )}
           </div>
         )
       )}

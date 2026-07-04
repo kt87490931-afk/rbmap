@@ -1,6 +1,18 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+
+type PublishCronStats = {
+  published: number
+  draft: number
+  schedule: string
+  lastSuccess: string | null
+  lastFailure: string | null
+  lastSuccessMsg: string | null
+  lastFailureMsg: string | null
+  totalRuns: number
+}
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
@@ -12,6 +24,10 @@ export default function AdminDashboard() {
   const [todayVisitors, setTodayVisitors] = useState(0)
   const [visitorSaving, setVisitorSaving] = useState(false)
   const [visitorSaved, setVisitorSaved] = useState(false)
+  const [publishCron, setPublishCron] = useState<PublishCronStats | null>(null)
+  const [publishTestRunning, setPublishTestRunning] = useState(false)
+  const [publishTestMsg, setPublishTestMsg] = useState('')
+  const [publishTestOk, setPublishTestOk] = useState(true)
 
   // 24시 KST 기준 점진 반영: 추가 인원이 00시에는 0, 24시에 가까울수록 설정값까지 증가
   const effectiveVisitorOffset = (() => {
@@ -22,6 +38,13 @@ export default function AdminDashboard() {
     const ratio = Math.min(1, minutesSinceMidnight / (24 * 60))
     return Math.round(visitorOffset * ratio)
   })()
+
+  const fetchPublishCron = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/cron-health/run-publish-reviews', { credentials: 'include' })
+      if (res.ok) setPublishCron(await res.json())
+    } catch { setPublishCron(null) }
+  }, [])
 
   const fetchCounts = useCallback(async () => {
     try {
@@ -54,7 +77,45 @@ export default function AdminDashboard() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchCounts() }, [fetchCounts])
+  useEffect(() => {
+    fetchCounts()
+    fetchPublishCron()
+  }, [fetchCounts, fetchPublishCron])
+
+  function formatKst(iso: string | null) {
+    if (!iso) return '-'
+    return new Date(iso).toLocaleString('ko-KR', {
+      month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+    })
+  }
+
+  async function runPublishTest() {
+    setPublishTestRunning(true)
+    setPublishTestMsg('')
+    try {
+      const res = await fetch('/api/admin/cron-health/run-publish-reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ test: true }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setPublishTestOk(json.ok !== false)
+        const title = json.results?.[0]?.title as string | undefined
+        setPublishTestMsg(title ? `1건 공개 · ${title.slice(0, 28)}…` : '1건 공개 완료')
+        fetchPublishCron()
+      } else {
+        setPublishTestOk(false)
+        setPublishTestMsg(json?.error ?? '실패')
+      }
+    } catch {
+      setPublishTestOk(false)
+      setPublishTestMsg('요청 실패')
+    }
+    setPublishTestRunning(false)
+    setTimeout(() => setPublishTestMsg(''), 6000)
+  }
 
   async function setCronPausedState(paused: boolean) {
     setCronPauseLoading(true)
@@ -98,6 +159,63 @@ export default function AdminDashboard() {
         <div className="stat-card">
           <div className="stat-card-num" style={{ color: 'var(--purple)' }}>{counts.reviews}</div>
           <div className="stat-card-label">리뷰 수</div>
+        </div>
+      </div>
+
+      <div className="card-box">
+        <div className="card-box-title">📤 00:00 리뷰 자동 공개</div>
+        <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 12 }}>
+          매일 <strong>00:00 KST</strong>에 비공개(draft) 리뷰 중 <strong>랜덤 5건</strong>을 자동 공개합니다. 메인 후기(최신 100개)에 최신순으로 반영됩니다.
+        </p>
+        {publishCron ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>공개 / 비공개</div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>
+                <span style={{ color: 'var(--green)' }}>{publishCron.published}</span>
+                {' / '}
+                <span style={{ color: 'var(--muted)' }}>{publishCron.draft}</span>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>마지막 성공</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--green)' }}>{formatKst(publishCron.lastSuccess)}</div>
+              {publishCron.lastSuccessMsg && (
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{publishCron.lastSuccessMsg}</div>
+              )}
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>마지막 실패</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: publishCron.lastFailure ? 'var(--red)' : 'var(--muted)' }}>
+                {formatKst(publishCron.lastFailure)}
+              </div>
+              {publishCron.lastFailureMsg && (
+                <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 2 }}>{publishCron.lastFailureMsg}</div>
+              )}
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>총 실행</div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{publishCron.totalRuns}회</div>
+            </div>
+          </div>
+        ) : (
+          <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 12 }}>크론 상태 로딩 중…</p>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn-save"
+            disabled={publishTestRunning}
+            onClick={runPublishTest}
+          >
+            {publishTestRunning ? '테스트 중…' : '🧪 테스트 (1건 공개)'}
+          </button>
+          {publishTestMsg && (
+            <span style={{ fontSize: 13, color: publishTestOk ? 'var(--green)' : 'var(--red)' }}>{publishTestMsg}</span>
+          )}
+          <Link href="/admin/cron-health" style={{ fontSize: 13, color: 'var(--gold)' }}>
+            전체 실행 이력 →
+          </Link>
         </div>
       </div>
 

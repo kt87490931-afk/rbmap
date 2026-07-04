@@ -8,7 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
-const JOB_NAMES = ['generate-reviews', 'sitemap-ping'] as const
+const JOB_NAMES = ['generate-reviews', 'sitemap-ping', 'publish-reviews'] as const
 const DEFAULT_LIMIT = 20
 
 function mapRow(r: Record<string, unknown>) {

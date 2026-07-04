@@ -32,6 +32,7 @@ module.exports = {
         NODE_ENV: 'production',
         DOTENV_CONFIG_PATH: path.join(__dirname, '.env.production'),
         ATTENDANCE_DATA_PATH: path.join(__dirname, 'data', 'attendance-data.json'),
+        // ATTENDANCE_BOT_TOKEN 은 .env.production 에서 dotenv 로 로드
       },
       instances: 1,
       exec_mode: 'fork',

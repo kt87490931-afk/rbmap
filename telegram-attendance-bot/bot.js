@@ -12,7 +12,9 @@ const {
   parseTimeOnDateKST,
 } = require('./time-utils');
 
-const TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+// 출근부 전용 봇 토큰 우선 (룸빵여지도 알림 봇과 분리)
+const TOKEN =
+  process.env.ATTENDANCE_BOT_TOKEN || process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_IDS = (process.env.ATTENDANCE_ADMIN_IDS || process.env.ADMIN_IDS || '')
   .split(',')
   .map((s) => s.trim())

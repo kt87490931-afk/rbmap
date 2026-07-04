@@ -16,10 +16,8 @@ fi
 # 1. 의존성 설치
 echo "[1/6] npm install..."
 npm ci
-if [ -d telegram-attendance-bot ]; then
-  echo "[1b/6] attendance-bot npm install..."
-  (cd telegram-attendance-bot && npm install --omit=dev)
-fi
+echo "[1b/6] attendance-bot npm ci..."
+(cd telegram-attendance-bot && npm ci --omit=dev)
 mkdir -p data
 
 # 2. 빌드

@@ -114,9 +114,11 @@ function initialData() {
     },
     ladies: [],
     rooms: [],
+    drinks: [],
     days: {},
     next_lady_id: 1,
     next_room_id: 1,
+    next_drink_id: 1,
     next_session_id: 1,
     audit_log: [],
   };
@@ -178,6 +180,7 @@ function normalizeSession(sess, ctx = {}) {
   if (!sess.hour_count) {
     sess.hour_count = Math.max(1, Math.ceil(sess.duration_minutes / 60));
   }
+  if (!sess.drinks) sess.drinks = [];
   return sess;
 }
 
@@ -252,6 +255,8 @@ function normalize(data) {
   data.settings.alert_minutes = migrateAlertMinutes(data.settings.alert_minutes);
   if (!data.ladies) data.ladies = [];
   if (!data.rooms) data.rooms = [];
+  if (!data.drinks) data.drinks = [];
+  if (!data.next_drink_id) data.next_drink_id = 1;
   if (!data.days) data.days = {};
   if (!data.audit_log) data.audit_log = [];
   if (!data.telegram_users) data.telegram_users = {};
@@ -415,6 +420,18 @@ function findRoomByName(name) {
 
 function findRoomById(id) {
   return loadData().rooms.find((r) => r.id === id);
+}
+
+function getActiveDrinks() {
+  return loadData().drinks.filter((d) => d.active).sort((a, b) => a.id - b.id);
+}
+
+function findDrinkByName(name) {
+  return loadData().drinks.find((d) => d.active && d.name === name);
+}
+
+function findDrinkById(id) {
+  return loadData().drinks.find((d) => d.id === id);
 }
 
 function addLady(name) {
@@ -685,6 +702,7 @@ function startRoomSession(date, { roomId, chatId, customerCount, ladyIds, startT
         ended_at: null,
       },
     ],
+    drinks: [],
   };
 
   data.days[date].sessions.push(session);
@@ -959,6 +977,58 @@ function removeCourse(courseKey) {
   return removed;
 }
 
+function drinksListText() {
+  const drinks = getActiveDrinks();
+  if (drinks.length === 0) return '(등록된 술 없음)';
+  return drinks.map((d) => `· ${d.name}`).join('\n');
+}
+
+function addDrink(name) {
+  const trimmed = String(name || '').trim();
+  if (!trimmed) return 'INVALID';
+  const data = loadData();
+  if (!data.drinks) data.drinks = [];
+  if (data.drinks.some((d) => d.active && d.name === trimmed)) return 'DUPLICATE';
+  const id = data.next_drink_id++;
+  data.drinks.push({ id, name: trimmed, active: true });
+  saveData(data);
+  return { id, name: trimmed };
+}
+
+function deactivateDrink(name) {
+  const data = loadData();
+  const drink = data.drinks?.find((d) => d.active && d.name === name);
+  if (!drink) return false;
+  drink.active = false;
+  saveData(data);
+  return true;
+}
+
+function addDrinkToSession(sessionId, drinkId) {
+  const found = findSessionById(sessionId);
+  if (!found || found.session.status !== 'active') return null;
+  const drink = findDrinkById(drinkId);
+  if (!drink || !drink.active) return 'NOT_FOUND';
+  const data = loadData();
+  const sess = data.days[found.date].sessions.find((s) => s.id === sessionId);
+  if (!sess) return null;
+  if (!sess.drinks) sess.drinks = [];
+  const existing = sess.drinks.find((d) => d.drink_id === drinkId);
+  if (existing) existing.count += 1;
+  else sess.drinks.push({ drink_id: drinkId, count: 1 });
+  saveData(data);
+  return normalizeSession(sess);
+}
+
+function sessionDrinkLabels(session) {
+  if (!session.drinks?.length) return [];
+  return session.drinks.map((item) => {
+    const drink = findDrinkById(item.drink_id);
+    const name = drink?.name || `#${item.drink_id}`;
+    return { name, count: item.count || 1 };
+  });
+}
+
 /** 봇과 대화한 적 있는 사용자 @username → ID (운영자 등록용) */
 function rememberTelegramUser(from) {
   if (!from?.id || from.is_bot || !from.username) return;
@@ -1029,6 +1099,14 @@ module.exports = {
   addRoom,
   deactivateRoom,
   renameRoom,
+  getActiveDrinks,
+  findDrinkByName,
+  findDrinkById,
+  drinksListText,
+  addDrink,
+  deactivateDrink,
+  addDrinkToSession,
+  sessionDrinkLabels,
   ensureDay,
   getDay,
   getLadyDayState,

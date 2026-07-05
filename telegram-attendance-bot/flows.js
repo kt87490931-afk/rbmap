@@ -1,6 +1,25 @@
 const db = require('./db');
 const { bold: b, escapeHtml: e } = require('./text-html');
 
+/** @type {Map<string, { sessionId: number, roomName: string }>} */
+const sessionTimePending = new Map();
+
+function sessionTimeKey(userId, chatId) {
+  return `${chatId}:${userId}`;
+}
+
+function setSessionTimePending(userId, chatId, data) {
+  sessionTimePending.set(sessionTimeKey(userId, chatId), data);
+}
+
+function getSessionTimePending(userId, chatId) {
+  return sessionTimePending.get(sessionTimeKey(userId, chatId)) || null;
+}
+
+function clearSessionTimePending(userId, chatId) {
+  sessionTimePending.delete(sessionTimeKey(userId, chatId));
+}
+
 /** @type {Map<string, { roomId: number, course: string, customers: number, ladies: number[], chatId: number }>} */
 const roomFlows = new Map();
 
@@ -199,6 +218,9 @@ function sessionManageKeyboard(sessionId) {
     ],
     [
       { text: '🤵 손님수', callback_data: `sess:cust:${sessionId}` },
+      { text: '🥃술 추가', callback_data: `sess:drink:${sessionId}` },
+    ],
+    [
       { text: '⏹ 종료', callback_data: `sess:end:${sessionId}` },
     ],
     [{ text: '← 목록', callback_data: 'nav:act' }],
@@ -257,16 +279,37 @@ function customerAdjustKeyboard(sessionId, current) {
   return [...chunk(btns, 3), [{ text: '← 돌아가기', callback_data: `sess:mgmt:${sessionId}` }]];
 }
 
-function startTimeAdjustKeyboard(sessionId) {
-  const mins = [10, 20, 30, 45, 60, 90];
-  const btns = mins.map((m) => ({
-    text: `${m}분 전`,
-    callback_data: `sess:back:${sessionId}:${m}`,
+function drinkMenuText() {
+  return (
+    `${b('🥃 술 목록')}\n\n` +
+    `${db.drinksListText()}\n\n` +
+    '명령어:\n' +
+    '· /술추가 12년산\n' +
+    '· /술삭제 12년산'
+  );
+}
+
+function drinkMenuKeyboard() {
+  return [[{ text: '← 출근부', callback_data: 'nav:all' }]];
+}
+
+function drinkPickKeyboard(sessionId) {
+  const drinks = db.getActiveDrinks();
+  if (drinks.length === 0) {
+    return [
+      [{ text: '등록된 술 없음 (/술추가)', callback_data: 'noop' }],
+      [{ text: '← 관리', callback_data: `sess:mgmt:${sessionId}` }],
+    ];
+  }
+  const btns = drinks.map((d) => ({
+    text: `🥃 ${d.name}`,
+    callback_data: `sess:pickdrink:${sessionId}:${d.id}`,
   }));
-  return [
-    ...chunk(btns, 3),
-    [{ text: '← 관리', callback_data: `sess:mgmt:${sessionId}` }],
-  ];
+  return [...chunk(btns, 2), [{ text: '← 관리', callback_data: `sess:mgmt:${sessionId}` }]];
+}
+
+function startTimeInputKeyboard(sessionId) {
+  return [[{ text: '← 관리', callback_data: `sess:mgmt:${sessionId}` }]];
 }
 
 function startTimeMenuText(roomLabel, currentStartIso, course) {
@@ -274,8 +317,9 @@ function startTimeMenuText(roomLabel, currentStartIso, course) {
   return (
     `${b(`⏳ ${roomLabel} 시작 시각 변경 (${course || 'A'}코스`)}\n\n` +
     `${b('현재')}: ${formatTimeKST(currentStartIso)}\n\n` +
-    '아래 버튼 또는\n' +
-    '/방시작수정 룸이름 22:33'
+    `${b('HH:MM 형식으로 입력하세요')}\n` +
+    '예: 22:33\n\n' +
+    `또는 /방시작수정 ${roomLabel} 22:33`
   );
 }
 
@@ -329,11 +373,17 @@ module.exports = {
   getRoomFlow,
   setRoomFlow,
   clearRoomFlow,
+  setSessionTimePending,
+  getSessionTimePending,
+  clearSessionTimePending,
   checkinKeyboard,
   checkinMenuText,
   courseMenuText,
   courseMenuKeyboard,
   coursePickForEditKeyboard,
+  drinkMenuText,
+  drinkMenuKeyboard,
+  drinkPickKeyboard,
   roomPickKeyboard,
   coursePickKeyboard,
   extendCourseKeyboard,
@@ -345,7 +395,7 @@ module.exports = {
   sessionLadyAddKeyboard,
   sessionLadySubKeyboard,
   customerAdjustKeyboard,
-  startTimeAdjustKeyboard,
+  startTimeInputKeyboard,
   startTimeMenuText,
   ladyRenameKeyboard,
   roomRenameKeyboard,

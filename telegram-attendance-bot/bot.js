@@ -544,6 +544,7 @@ bot.onText(/^\/방시작수정(?:@\w+)?\s+(\S+)\s+(\d{1,2}:\d{2})$/, (msg, m) =>
   const newStart = parseTimeOnBusinessDate(date, timeStr);
   const updated = db.updateSessionStartTime(sess.id, newStart);
   if (!updated) return bot.sendMessage(msg.chat.id, '변경 실패');
+  flows.clearSessionTimePending(msg.from.id, msg.chat.id);
   clearSessionTimers(sess.id);
   scheduleAlert(updated.session);
   db.appendAudit('room_start_edit', `${roomName} ${formatTimeKST(updated.oldStart)}→${timeStr}`, operatorName(msg.from));
@@ -617,6 +618,24 @@ bot.onText(/^\/코스삭제(?:@\w+)?\s+(\S+)$/, (msg, m) => {
   if (r === 'LAST_ONE') return bot.sendMessage(msg.chat.id, '마지막 코스는 삭제할 수 없습니다.');
   db.appendAudit('course_remove', r.name, operatorName(msg.from));
   bot.sendMessage(msg.chat.id, `✅ 코스 삭제: ${r.name}`);
+});
+
+bot.onText(/^\/술추가(?:@\w+)?\s+(.+)$/, (msg, m) => {
+  if (!canOperateFrom(msg.from)) return denyOperate(msg.chat.id);
+  const name = m[1].trim();
+  const r = db.addDrink(name);
+  if (r === 'INVALID') return bot.sendMessage(msg.chat.id, '형식: /술추가 12년산');
+  if (r === 'DUPLICATE') return bot.sendMessage(msg.chat.id, `이미 등록된 술: ${name}`);
+  db.appendAudit('drink_add', name, operatorName(msg.from));
+  bot.sendMessage(msg.chat.id, `✅ 술 등록: 🥃${name}`);
+});
+
+bot.onText(/^\/술삭제(?:@\w+)?\s+(.+)$/, (msg, m) => {
+  if (!canOperateFrom(msg.from)) return denyOperate(msg.chat.id);
+  const name = m[1].trim();
+  if (!db.deactivateDrink(name)) return bot.sendMessage(msg.chat.id, `등록되지 않은 술: ${name}`);
+  db.appendAudit('drink_remove', name, operatorName(msg.from));
+  bot.sendMessage(msg.chat.id, `✅ 술 삭제: ${name}`);
 });
 
 // ---------- 권한 (슈퍼관리자 전용) ----------
@@ -777,6 +796,7 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id);
+    flows.clearSessionTimePending(from.id, chatId);
     await bot.editMessageText(flows.sessionManageText(found.session), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
@@ -1224,48 +1244,73 @@ bot.on('callback_query', async (q) => {
       await bot.answerCallbackQuery(q.id, { text: '세션 없음', show_alert: true });
       return;
     }
-    const rn = db.findRoomById(found.session.room_id)?.name || found.session.room_id;
+    const rn = db.findRoomById(found.session.room_id)?.name || String(found.session.room_id);
+    flows.setSessionTimePending(from.id, chatId, { sessionId: sid, roomName: rn });
     await bot.answerCallbackQuery(q.id);
     await bot.editMessageText(flows.startTimeMenuText(rn, found.session.start_time, found.session.course), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
-      reply_markup: { inline_keyboard: flows.startTimeAdjustKeyboard(sid) },
+      reply_markup: { inline_keyboard: flows.startTimeInputKeyboard(sid) },
     }));
     return;
   }
 
-  if (data.startsWith('sess:back:')) {
+  if (data.startsWith('sess:drink:')) {
+    if (!canOperateFrom(from)) {
+      await bot.answerCallbackQuery(q.id, { text: '권한 없음', show_alert: true });
+      return;
+    }
+    const sid = parseInt(data.split(':')[2], 10);
+    const found = db.findSessionById(sid);
+    if (!found || found.session.status !== 'active') {
+      await bot.answerCallbackQuery(q.id, { text: '세션 없음', show_alert: true });
+      return;
+    }
+    await bot.answerCallbackQuery(q.id);
+    await bot.editMessageText(b('🥃 술 추가 — 선택하세요. (1회 = 1병)'), htmlOpts({
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup: { inline_keyboard: flows.drinkPickKeyboard(sid) },
+    }));
+    return;
+  }
+
+  if (data.startsWith('sess:pickdrink:')) {
     if (!canOperateFrom(from)) {
       await bot.answerCallbackQuery(q.id, { text: '권한 없음', show_alert: true });
       return;
     }
     const parts = data.split(':');
     const sid = parseInt(parts[2], 10);
-    const minutesAgo = parseInt(parts[3], 10);
-    const found = db.findSessionById(sid);
-    if (!found || found.session.status !== 'active') {
-      await bot.answerCallbackQuery(q.id, { text: '세션 없음', show_alert: true });
-      return;
-    }
-    const newStart = new Date(Date.now() - minutesAgo * 60000).toISOString();
-    const updated = db.updateSessionStartTime(sid, newStart);
+    const drinkId = parseInt(parts[3], 10);
+    const updated = db.addDrinkToSession(sid, drinkId);
     if (!updated) {
-      await bot.answerCallbackQuery(q.id, { text: '변경 실패', show_alert: true });
+      await bot.answerCallbackQuery(q.id, { text: '추가 실패', show_alert: true });
       return;
     }
-    clearSessionTimers(sid);
-    scheduleAlert(updated.session);
-    const rn = db.findRoomById(updated.session.room_id)?.name || updated.session.room_id;
-    db.appendAudit('room_start_edit', `${rn} -${minutesAgo}분`, operatorName(from));
-    await bot.answerCallbackQuery(q.id, { text: `${minutesAgo}분 전으로 변경` });
-    await bot.editMessageText(
-      `${b('⏳ 시작 시각 변경')} — ${e(rn)}\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`,
-      htmlOpts({
-        chat_id: chatId,
-        message_id: messageId,
-        reply_markup: { inline_keyboard: flows.sessionManageKeyboard(sid) },
-      })
-    );
+    const drink = db.findDrinkById(drinkId);
+    const rn = db.findRoomById(updated.room_id)?.name || updated.room_id;
+    db.appendAudit('session_drink_add', `${rn} +${drink?.name || drinkId}`, operatorName(from));
+    await bot.answerCallbackQuery(q.id, { text: `${drink?.name || '술'} 1병 추가` });
+    await bot.editMessageText(flows.sessionManageText(updated), htmlOpts({
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup: { inline_keyboard: flows.sessionManageKeyboard(sid) },
+    }));
+    return;
+  }
+
+  if (data === 'op:drink_menu') {
+    if (!canOperateFrom(from)) {
+      await bot.answerCallbackQuery(q.id, { text: '권한 없음', show_alert: true });
+      return;
+    }
+    await bot.answerCallbackQuery(q.id);
+    await bot.editMessageText(flows.drinkMenuText(), htmlOpts({
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup: { inline_keyboard: flows.drinkMenuKeyboard() },
+    }));
     return;
   }
 
@@ -1456,12 +1501,54 @@ function autoRegisterStaff(member) {
   db.appendAudit('staff_auto_join', uid, 'system');
 }
 
-bot.on('message', (msg) => {
+bot.on('message', async (msg) => {
   if (msg.from) db.rememberTelegramUser(msg.from);
-  if (!msg.new_chat_members?.length) return;
-  for (const member of msg.new_chat_members) {
-    autoRegisterStaff(member);
+  if (msg.new_chat_members?.length) {
+    for (const member of msg.new_chat_members) {
+      autoRegisterStaff(member);
+    }
   }
+
+  if (!msg.text || msg.text.startsWith('/')) return;
+  if (!msg.from || !canOperateFrom(msg.from)) return;
+
+  const pending = flows.getSessionTimePending(msg.from.id, msg.chat.id);
+  if (!pending) return;
+
+  const timeStr = msg.text.trim();
+  if (!isValidTimeString(timeStr)) {
+    bot.sendMessage(msg.chat.id, 'HH:MM 형식으로 입력하세요. (예: 22:33)');
+    return;
+  }
+
+  const found = db.findSessionById(pending.sessionId);
+  if (!found || found.session.status !== 'active') {
+    flows.clearSessionTimePending(msg.from.id, msg.chat.id);
+    bot.sendMessage(msg.chat.id, '진행 중인 세션이 없습니다.');
+    return;
+  }
+
+  const date = todayDateStringKST();
+  const newStart = parseTimeOnBusinessDate(date, timeStr);
+  const updated = db.updateSessionStartTime(pending.sessionId, newStart);
+  flows.clearSessionTimePending(msg.from.id, msg.chat.id);
+  if (!updated) {
+    bot.sendMessage(msg.chat.id, '시작 시각 변경 실패');
+    return;
+  }
+
+  clearSessionTimers(pending.sessionId);
+  scheduleAlert(updated.session);
+  db.appendAudit(
+    'room_start_edit',
+    `${pending.roomName} → ${timeStr}`,
+    operatorName(msg.from)
+  );
+  bot.sendMessage(
+    msg.chat.id,
+    `${b('⏳ 시작 시각 변경')} — ${e(pending.roomName)}\n${formatTimeKST(updated.oldStart)} → ${timeStr}\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`,
+    htmlOpts()
+  );
 });
 
 /** 채널은 channel_post로만 전달됨 — onText는 processUpdate(message)에서만 실행됨 */

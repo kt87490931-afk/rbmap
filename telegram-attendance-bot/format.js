@@ -26,6 +26,12 @@ function courseTag(session) {
   return db.courseLabel(c);
 }
 
+function sessionDrinksTag(session) {
+  const labels = db.sessionDrinkLabels(session);
+  if (labels.length === 0) return '';
+  return labels.map((d) => `[${e(d.name)} ${d.count}병]`).join(' ');
+}
+
 function sessionLine(session) {
   const rn = e(roomName(session.room_id));
   const ct = e(courseTag(session));
@@ -35,12 +41,14 @@ function sessionLine(session) {
   const status = running ? `${ct} ${b('진행중')}` : `${ct} ${b('종료')}`;
   const ext = db.sessionExtensionCount(session);
   const extTag = ext > 0 ? `[연장+${ext}]` : '';
+  const drinksTag = sessionDrinksTag(session);
   const ladies = activeAssignments(session)
     .map((a) => `[💋${e(ladyName(a.lady_id))}]`)
     .join(' ');
+  const drinksLine = drinksTag ? `\n${drinksTag}` : '';
   return (
     `[❤️${rn}][${ct}][🤵손님 ${session.customer_count}명]${extTag}\n` +
-    `[⏳${start}][⌛️${end}][${status}]\n` +
+    `[⏳${start}][⌛️${end}][${status}]${drinksLine}\n` +
     `${ladies || '(언니 없음)'}`
   );
 }
@@ -149,7 +157,9 @@ function segmentLine(session, seg) {
     Date.now() < new Date(seg.end_scheduled).getTime()
       ? b('진행중')
       : b('종료');
-  return `❤️${rn} · ${label} · ${start}~${end} · ${ladies || '-'} · ${st}`;
+  const drinksTag = sessionDrinksTag(session);
+  const drinksPart = drinksTag ? ` · ${drinksTag}` : '';
+  return `❤️${rn} · ${label} · ${start}~${end} · ${ladies || '-'} · ${st}${drinksPart}`;
 }
 
 function dailyProgressBlock(date) {
@@ -288,9 +298,10 @@ function buildHelpText(canOperate, isSuperAdmin) {
     lines.push('', b('【코스 관리】'));
     lines.push('코스 — 코스추가/수정/삭제 (이름·시간 직접 입력)');
     lines.push('/코스추가 A코스 60 · /코스수정 A A코스 60 · /코스삭제 A');
+    lines.push('🥃술 목록 — 등록 술 조회 · /술추가 12년산 · /술삭제 12년산');
     lines.push('', b('【운영자 — 조작 권한】'));
     lines.push('▶️방시작 — 룸 → 코스 → 손님 → 언니(0명 가능)');
-    lines.push('💡방관리(연장) — 진행 중 방 선택 → 연장·종료·언니·손님·시간');
+    lines.push('💡방관리(연장) — 진행 중 방 → 연장·종료·언니·손님·🥃술·시간');
     lines.push('🚀진행중인방 — 지금 돌아가는 방 목록 (조회)');
     lines.push('🚨바쁨 — 전체에 바쁨 알림 (운영자)');
     lines.push('📝출근처리 — 전체 언니 출근/퇴근 (토글 가능)');
@@ -359,7 +370,12 @@ function navKeyboard(canOperate, isOperator) {
   }
 
   rows.push([
-    ...(canOperate ? [{ text: '코스', callback_data: 'op:course_menu' }] : []),
+    ...(canOperate
+      ? [
+          { text: '코스', callback_data: 'op:course_menu' },
+          { text: '🥃술 목록', callback_data: 'op:drink_menu' },
+        ]
+      : []),
     { text: '📖도움말', callback_data: 'nav:help' },
   ]);
 
@@ -413,6 +429,7 @@ module.exports = {
   formatRoomEndNotice,
   formatBusyNotice,
   sessionLine,
+  sessionDrinksTag,
   ladyName,
   roomName,
   activeAssignments,

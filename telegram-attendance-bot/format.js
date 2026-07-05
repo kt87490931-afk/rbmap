@@ -168,6 +168,40 @@ function dailyProgressBlock(date) {
   return lines.join('\n');
 }
 
+/** 금일진행현황 — 코스별 세그먼트(연장 포함) 건수 */
+function courseDayCountBlock(date) {
+  const day = db.getDay(date);
+  const counts = {};
+  for (const s of day.sessions) {
+    const segments = s.course_segments || [
+      {
+        course: s.course || 'A',
+        start_time: s.start_time,
+        end_scheduled: s.end_scheduled,
+        ended_at: s.ended_at,
+      },
+    ];
+    for (const seg of segments) {
+      const label = db.courseLabel(seg.course);
+      counts[label] = (counts[label] || 0) + 1;
+    }
+  }
+  if (Object.keys(counts).length === 0) return '';
+
+  const lines = [];
+  for (const c of db.getCourses()) {
+    const label = db.courseLabel(c.id);
+    if (counts[label]) {
+      lines.push(b(`${label}=${counts[label]}`));
+      delete counts[label];
+    }
+  }
+  for (const [label, n] of Object.entries(counts)) {
+    lines.push(b(`${label}=${n}`));
+  }
+  return lines.join('\n');
+}
+
 function ladyStatsBlock(date) {
   return `${b('🏃‍♀️ 금일진행현황')}\n${dailyProgressBlock(date)}`;
 }
@@ -219,8 +253,13 @@ function buildView(view, date, perm = { canOperate: false, isSuperAdmin: false }
       return { text: `${b(header)}\n\n${activeRoomsBlock(date)}\n\n${alertInfoBlock()}` };
     case 'end':
       return { text: `${b(header)}\n\n${endedRoomsBlock(date)}\n\n${alertInfoBlock()}` };
-    case 'stats':
-      return { text: `${b(header)}\n\n${ladyStatsBlock(date)}\n\n${alertInfoBlock()}` };
+    case 'stats': {
+      const counter = courseDayCountBlock(date);
+      const counterPart = counter ? `\n${counter}` : '';
+      return {
+        text: `${b(header)}${counterPart}\n\n${ladyStatsBlock(date)}\n\n${alertInfoBlock()}`,
+      };
+    }
     case 'status':
       return {
         text: `${b(header)}\n\n${b('👀언니상태')}\n\n${ladyStatusBlock(date)}\n\n${alertInfoBlock()}`,

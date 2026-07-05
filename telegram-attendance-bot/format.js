@@ -16,6 +16,21 @@ function activeAssignments(session) {
   return session.assignments.filter((a) => !a.removed_at);
 }
 
+/** 세그먼트 구간에 참여한 언니 (연장·중도 합류/제외 반영) */
+function segmentAssignments(session, seg) {
+  const segStart = new Date(seg.start_time).getTime();
+  const segEnd = new Date(seg.ended_at || seg.end_scheduled).getTime();
+  return session.assignments.filter((a) => {
+    const joined = new Date(a.joined_at || session.start_time).getTime();
+    if (joined > segEnd) return false;
+    if (a.removed_at) {
+      const removed = new Date(a.removed_at).getTime();
+      if (removed <= segStart) return false;
+    }
+    return true;
+  });
+}
+
 function courseTag(session) {
   const c = session.course || 'A';
   return db.courseLabel(c);
@@ -164,7 +179,7 @@ function dailyProgressBlock(date) {
   return lines.join('\n');
 }
 
-/** 금일진행현황 — 코스별 세그먼트(연장 포함) 건수 */
+/** 금일진행현황 — 코스별 언니 참여 인원 (세그먼트×언니) */
 function courseDayCountBlock(date) {
   const day = db.getDay(date);
   const counts = {};
@@ -179,7 +194,8 @@ function courseDayCountBlock(date) {
     ];
     for (const seg of segments) {
       const label = db.courseLabel(seg.course);
-      counts[label] = (counts[label] || 0) + 1;
+      const n = segmentAssignments(s, seg).length;
+      counts[label] = (counts[label] || 0) + n;
     }
   }
   if (Object.keys(counts).length === 0) return '';

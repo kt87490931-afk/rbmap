@@ -7,6 +7,8 @@ const DB_FILE =
   path.join(__dirname, '..', 'data', 'attendance-data.json');
 const DEFAULT_ALERT_MINUTES = 55;
 const VALID_ALERTS = [45, 50, 55];
+/** 종료 예정(end_scheduled) 후 자동 마감까지 대기 (분) */
+const AUTO_END_GRACE_MINUTES = 30;
 const MAX_AUDIT = 200;
 
 function initialData() {
@@ -453,6 +455,22 @@ function getPendingAlerts() {
   return pending;
 }
 
+/** end_scheduled + AUTO_END_GRACE_MINUTES 경과한 active 세션 */
+function getSessionsDueForAutoEnd() {
+  const data = loadData();
+  const now = Date.now();
+  const graceMs = AUTO_END_GRACE_MINUTES * 60000;
+  const due = [];
+  for (const date of Object.keys(data.days)) {
+    for (const s of data.days[date].sessions) {
+      if (s.status !== 'active') continue;
+      const deadline = new Date(s.end_scheduled).getTime() + graceMs;
+      if (now >= deadline) due.push({ date, session: s });
+    }
+  }
+  return due;
+}
+
 function getAllData() {
   return loadData();
 }
@@ -483,6 +501,7 @@ module.exports = {
   DB_FILE,
   VALID_ALERTS,
   DEFAULT_ALERT_MINUTES,
+  AUTO_END_GRACE_MINUTES,
   getSettings,
   getAlertMinutes,
   setAlertMinutes,
@@ -519,6 +538,7 @@ module.exports = {
   removeLadyFromSession,
   markSessionAlertSent,
   getPendingAlerts,
+  getSessionsDueForAutoEnd,
   getAllData,
   replaceSettings,
   appendAudit,

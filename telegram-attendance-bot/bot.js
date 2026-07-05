@@ -103,6 +103,33 @@ function resyncTimers() {
   db.getPendingAlerts().forEach(({ session }) => scheduleAlert(session));
 }
 
+function processAutoEnds() {
+  for (const { session } of db.getSessionsDueForAutoEnd()) {
+    clearTimer(session.id);
+    const result = db.endSession(session.id);
+    if (!result) continue;
+
+    const rn = fmt.roomName(session.room_id);
+    db.appendAudit('room_auto_end', rn, 'system');
+    const counts = result.session.assignments
+      .filter((a) => !a.removed_at)
+      .map((a) => `${fmt.ladyName(a.lady_id)} +1`)
+      .join(', ');
+    const endAt = formatTimeKST(result.session.end_scheduled);
+    const text =
+      `⏰ [자동 종료] ❤️${rn}\n` +
+      `💔종료 예정 ${endAt} + ${db.AUTO_END_GRACE_MINUTES}분 경과\n\n` +
+      `${fmt.sessionLine(result.session)}\n\n` +
+      `완료 세션: ${counts || '-'}`;
+    bot.sendMessage(session.chat_id, text).catch((e) => console.error('자동종료 알림 실패:', e.message));
+  }
+}
+
+function tickMaintenance() {
+  resyncTimers();
+  processAutoEnds();
+}
+
 function findActiveSessionByRoomName(date, roomName) {
   const room = db.findRoomByName(roomName);
   if (!room) return null;
@@ -857,7 +884,9 @@ bot.on('callback_query', async (q) => {
   }
 });
 
-resyncTimers();
-setInterval(resyncTimers, 60000);
+tickMaintenance();
+setInterval(tickMaintenance, 60000);
 
-console.log(`출근부 v2 실행 (DB: ${db.DB_FILE}, 운영자 ${ADMIN_IDS.length}명, 알람 ${db.getAlertMinutes()}분)`);
+console.log(
+  `출근부 v2 실행 (DB: ${db.DB_FILE}, 운영자 ${ADMIN_IDS.length}명, 알람 ${db.getAlertMinutes()}분, 자동종료 ${db.AUTO_END_GRACE_MINUTES}분)`
+);

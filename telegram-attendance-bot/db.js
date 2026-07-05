@@ -9,8 +9,8 @@ const VALID_ALERTS = [5, 10, 15];
 const DEFAULT_ALERT_MINUTES = 5;
 /** @deprecated — settings.courses 사용 */
 const COURSE_DURATIONS = { A: 60, B: 90 };
-/** 종료 예정(end_scheduled) 후 자동 마감까지 대기 (분) */
-const AUTO_END_GRACE_MINUTES = 30;
+/** 종료 예정(end_scheduled) 시각에 자동 마감 (유예 없음) */
+const AUTO_END_GRACE_MINUTES = 0;
 const MAX_AUDIT = 200;
 const LEGACY_ALERT_MAP = { 55: 5, 50: 10, 45: 15 };
 
@@ -537,11 +537,25 @@ function checkOutLady(date, ladyId, timeIso) {
   return true;
 }
 
+function isSessionInProgress(session) {
+  if (session.status !== 'active') return false;
+  return Date.now() < new Date(session.end_scheduled).getTime();
+}
+
+/** 화면 분류용 — DB ended 또는 예정 시각 경과(active, 타이머 미처리) */
+function isSessionEndedForDisplay(session) {
+  if (session.status === 'ended') return true;
+  if (session.status === 'active') {
+    return Date.now() >= new Date(session.end_scheduled).getTime();
+  }
+  return false;
+}
+
 function isLadyInActiveSession(date, ladyId) {
   const day = getDay(date);
   return day.sessions.some(
     (s) =>
-      s.status === 'active' &&
+      isSessionInProgress(s) &&
       s.assignments.some((a) => a.lady_id === ladyId && !a.removed_at)
   );
 }
@@ -561,7 +575,7 @@ function getLadyCourseCounts(date, ladyId) {
   const courseIds = getCourses().map((c) => c.id);
   const counts = normalizeCompletedEntry(day.completed_counts[key], courseIds);
   for (const s of day.sessions) {
-    if (s.status !== 'active') continue;
+    if (!isSessionInProgress(s)) continue;
     if (!s.assignments.some((a) => a.lady_id === ladyId && !a.removed_at)) continue;
     const c = s.course || 'A';
     if (counts[c] == null) counts[c] = 0;
@@ -591,7 +605,7 @@ function startRoomSession(date, { roomId, chatId, customerCount, ladyIds, startT
     data.days[date] = { ladies: {}, sessions: [], completed_counts: {} };
   }
   const activeOnRoom = data.days[date].sessions.find(
-    (s) => s.room_id === roomId && s.status === 'active'
+    (s) => s.room_id === roomId && isSessionInProgress(s)
   );
   if (activeOnRoom) return 'ROOM_BUSY';
 
@@ -798,18 +812,15 @@ function getPendingAlerts() {
   return pending;
 }
 
-function isSessionInProgress(session) {
-  if (session.status !== 'active') return false;
-  return Date.now() < new Date(session.end_scheduled).getTime();
-}
-
-/** 화면 분류용 — 종료 버튼 전이라도 예정 시각이 지나면 종료 목록에 표시 */
-function isSessionEndedForDisplay(session) {
-  if (session.status === 'ended') return true;
-  if (session.status === 'active') {
-    return Date.now() >= new Date(session.end_scheduled).getTime();
+function getActiveSessions() {
+  const data = loadData();
+  const out = [];
+  for (const date of Object.keys(data.days)) {
+    for (const s of data.days[date].sessions) {
+      if (s.status === 'active') out.push({ date, session: normalizeSession(s) });
+    }
   }
-  return false;
+  return out;
 }
 
 function getSessionsDueForAutoEnd() {
@@ -1006,6 +1017,7 @@ module.exports = {
   removeLadyFromSession,
   markSessionAlertSent,
   getPendingAlerts,
+  getActiveSessions,
   getSessionsDueForAutoEnd,
   getAllData,
   replaceSettings,

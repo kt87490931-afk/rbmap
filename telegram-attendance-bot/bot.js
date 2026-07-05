@@ -29,6 +29,7 @@ if (!TOKEN) {
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 const scheduledTimers = new Map();
+const scheduledEndTimers = new Map();
 
 function isSuperAdmin(userId) {
   return ADMIN_IDS.includes(String(userId));
@@ -146,10 +147,62 @@ function clearTimer(sessionId) {
   }
 }
 
+function clearEndTimer(sessionId) {
+  const h = scheduledEndTimers.get(sessionId);
+  if (h) {
+    clearTimeout(h);
+    scheduledEndTimers.delete(sessionId);
+  }
+}
+
+function clearSessionTimers(sessionId) {
+  clearTimer(sessionId);
+  clearEndTimer(sessionId);
+}
+
+function autoEndSession(sessionId) {
+  clearSessionTimers(sessionId);
+  const found = db.findSessionById(sessionId);
+  if (!found || found.session.status !== 'active') return null;
+  if (Date.now() < new Date(found.session.end_scheduled).getTime()) return null;
+
+  const result = db.endSession(sessionId);
+  if (!result) return null;
+
+  const rn = fmt.roomName(found.session.room_id);
+  db.appendAudit('room_auto_end', rn, 'system');
+  const counts = result.session.assignments
+    .filter((a) => !a.removed_at)
+    .map((a) => `${fmt.ladyName(a.lady_id)} +1`)
+    .join(', ');
+  const text = fmt.formatRoomEndNotice(result.session, '자동종료', counts || '-');
+  notifyChat(found.session.chat_id, text).catch((e) => console.error('자동종료 알림 실패:', e.message));
+  return result;
+}
+
+function scheduleAutoEnd(session) {
+  clearEndTimer(session.id);
+  const fresh = db.findSessionById(session.id);
+  if (!fresh || fresh.session.status !== 'active') return;
+
+  const delay = new Date(fresh.session.end_scheduled).getTime() - Date.now();
+  const fire = () => {
+    scheduledEndTimers.delete(session.id);
+    autoEndSession(session.id);
+  };
+
+  if (delay <= 0) fire();
+  else scheduledEndTimers.set(session.id, setTimeout(fire, delay));
+}
+
 function scheduleAlert(session) {
   clearTimer(session.id);
   const fresh = db.findSessionById(session.id);
-  if (!fresh || fresh.session.status !== 'active' || fresh.session.alert_sent) return;
+  if (!fresh || fresh.session.status !== 'active') return;
+
+  scheduleAutoEnd(fresh.session);
+
+  if (fresh.session.alert_sent) return;
 
   const delay = new Date(fresh.session.alert_time).getTime() - Date.now();
   const fire = () => {
@@ -181,22 +234,12 @@ function scheduleAlert(session) {
 
 function resyncTimers() {
   db.getPendingAlerts().forEach(({ session }) => scheduleAlert(session));
+  db.getActiveSessions().forEach(({ session }) => scheduleAutoEnd(session));
 }
 
 function processAutoEnds() {
   for (const { session } of db.getSessionsDueForAutoEnd()) {
-    clearTimer(session.id);
-    const result = db.endSession(session.id);
-    if (!result) continue;
-
-    const rn = fmt.roomName(session.room_id);
-    db.appendAudit('room_auto_end', rn, 'system');
-    const counts = result.session.assignments
-      .filter((a) => !a.removed_at)
-      .map((a) => `${fmt.ladyName(a.lady_id)} +1`)
-      .join(', ');
-    const text = fmt.formatRoomEndNotice(result.session, '자동종료', counts || '-');
-    notifyChat(session.chat_id, text).catch((e) => console.error('자동종료 알림 실패:', e.message));
+    autoEndSession(session.id);
   }
 }
 
@@ -209,7 +252,7 @@ function findActiveSessionByRoomName(date, roomName) {
   const room = db.findRoomByName(roomName);
   if (!room) return null;
   const day = db.getDay(date);
-  return day.sessions.find((s) => s.room_id === room.id && s.status === 'active') || null;
+  return day.sessions.find((s) => s.room_id === room.id && db.isSessionInProgress(s)) || null;
 }
 
 function parseLadyNames(str) {
@@ -459,7 +502,7 @@ bot.onText(/^\/방종료(?:@\w+)?\s+(\S+)$/, (msg, m) => {
   const date = todayDateStringKST();
   const sess = findActiveSessionByRoomName(date, m[1].trim());
   if (!sess) return bot.sendMessage(msg.chat.id, '진행중인 방 없음');
-  clearTimer(sess.id);
+  clearSessionTimers(sess.id);
   const result = db.endSession(sess.id);
   db.appendAudit('room_end', m[1], operatorName(msg.from));
   const counts = result.session.assignments
@@ -482,7 +525,7 @@ bot.onText(/^\/방연장(?:@\w+)?\s+(\S+)(?:\s+([ABab]))?$/, (msg, m) => {
     return bot.sendMessage(msg.chat.id, `연장 코스 선택: /방연장 ${m[1]} A  (또는 코스 ID/이름)`);
   }
   const updated = db.extendSession(sess.id, courseDef.id);
-  clearTimer(sess.id);
+  clearSessionTimers(sess.id);
   scheduleAlert(updated.session);
   notifyChat(
     msg.chat.id,
@@ -501,7 +544,7 @@ bot.onText(/^\/방시작수정(?:@\w+)?\s+(\S+)\s+(\d{1,2}:\d{2})$/, (msg, m) =>
   const newStart = parseTimeOnBusinessDate(date, timeStr);
   const updated = db.updateSessionStartTime(sess.id, newStart);
   if (!updated) return bot.sendMessage(msg.chat.id, '변경 실패');
-  clearTimer(sess.id);
+  clearSessionTimers(sess.id);
   scheduleAlert(updated.session);
   db.appendAudit('room_start_edit', `${roomName} ${formatTimeKST(updated.oldStart)}→${timeStr}`, operatorName(msg.from));
   bot.sendMessage(
@@ -989,7 +1032,7 @@ bot.on('callback_query', async (q) => {
       await bot.answerCallbackQuery(q.id, { text: '세션 없음', show_alert: true });
       return;
     }
-    clearTimer(sid);
+    clearSessionTimers(sid);
     scheduleAlert(updated.session);
     await bot.answerCallbackQuery(q.id, { text: `${c}코스 연장됨` });
     await notifyChat(chatId, fmt.formatRoomExtendNotice(updated.session, operatorName(from)));
@@ -1010,7 +1053,7 @@ bot.on('callback_query', async (q) => {
       return;
     }
     const sid = parseInt(data.split(':')[2], 10);
-    clearTimer(sid);
+    clearSessionTimers(sid);
     const result = db.endSession(sid);
     if (!result) {
       await bot.answerCallbackQuery(q.id, { text: '세션 없음', show_alert: true });
@@ -1210,7 +1253,7 @@ bot.on('callback_query', async (q) => {
       await bot.answerCallbackQuery(q.id, { text: '변경 실패', show_alert: true });
       return;
     }
-    clearTimer(sid);
+    clearSessionTimers(sid);
     scheduleAlert(updated.session);
     const rn = db.findRoomById(updated.session.room_id)?.name || updated.session.room_id;
     db.appendAudit('room_start_edit', `${rn} -${minutesAgo}분`, operatorName(from));

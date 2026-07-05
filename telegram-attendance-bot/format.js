@@ -298,7 +298,7 @@ function buildHelpText(canOperate, isSuperAdmin) {
     lines.push('+언니 / +룸 / ✏️이름변경 — 등록·이름 변경');
     lines.push('', '※ 영업일: 15:00~익일 15:00 = 같은 날짜');
     lines.push('※ 연장 시 코스 재선택 (A→B 등 변경 가능)');
-    lines.push('※ 종료 예정 +30분 후 자동 종료');
+    lines.push('※ 종료 예정 시각에 자동 마감 (재개 시 ▶️방시작)');
   }
 
   if (isSuperAdmin) {

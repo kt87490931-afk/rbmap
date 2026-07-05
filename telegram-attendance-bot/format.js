@@ -36,7 +36,7 @@ function registeredBlock(date) {
   const names = ladies.map((l) => `[🙍${l.name}]`).join('');
   const roomTags = rooms.map((r) => `[❤️${r.name}]`).join(' ');
   return (
-    `*아가씨 등록인원 : ${ladies.length}명\n${names || '(없음)'}\n\n` +
+    `*언니 등록인원 : ${ladies.length}명\n${names || '(없음)'}\n\n` +
     `*룸이름\n${roomTags || '(없음)'}`
   );
 }
@@ -131,7 +131,17 @@ function ladyStatsBlock(date) {
       return `[${emoji}${l.name} ${cnt}]`;
     })
     .join(' ');
-  return `[금일아가씨진행현황]\n${tags || '(등록 없음)'}`;
+  return `[금일언니진행현황]\n${tags || '(등록 없음)'}`;
+}
+
+function ladyStatusBlock(date) {
+  const { checkedIn, waiting } = classifyLadies(date);
+  const inTags = checkedIn.map((l) => `[🙆${l.name}]`).join(' ');
+  const waitTags = waiting.map((l) => `[🙋${l.name}]`).join(' ');
+  return (
+    `🙆 진행중 ${checkedIn.length}명\n${inTags || '(없음)'}\n\n` +
+    `🙋 대기중 ${waiting.length}명\n${waitTags || '(없음)'}`
+  );
 }
 
 function alertInfoBlock() {
@@ -171,6 +181,8 @@ function buildView(view, date) {
       return { text: `${header}\n\n${endedRoomsBlock(date)}\n\n${alertInfoBlock()}` };
     case 'stats':
       return { text: `${header}\n\n${ladyStatsBlock(date)}\n\n${alertInfoBlock()}` };
+    case 'status':
+      return { text: `${header}\n\n👀언니상태\n\n${ladyStatusBlock(date)}\n\n${alertInfoBlock()}` };
     case 'alert':
       return { text: `${header}\n\n${alertInfoBlock()}\n\n변경할 알람 시간을 선택하세요.` };
     default:
@@ -178,34 +190,59 @@ function buildView(view, date) {
   }
 }
 
+function keyboardSpacer() {
+  return [{ text: '────────', callback_data: 'noop' }];
+}
+
 function navKeyboard(canOperate, isOperator) {
-  const rows = [
-    [
-      { text: '전체인원보기', callback_data: 'nav:all' },
-      { text: '출근인원보기', callback_data: 'nav:in' },
-      { text: '미출근인원보기', callback_data: 'nav:abs' },
-    ],
-    [
-      { text: '진행중인방보기', callback_data: 'nav:act' },
-      { text: '종료된방보기', callback_data: 'nav:end' },
-      { text: '금일진행현황', callback_data: 'nav:stats' },
-    ],
-  ];
+  const rows = [];
+
   if (canOperate) {
-    rows.push([
-      { text: '📝 출근처리', callback_data: 'op:ci_menu' },
-      { text: '▶️ 방시작', callback_data: 'op:rs_menu' },
-    ]);
-    rows.push([{ text: '🎛 방관리', callback_data: 'op:rm_menu' }]);
-    rows.push([{ text: '알람설정', callback_data: 'nav:alert' }]);
+    rows.push([{ text: '▶️방시작', callback_data: 'op:rs_menu' }]);
+    rows.push(keyboardSpacer());
   }
+
+  rows.push(
+    [
+      { text: '🚀진행중인방', callback_data: 'nav:act' },
+      { text: '👀언니상태', callback_data: 'nav:status' },
+    ],
+    [
+      { text: '🏃‍♀️금일진행현황', callback_data: 'nav:stats' },
+      { text: '🛑종료된방', callback_data: 'nav:end' },
+    ]
+  );
+
+  if (canOperate) {
+    rows.push(keyboardSpacer());
+    rows.push([{ text: '💡방관리(연장)', callback_data: 'op:rm_menu' }]);
+    rows.push(keyboardSpacer());
+    rows.push([{ text: '📝출근처리', callback_data: 'op:ci_menu' }]);
+  }
+
+  rows.push([
+    { text: '✔️출근인원', callback_data: 'nav:in' },
+    { text: '❌미출근인원', callback_data: 'nav:abs' },
+    { text: '👪전체인원', callback_data: 'nav:all' },
+  ]);
+
+  if (canOperate) {
+    rows.push(keyboardSpacer());
+    rows.push([{ text: '⏰알람설정', callback_data: 'nav:alert' }]);
+  }
+
   if (isOperator) {
+    rows.push(keyboardSpacer());
     rows.push([
-      { text: '➕아가씨', callback_data: 'op:addlady' },
-      { text: '➕룸', callback_data: 'op:addroom' },
+      { text: '+언니', callback_data: 'op:addlady' },
+      { text: '✏️언니이름변경', callback_data: 'op:renlady' },
     ]);
-    rows.push([{ text: '✏️ 이름변경', callback_data: 'op:renlady' }]);
+    rows.push([
+      { text: '+룸', callback_data: 'op:addroom' },
+      { text: '✏️룸이름변경', callback_data: 'op:renroom' },
+    ]);
   }
+
   return rows;
 }
 

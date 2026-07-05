@@ -184,11 +184,11 @@ bot.onText(/^\/도움말(?:@\w+)?$/, (msg) => {
     lines.push(
       '',
       '【버튼】',
-      '📝 출근처리 · ▶️ 방시작 · 🎛 방관리',
+      '📝출근처리 · ▶️방시작 · 💡방관리(연장)',
       '',
       '【명령 (선택)】',
-      '/아가씨등록 이름 · /룸등록 1T',
-      '/방시작수정 1T 22:33 · /아가씨이름변경 하나 하니',
+      '/언니등록 이름 · /룸등록 1T',
+      '/방시작수정 1T 22:33 · /언니이름변경 하나 하니 · /룸이름변경 1T 2T',
       '/방추가 1T 사월 · /방빼 1T 이슬'
     );
   }
@@ -196,37 +196,42 @@ bot.onText(/^\/도움말(?:@\w+)?$/, (msg) => {
 });
 
 // ---------- 마스터 등록 ----------
-bot.onText(/^\/아가씨등록(?:@\w+)?\s+(.+)$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
-  const name = m[1].trim();
+function registerLady(msg, name) {
   const id = db.addLady(name);
   if (!id) return bot.sendMessage(msg.chat.id, `이미 등록된 이름입니다: ${name}`);
   db.appendAudit('lady_add', name, operatorName(msg.from));
-  bot.sendMessage(msg.chat.id, `✅ 아가씨 등록: ${name}`);
+  bot.sendMessage(msg.chat.id, `✅ 언니 등록: ${name}`);
+}
+
+bot.onText(/^\/(?:아가씨등록|언니등록)(?:@\w+)?\s+(.+)$/, (msg, m) => {
+  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
+  registerLady(msg, m[1].trim());
 });
 
-bot.onText(/^\/아가씨해제(?:@\w+)?\s+(.+)$/, (msg, m) => {
+bot.onText(/^\/(?:아가씨해제|언니해제)(?:@\w+)?\s+(.+)$/, (msg, m) => {
   if (!isOperator(msg.from.id)) return deny(msg.chat.id);
   const name = m[1].trim();
   if (!db.deactivateLady(name)) return bot.sendMessage(msg.chat.id, `없음: ${name}`);
   db.appendAudit('lady_remove', name, operatorName(msg.from));
-  bot.sendMessage(msg.chat.id, `✅ 아가씨 해제: ${name}`);
+  bot.sendMessage(msg.chat.id, `✅ 언니 해제: ${name}`);
 });
 
-bot.onText(/^\/아가씨이름변경(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
-  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
-  const oldName = m[1].trim();
-  const newName = m[2].trim();
+function renameLadyCmd(msg, oldName, newName) {
   const r = db.renameLady(oldName, newName);
   if (r === 'NOT_FOUND') return bot.sendMessage(msg.chat.id, `등록되지 않은 이름: ${oldName}`);
   if (r === 'DUPLICATE') return bot.sendMessage(msg.chat.id, `이미 사용 중인 이름: ${newName}`);
   if (r === 'INVALID' || r === 'SAME') return bot.sendMessage(msg.chat.id, '이름을 확인하세요.');
   db.appendAudit('lady_rename', `${oldName}→${newName}`, operatorName(msg.from));
-  bot.sendMessage(msg.chat.id, `✅ [🙍${oldName}] → [🙍${newName}] 이름 변경`);
+  bot.sendMessage(msg.chat.id, `✅ [🙍${oldName}] → [🙍${newName}] 언니 이름 변경`);
+}
+
+bot.onText(/^\/(?:아가씨이름변경|언니이름변경)(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
+  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
+  renameLadyCmd(msg, m[1].trim(), m[2].trim());
 });
 
 bot.onText(/^\/룸등록(?:@\w+)?\s+(.+)$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
   const name = m[1].trim();
   const id = db.addRoom(name);
   if (!id) return bot.sendMessage(msg.chat.id, `이미 등록된 룸: ${name}`);
@@ -235,11 +240,23 @@ bot.onText(/^\/룸등록(?:@\w+)?\s+(.+)$/, (msg, m) => {
 });
 
 bot.onText(/^\/룸해제(?:@\w+)?\s+(.+)$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
   const name = m[1].trim();
   if (!db.deactivateRoom(name)) return bot.sendMessage(msg.chat.id, `없음: ${name}`);
   db.appendAudit('room_remove', name, operatorName(msg.from));
   bot.sendMessage(msg.chat.id, `✅ 룸 해제: ${name}`);
+});
+
+bot.onText(/^\/룸이름변경(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
+  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
+  const oldName = m[1].trim();
+  const newName = m[2].trim();
+  const r = db.renameRoom(oldName, newName);
+  if (r === 'NOT_FOUND') return bot.sendMessage(msg.chat.id, `등록되지 않은 룸: ${oldName}`);
+  if (r === 'DUPLICATE') return bot.sendMessage(msg.chat.id, `이미 사용 중인 룸: ${newName}`);
+  if (r === 'INVALID' || r === 'SAME') return bot.sendMessage(msg.chat.id, '이름을 확인하세요.');
+  db.appendAudit('room_rename', `${oldName}→${newName}`, operatorName(msg.from));
+  bot.sendMessage(msg.chat.id, `✅ [❤️${oldName}] → [❤️${newName}] 룸 이름 변경`);
 });
 
 // ---------- 출근 / 퇴근 ----------
@@ -701,7 +718,7 @@ bot.on('callback_query', async (q) => {
     await bot.answerCallbackQuery(q.id);
     bot.sendMessage(
       chatId,
-      `인원 변경:\n/방추가 룸이름 아가씨\n/방빼 룸이름 아가씨\n\n(중途 제외 시 완료횟수 +0)`
+      `인원 변경:\n/방추가 룸이름 언니이름\n/방빼 룸이름 언니이름\n\n(중途 제외 시 완료횟수 +0)`
     );
     return;
   }
@@ -768,7 +785,7 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText('✏️ 이름 변경 — 아가씨 선택', {
+    await bot.editMessageText('✏️ 언니 이름 변경 — 선택', {
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.ladyRenameKeyboard() },
@@ -790,14 +807,47 @@ bot.on('callback_query', async (q) => {
     await bot.answerCallbackQuery(q.id);
     bot.sendMessage(
       chatId,
-      `✏️ [🙍${lady.name}] 새 이름 입력:\n/아가씨이름변경 ${lady.name} 새이름`
+      `✏️ [🙍${lady.name}] 새 이름 입력:\n/언니이름변경 ${lady.name} 새이름`
+    );
+    return;
+  }
+
+  if (data === 'op:renroom') {
+    if (!isOperator(from.id)) {
+      await bot.answerCallbackQuery(q.id, { text: '운영자만', show_alert: true });
+      return;
+    }
+    await bot.answerCallbackQuery(q.id);
+    await bot.editMessageText('✏️ 룸 이름 변경 — 선택', {
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup: { inline_keyboard: flows.roomRenameKeyboard() },
+    });
+    return;
+  }
+
+  if (data.startsWith('room:ren:')) {
+    if (!isOperator(from.id)) {
+      await bot.answerCallbackQuery(q.id, { text: '운영자만', show_alert: true });
+      return;
+    }
+    const roomId = parseInt(data.split(':')[2], 10);
+    const room = db.findRoomById(roomId);
+    if (!room || !room.active) {
+      await bot.answerCallbackQuery(q.id, { text: '없음', show_alert: true });
+      return;
+    }
+    await bot.answerCallbackQuery(q.id);
+    bot.sendMessage(
+      chatId,
+      `✏️ [❤️${room.name}] 새 이름 입력:\n/룸이름변경 ${room.name} 새이름`
     );
     return;
   }
 
   if (data === 'op:addlady') {
     await bot.answerCallbackQuery(q.id);
-    bot.sendMessage(chatId, '아가씨 등록: /아가씨등록 이름');
+    bot.sendMessage(chatId, '언니 등록: /언니등록 이름');
     return;
   }
 

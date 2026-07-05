@@ -102,7 +102,7 @@ function ladyPickKeyboard(date, roomId, customers, selectedIds) {
 
   if (btns.length === 0) {
     return [
-      [{ text: '출근·대기 중인 아가씨 없음', callback_data: 'noop' }],
+      [{ text: '출근·대기 중인 언니 없음', callback_data: 'noop' }],
       [{ text: '← 손님 수', callback_data: `rs:rm:${roomId}` }],
     ];
   }
@@ -157,7 +157,7 @@ function startTimeMenuText(roomLabel, currentStartIso) {
   );
 }
 
-/** 아가씨 이름 변경 — 운영자 */
+/** 언니 이름 변경 — 운영자 */
 function ladyRenameKeyboard() {
   const ladies = db.getActiveLadies();
   if (ladies.length === 0) {
@@ -168,6 +168,19 @@ function ladyRenameKeyboard() {
     callback_data: `lady:ren:${l.id}`,
   }));
   return [...chunk(btns, 2), [{ text: '← 출근부', callback_data: 'nav:all' }]];
+}
+
+/** 룸 이름 변경 — 운영자 */
+function roomRenameKeyboard() {
+  const rooms = db.getActiveRooms();
+  if (rooms.length === 0) {
+    return [[{ text: '← 출근부', callback_data: 'nav:all' }]];
+  }
+  const btns = rooms.map((r) => ({
+    text: `✏️ ${r.name}`,
+    callback_data: `room:ren:${r.id}`,
+  }));
+  return [...chunk(btns, 3), [{ text: '← 출근부', callback_data: 'nav:all' }]];
 }
 
 function checkinMenuText(date) {
@@ -195,7 +208,7 @@ function roomStartText(roomId, customers, selectedIds) {
     `▶️ 방 시작\n\n` +
     `룸: ❤️${room?.name || roomId}\n` +
     `손님: 🤵 ${customers}명\n` +
-    `아가씨: ${names || '(아래에서 선택)'}`
+    `언니: ${names || '(아래에서 선택)'}`
   );
 }
 
@@ -211,6 +224,7 @@ module.exports = {
   startTimeAdjustKeyboard,
   startTimeMenuText,
   ladyRenameKeyboard,
+  roomRenameKeyboard,
   checkinMenuText,
   roomStartText,
 };

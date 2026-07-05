@@ -211,6 +211,20 @@ function deactivateRoom(name) {
   return true;
 }
 
+function renameRoom(oldName, newName) {
+  const from = oldName.trim();
+  const to = newName.trim();
+  if (!from || !to) return 'INVALID';
+  if (from === to) return 'SAME';
+  const data = loadData();
+  const room = data.rooms.find((r) => r.active && r.name === from);
+  if (!room) return 'NOT_FOUND';
+  if (data.rooms.some((r) => r.active && r.name === to)) return 'DUPLICATE';
+  room.name = to;
+  saveData(data);
+  return room;
+}
+
 // ---------- 일별 데이터 ----------
 function ensureDay(date) {
   const data = loadData();
@@ -488,6 +502,7 @@ module.exports = {
   renameLady,
   addRoom,
   deactivateRoom,
+  renameRoom,
   ensureDay,
   getDay,
   getLadyDayState,

@@ -130,7 +130,7 @@ export default function AdminAttendancePage() {
           </div>
 
           <div className="admin-card">
-            <h2 style={{ fontSize: 16, marginBottom: 12 }}>🙍 아가씨 등록 ({ladies.length}명)</h2>
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>🙍 언니 등록 ({ladies.length}명)</h2>
             <p style={{ fontSize: 13, marginBottom: 8 }}>{ladies.map((l) => `[🙍${l.name}]`).join(' ') || '(없음)'}</p>
             <div style={{ display: 'flex', gap: 8 }}>
               <input className="form-input" placeholder="이름" value={newLady} onChange={(e) => setNewLady(e.target.value)} style={{ width: 100 }} />

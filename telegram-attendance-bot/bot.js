@@ -1,6 +1,6 @@
-require('dotenv').config({ path: require('path').join(__dirname, '..', '.env.production') });
-require('dotenv').config({ path: require('path').join(__dirname, '..', '.env.local') });
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env.production'), override: true });
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env.local'), override: true });
+require('dotenv').config({ override: true });
 
 const TelegramBot = require('node-telegram-bot-api');
 const db = require('./db');

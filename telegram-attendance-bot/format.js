@@ -7,11 +7,12 @@ const DASH_SEP = '━━━━━━━━━━━━━━━━';
 const LADY_TAGS_PER_LINE = 5;
 
 /** 언니 태그 목록 — 한 줄에 5명, 6번째부터 줄바꿈 */
-function ladyTagsLines(tags, emptyLabel = '(없음)') {
+function ladyTagsLines(tags, emptyLabel = '(없음)', spaced = true) {
   if (!tags.length) return emptyLabel;
+  const sep = spaced ? ' ' : '';
   const lines = [];
   for (let i = 0; i < tags.length; i += LADY_TAGS_PER_LINE) {
-    lines.push(tags.slice(i, i + LADY_TAGS_PER_LINE).join(' '));
+    lines.push(tags.slice(i, i + LADY_TAGS_PER_LINE).join(sep));
   }
   return lines.join('\n');
 }
@@ -40,10 +41,21 @@ function courseTag(session) {
   return db.courseLabel(c);
 }
 
+function sessionDrinkBracketTags(session) {
+  return db.sessionDrinkLabels(session).map((d) => `[🥃${e(d.name)} ${d.count}병]`);
+}
+
 function sessionDrinksTag(session) {
-  const labels = db.sessionDrinkLabels(session);
-  if (labels.length === 0) return '';
-  return labels.map((d) => `[🥃${e(d.name)} ${d.count}병]`).join(' ');
+  const tags = sessionDrinkBracketTags(session);
+  if (tags.length === 0) return '';
+  return tags.join(' ');
+}
+
+function sessionPeopleLine(session, includeDrinks = true) {
+  const tags = activeAssignments(session).map((a) => `[💋${e(ladyName(a.lady_id))}]`);
+  if (includeDrinks) tags.push(...sessionDrinkBracketTags(session));
+  if (!tags.length) return '(언니 없음)';
+  return ladyTagsLines(tags, '(언니 없음)', false);
 }
 
 function sessionLine(session, opts = {}) {
@@ -63,16 +75,11 @@ function sessionLine(session, opts = {}) {
       : `${ct} ${b('종료')}`;
   const ext = db.sessionExtensionCount(session);
   const extTag = ext > 0 ? `[연장+${ext}]` : '';
-  const drinksTag = includeDrinks ? sessionDrinksTag(session) : '';
-  const ladyTagList = activeAssignments(session).map(
-    (a) => `[💋${e(ladyName(a.lady_id))}]`
-  );
-  const ladies = ladyTagList.length ? ladyTagsLines(ladyTagList, '(언니 없음)') : '(언니 없음)';
-  const drinksLine = drinksTag ? `\n${drinksTag}` : '';
+  const people = sessionPeopleLine(session, includeDrinks);
   return (
     `[❤️${rn}][${ct}][🤵손님 ${session.customer_count}명]${extTag}\n` +
-    `[⏳${start}][⌛️${end}][${status}]${drinksLine}\n` +
-    `${ladies || '(언니 없음)'}`
+    `[⏳${start}][⌛️${end}][${status}]\n` +
+    `${people}`
   );
 }
 
@@ -99,14 +106,22 @@ function dayDrinksSalesBlock(date) {
   return lines.join('\n');
 }
 
-function dashboardActiveRoomsContent(date) {
+function activeRoomsFormattedBody(date) {
   const day = db.getDay(date);
   const active = day.sessions.filter((s) => db.isSessionInProgress(s));
   if (active.length === 0) {
-    return `▶️진행중\n\n(없음)`;
+    return `▶️진행중\n${DASH_SEP}\n(없음)`;
   }
-  const roomBlocks = active.map((s) => sessionLine(s, { includeDrinks: false, plain: true }));
-  return `▶️진행중\n\n${roomBlocks.join(`\n${DASH_SEP}\n`)}`;
+  const roomBlocks = active.map((s) => sessionLine(s, { plain: true }));
+  return `▶️진행중\n${DASH_SEP}\n\n${roomBlocks.join(`\n\n${DASH_SEP}\n\n`)}`;
+}
+
+function buildActiveRoomsView(date, header) {
+  return `${header}\n\n${activeRoomsFormattedBody(date)}\n\n${DASH_SEP}\n\n${dashboardAlertLine()}`;
+}
+
+function dashboardActiveRoomsContent(date) {
+  return activeRoomsFormattedBody(date);
 }
 
 function dashboardAlertLine() {
@@ -222,10 +237,7 @@ function checkoutBlock(date) {
 }
 
 function activeRoomsBlock(date) {
-  const day = db.getDay(date);
-  const active = day.sessions.filter((s) => db.isSessionInProgress(s));
-  if (active.length === 0) return `${b('▶️진행중')}\n(없음)`;
-  return `${b('▶️진행중')}\n\n${active.map(sessionLine).join('\n\n')}`;
+  return activeRoomsFormattedBody(date);
 }
 
 function endedRoomsBlock(date) {
@@ -339,7 +351,7 @@ function buildView(view, date, perm = { canOperate: false, isSuperAdmin: false }
       };
     }
     case 'act':
-      return { text: `${b(header)}\n\n${activeRoomsBlock(date)}\n\n${alertInfoBlock()}` };
+      return { text: buildActiveRoomsView(date, header) };
     case 'end':
       return { text: `${b(header)}\n\n${endedRoomsBlock(date)}\n\n${alertInfoBlock()}` };
     case 'stats': {

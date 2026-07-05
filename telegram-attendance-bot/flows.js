@@ -1,4 +1,5 @@
 const db = require('./db');
+const { bold: b, escapeHtml: e } = require('./text-html');
 
 /** @type {Map<string, { roomId: number, course: string, customers: number, ladies: number[], chatId: number }>} */
 const roomFlows = new Map();
@@ -51,10 +52,10 @@ function checkinMenuText(date) {
   }
 
   return (
-    '📝 출근 / 퇴근 처리\n\n' +
+    `${b('📝 출근 / 퇴근 처리')}\n\n` +
     `출근 ${checkedInList.length}명 · 퇴근 ${checkedOutList.length}명\n\n` +
-    `*출근\n${checkedInList.map((n) => `[${n}]`).join(' ') || '(없음)'}\n\n` +
-    `*퇴근\n${checkedOutList.map((n) => `[${n}]`).join(' ') || '(없음)'}\n\n` +
+    `${b('출근')}\n${checkedInList.map((n) => `[${e(n)}]`).join(' ') || '(없음)'}\n\n` +
+    `${b('퇴근')}\n${checkedOutList.map((n) => `[${e(n)}]`).join(' ') || '(없음)'}\n\n` +
     '아래 버튼을 눌러주세요.'
   );
 }
@@ -100,7 +101,7 @@ function extendCourseKeyboard(sessionId) {
 
 function courseMenuText() {
   return (
-    '📋 코스 관리\n\n' +
+    `${b('📋 코스 관리')}\n\n` +
     `${db.coursesListText()}\n\n` +
     '아래에서 선택하거나 명령어로 입력하세요.\n' +
     '· /코스추가 이름 분\n' +
@@ -271,8 +272,8 @@ function startTimeAdjustKeyboard(sessionId) {
 function startTimeMenuText(roomLabel, currentStartIso, course) {
   const { formatTimeKST } = require('./time-utils');
   return (
-    `⏳ ${roomLabel} 시작 시각 변경 (${course || 'A'}코스)\n\n` +
-    `현재: ${formatTimeKST(currentStartIso)}\n\n` +
+    `${b(`⏳ ${roomLabel} 시작 시각 변경 (${course || 'A'}코스`)}\n\n` +
+    `${b('현재')}: ${formatTimeKST(currentStartIso)}\n\n` +
     '아래 버튼 또는\n' +
     '/방시작수정 룸이름 22:33'
   );
@@ -304,19 +305,19 @@ function roomRenameKeyboard() {
 
 function roomStartText(roomId, course, customers, selectedIds) {
   const room = db.findRoomById(roomId);
-  const names = selectedIds.map((id) => db.findLadyById(id)?.name || id).join(', ');
+  const names = selectedIds.map((id) => e(db.findLadyById(id)?.name || id)).join(', ');
   return (
-    `▶️ 방 시작\n\n` +
-    `룸: ❤️${room?.name || roomId}\n` +
-    `코스: ${db.courseLabel(course)}\n` +
-    `손님: 🤵 ${customers}명\n` +
-    `언니: ${names || '(없음 — 0명 시작 가능)'}`
+    `${b('▶️ 방 시작')}\n\n` +
+    `${b('룸')}: ❤️${e(room?.name || roomId)}\n` +
+    `${b('코스')}: ${e(db.courseLabel(course))}\n` +
+    `${b('손님')}: 🤵 ${customers}명\n` +
+    `${b('언니')}: ${names || '(없음 — 0명 시작 가능)'}`
   );
 }
 
 function sessionManageText(session) {
   const fmt = require('./format');
-  return `🎛 방 관리\n\n${fmt.sessionLine(session)}\n\n원하는 항목을 선택하세요.`;
+  return `${b('🎛 방 관리')}\n\n${fmt.sessionLine(session)}\n\n원하는 항목을 선택하세요.`;
 }
 
 /** @deprecated — activeRoomListKeyboard 사용 */

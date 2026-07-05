@@ -9,6 +9,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const db = require('./db');
 const fmt = require('./format');
 const flows = require('./flows');
+const { htmlOpts, escapeHtml: e, bold: b } = require('./text-html');
 const {
   todayDateStringKST,
   formatTimeKST,
@@ -122,19 +123,19 @@ async function resolveUserTarget(raw) {
 }
 
 async function broadcast(text, chatId) {
-  await bot.sendMessage(chatId, text).catch(() => {});
+  await bot.sendMessage(chatId, text, htmlOpts()).catch(() => {});
   if (CHANNEL_ID) {
     fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: CHANNEL_ID, text }),
+      body: JSON.stringify({ chat_id: CHANNEL_ID, text, parse_mode: 'HTML' }),
     }).catch(() => {});
   }
 }
 
 /** 그룹/채널 전체에 알림 (방시작·연장·종료·바쁨) */
 async function notifyChat(chatId, text) {
-  await bot.sendMessage(chatId, text).catch((e) => console.error('알림 전송 실패:', e.message));
+  await bot.sendMessage(chatId, text, htmlOpts()).catch((err) => console.error('알림 전송 실패:', err.message));
 }
 
 function clearTimer(sessionId) {
@@ -158,7 +159,7 @@ function scheduleAlert(session) {
 
     const text = fmt.formatAlertMessage(cur.session);
     bot
-      .sendMessage(cur.session.chat_id, text, {
+      .sendMessage(cur.session.chat_id, text, htmlOpts({
         reply_markup: {
           inline_keyboard: [
             [
@@ -168,7 +169,7 @@ function scheduleAlert(session) {
             [{ text: '👥 인원변경', callback_data: `sess:staff:${cur.session.id}` }],
           ],
         },
-      })
+      }))
       .catch((e) => console.error('알림 실패:', e.message));
 
     db.markSessionAlertSent(cur.session.id);
@@ -229,17 +230,17 @@ async function sendBoard(chatId, view = 'all', messageId = null) {
 
   if (messageId) {
     try {
-      await bot.editMessageText(text, {
+      await bot.editMessageText(text, htmlOpts({
         chat_id: chatId,
         message_id: messageId,
         reply_markup: keyboard,
-      });
+      }));
       return;
     } catch {
       /* fallback send */
     }
   }
-  await bot.sendMessage(chatId, text, { reply_markup: keyboard });
+  await bot.sendMessage(chatId, text, htmlOpts({ reply_markup: keyboard }));
 }
 
 function sendBoardWithPerm(chatId, view, from, messageId = null) {
@@ -261,12 +262,12 @@ function sendBoardWithPerm(chatId, view, from, messageId = null) {
 
   if (messageId) {
     return bot
-      .editMessageText(text, { chat_id: chatId, message_id: messageId, reply_markup: markup })
-      .catch((e) => console.error('editMessageText 실패:', e.message));
+      .editMessageText(text, htmlOpts({ chat_id: chatId, message_id: messageId, reply_markup: markup }))
+      .catch((err) => console.error('editMessageText 실패:', err.message));
   }
   return bot
-    .sendMessage(chatId, text, { reply_markup: markup })
-    .catch((e) => console.error('sendMessage 실패:', e.message));
+    .sendMessage(chatId, text, htmlOpts({ reply_markup: markup }))
+    .catch((err) => console.error('sendMessage 실패:', err.message));
 }
 
 // ---------- /출근부 ----------
@@ -275,11 +276,7 @@ bot.onText(/^\/출근부(?:@\w+)?$/, (msg) => {
 });
 
 bot.onText(/^\/알림확인(?:@\w+)?$/, (msg) => {
-  const m = db.getAlertMinutes();
-  bot.sendMessage(
-    msg.chat.id,
-    `📢 현재 알람: ${m}분전\n각 방 코스 종료 ${m}분 전에 알림이 발송됩니다.`
-  );
+  bot.sendMessage(msg.chat.id, fmt.alertInfoBlock(), htmlOpts());
 });
 
 bot.onText(/^\/도움말(?:@\w+)?$/, (msg) => {
@@ -509,7 +506,8 @@ bot.onText(/^\/방시작수정(?:@\w+)?\s+(\S+)\s+(\d{1,2}:\d{2})$/, (msg, m) =>
   db.appendAudit('room_start_edit', `${roomName} ${formatTimeKST(updated.oldStart)}→${timeStr}`, operatorName(msg.from));
   bot.sendMessage(
     msg.chat.id,
-    `⏳ ${roomName} 시작 시각 변경\n${formatTimeKST(updated.oldStart)} → ${timeStr}\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`
+    `${b('⏳ 시작 시각 변경')} — ${e(roomName)}\n${formatTimeKST(updated.oldStart)} → ${timeStr}\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`,
+    htmlOpts()
   );
 });
 
@@ -523,7 +521,11 @@ bot.onText(/^\/방추가(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
   const r = db.addLadyToSession(sess.id, lady.id);
   if (r === 'LADY_BUSY') return bot.sendMessage(msg.chat.id, '다른 방 진행중');
   if (r === 'ALREADY') return bot.sendMessage(msg.chat.id, '이미 배정됨');
-  bot.sendMessage(msg.chat.id, `👥 ${m[1]} + [🙅${lady.name}]\n${fmt.sessionLine(r)}`);
+  bot.sendMessage(
+    msg.chat.id,
+    `👥 ${e(m[1])} + [🙅${e(lady.name)}]\n${fmt.sessionLine(r)}`,
+    htmlOpts()
+  );
 });
 
 bot.onText(/^\/방빼(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
@@ -535,7 +537,11 @@ bot.onText(/^\/방빼(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
   if (!lady) return bot.sendMessage(msg.chat.id, '아가씨 없음');
   const r = db.removeLadyFromSession(sess.id, lady.id);
   if (!r) return bot.sendMessage(msg.chat.id, '배정되지 않음');
-  bot.sendMessage(msg.chat.id, `👥 ${m[1]} - ${lady.name} (이번 방 완료횟수 제외)\n${fmt.sessionLine(r)}`);
+  bot.sendMessage(
+    msg.chat.id,
+    `👥 ${e(m[1])} - ${e(lady.name)} (이번 방 완료횟수 제외)\n${fmt.sessionLine(r)}`,
+    htmlOpts()
+  );
 });
 
 bot.onText(/^\/코스목록(?:@\w+)?$/, (msg) => {
@@ -682,11 +688,11 @@ bot.on('callback_query', async (q) => {
     }
     const date = todayDateStringKST();
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText(flows.checkinMenuText(date), {
+    await bot.editMessageText(flows.checkinMenuText(date), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.checkinKeyboard(date) },
-    });
+    }));
     return;
   }
 
@@ -697,11 +703,11 @@ bot.on('callback_query', async (q) => {
     }
     flows.clearRoomFlow(from.id, chatId);
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText('▶️ 방 시작 — 룸을 선택하세요.', {
+    await bot.editMessageText(b('▶️ 방 시작 — 룸을 선택하세요.'), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.roomPickKeyboard() },
-    });
+    }));
     return;
   }
 
@@ -728,11 +734,11 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText(flows.sessionManageText(found.session), {
+    await bot.editMessageText(flows.sessionManageText(found.session), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.sessionManageKeyboard(sid) },
-    });
+    }));
     return;
   }
 
@@ -752,11 +758,11 @@ bot.on('callback_query', async (q) => {
     db.checkInLady(date, ladyId, iso);
     db.appendAudit('checkin', lady.name, operatorName(from));
     await bot.answerCallbackQuery(q.id, { text: `${lady.name} 출근!` });
-    await bot.editMessageText(flows.checkinMenuText(date), {
+    await bot.editMessageText(flows.checkinMenuText(date), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.checkinKeyboard(date) },
-    });
+    }));
     return;
   }
 
@@ -787,11 +793,11 @@ bot.on('callback_query', async (q) => {
     }
     db.appendAudit('checkout', lady.name, operatorName(from));
     await bot.answerCallbackQuery(q.id, { text: `${lady.name} 퇴근` });
-    await bot.editMessageText(flows.checkinMenuText(date), {
+    await bot.editMessageText(flows.checkinMenuText(date), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.checkinKeyboard(date) },
-    });
+    }));
     return;
   }
 
@@ -803,11 +809,11 @@ bot.on('callback_query', async (q) => {
     const roomId = parseInt(data.split(':')[2], 10);
     flows.setRoomFlow(from.id, chatId, { roomId, course: 'A', customers: 0, ladies: [] });
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText('코스를 선택하세요.', {
+    await bot.editMessageText('코스를 선택하세요.', htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.coursePickKeyboard(roomId) },
-    });
+    }));
     return;
   }
 
@@ -821,11 +827,11 @@ bot.on('callback_query', async (q) => {
     const c = course;
     flows.setRoomFlow(from.id, chatId, { roomId: rid, course: c, customers: 0, ladies: [] });
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText('🤵 손님 몇 명인가요?', {
+    await bot.editMessageText('🤵 손님 몇 명인가요?', htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.customerPickKeyboard(rid, c) },
-    });
+    }));
     return;
   }
 
@@ -841,11 +847,11 @@ bot.on('callback_query', async (q) => {
     flows.setRoomFlow(from.id, chatId, { roomId: rid, course: c, customers, ladies: [] });
     const date = todayDateStringKST();
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText(flows.roomStartText(rid, c, customers, []), {
+    await bot.editMessageText(flows.roomStartText(rid, c, customers, []), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.ladyPickKeyboard(date, rid, c, customers, []) },
-    });
+    }));
     return;
   }
 
@@ -866,11 +872,11 @@ bot.on('callback_query', async (q) => {
     flows.setRoomFlow(from.id, chatId, { roomId: rid, course: c, customers, ladies });
     const date = todayDateStringKST();
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText(flows.roomStartText(rid, c, customers, ladies), {
+    await bot.editMessageText(flows.roomStartText(rid, c, customers, ladies), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.ladyPickKeyboard(date, rid, c, customers, ladies) },
-    });
+    }));
     return;
   }
 
@@ -918,8 +924,8 @@ bot.on('callback_query', async (q) => {
       fmt.formatRoomStartNotice(session, operatorName(from), alertMin)
     );
     await bot.editMessageText(
-      `✅ ${room?.name || rid} ${c}코스 시작\n${fmt.sessionLine(session)}\n\n종료 ${alertMin}분 전 알림 (${formatTimeKST(session.alert_time)})`,
-      { chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: fmt.navKeyboard(true, isOperatorFrom(from)) } }
+      `${b('✅ 방 시작')} ${e(room?.name || rid)} ${c}코스\n${fmt.sessionLine(session)}\n\n종료 ${alertMin}분 전 알림 (${formatTimeKST(session.alert_time)})`,
+      htmlOpts({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: fmt.navKeyboard(true, isOperatorFrom(from)) } })
     );
     return;
   }
@@ -942,7 +948,7 @@ bot.on('callback_query', async (q) => {
     db.setAlertMinutes(minutes, operatorName(from));
     db.appendAudit('alert_change', `${prev}→${minutes}`, operatorName(from));
     await broadcast(
-      `📢 [알람설정] ${operatorName(from)}님이 종료 ${minutes}분전으로 변경`,
+      `${b('📢 알람설정')} ${e(operatorName(from))}님이 종료 ${minutes}분전으로 변경`,
       chatId
     );
     await bot.answerCallbackQuery(q.id, { text: `${minutes}분전 설정됨` });
@@ -962,11 +968,11 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText('➕ 연장 — 코스를 선택하세요.', {
+    await bot.editMessageText(b('➕ 연장 — 코스를 선택하세요.'), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.extendCourseKeyboard(sid) },
-    });
+    }));
     return;
   }
 
@@ -988,12 +994,12 @@ bot.on('callback_query', async (q) => {
     await bot.answerCallbackQuery(q.id, { text: `${c}코스 연장됨` });
     await notifyChat(chatId, fmt.formatRoomExtendNotice(updated.session, operatorName(from)));
     await bot.editMessageText(
-      `➕ ${db.courseLabel(c)} 연장\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`,
-      {
+      `${b('➕ 연장')} ${e(db.courseLabel(c))}\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`,
+      htmlOpts({
         chat_id: chatId,
         message_id: messageId,
         reply_markup: { inline_keyboard: flows.sessionManageKeyboard(sid) },
-      }
+      })
     );
     return;
   }
@@ -1030,11 +1036,11 @@ bot.on('callback_query', async (q) => {
     const sid = parseInt(data.split(':')[2], 10);
     const date = todayDateStringKST();
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText('👥 추가할 언니를 선택하세요.', {
+    await bot.editMessageText('👥 추가할 언니를 선택하세요.', htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.sessionLadyAddKeyboard(date, sid) },
-    });
+    }));
     return;
   }
 
@@ -1045,11 +1051,11 @@ bot.on('callback_query', async (q) => {
     }
     const sid = parseInt(data.split(':')[2], 10);
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText('👥 빼낼 언니를 선택하세요.', {
+    await bot.editMessageText('👥 빼낼 언니를 선택하세요.', htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.sessionLadySubKeyboard(sid) },
-    });
+    }));
     return;
   }
 
@@ -1075,11 +1081,11 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id, { text: '추가됨' });
-    await bot.editMessageText(flows.sessionManageText(r), {
+    await bot.editMessageText(flows.sessionManageText(r), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.sessionManageKeyboard(sid) },
-    });
+    }));
     return;
   }
 
@@ -1097,11 +1103,11 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id, { text: '제외됨' });
-    await bot.editMessageText(flows.sessionManageText(r), {
+    await bot.editMessageText(flows.sessionManageText(r), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.sessionManageKeyboard(sid) },
-    });
+    }));
     return;
   }
 
@@ -1119,11 +1125,11 @@ bot.on('callback_query', async (q) => {
     await bot.answerCallbackQuery(q.id);
     await bot.editMessageText(
       `🤵 손님 수 변경 (현재 ${found.session.customer_count}명)`,
-      {
+      htmlOpts({
         chat_id: chatId,
         message_id: messageId,
         reply_markup: { inline_keyboard: flows.customerAdjustKeyboard(sid, found.session.customer_count) },
-      }
+      })
     );
     return;
   }
@@ -1142,11 +1148,11 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id, { text: `손님 ${count}명` });
-    await bot.editMessageText(flows.sessionManageText(r), {
+    await bot.editMessageText(flows.sessionManageText(r), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.sessionManageKeyboard(sid) },
-    });
+    }));
     return;
   }
 
@@ -1177,11 +1183,11 @@ bot.on('callback_query', async (q) => {
     }
     const rn = db.findRoomById(found.session.room_id)?.name || found.session.room_id;
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText(flows.startTimeMenuText(rn, found.session.start_time, found.session.course), {
+    await bot.editMessageText(flows.startTimeMenuText(rn, found.session.start_time, found.session.course), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.startTimeAdjustKeyboard(sid) },
-    });
+    }));
     return;
   }
 
@@ -1210,12 +1216,12 @@ bot.on('callback_query', async (q) => {
     db.appendAudit('room_start_edit', `${rn} -${minutesAgo}분`, operatorName(from));
     await bot.answerCallbackQuery(q.id, { text: `${minutesAgo}분 전으로 변경` });
     await bot.editMessageText(
-      `⏳ ${rn} 시작 시각 변경됨\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`,
-      {
+      `${b('⏳ 시작 시각 변경')} — ${e(rn)}\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`,
+      htmlOpts({
         chat_id: chatId,
         message_id: messageId,
         reply_markup: { inline_keyboard: flows.sessionManageKeyboard(sid) },
-      }
+      })
     );
     return;
   }
@@ -1226,11 +1232,11 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText(flows.courseMenuText(), {
+    await bot.editMessageText(flows.courseMenuText(), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.courseMenuKeyboard() },
-    });
+    }));
     return;
   }
 
@@ -1253,11 +1259,11 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText('✏️ 수정할 코스를 선택하세요.', {
+    await bot.editMessageText('✏️ 수정할 코스를 선택하세요.', htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.coursePickForEditKeyboard('edit') },
-    });
+    }));
     return;
   }
 
@@ -1267,11 +1273,11 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText('🗑 삭제할 코스를 선택하세요.', {
+    await bot.editMessageText('🗑 삭제할 코스를 선택하세요.', htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.coursePickForEditKeyboard('del') },
-    });
+    }));
     return;
   }
 
@@ -1308,11 +1314,11 @@ bot.on('callback_query', async (q) => {
     }
     db.appendAudit('course_remove', c?.name || id, operatorName(from));
     await bot.answerCallbackQuery(q.id, { text: '삭제됨' });
-    await bot.editMessageText(flows.courseMenuText(), {
+    await bot.editMessageText(flows.courseMenuText(), htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.courseMenuKeyboard() },
-    });
+    }));
     return;
   }
 
@@ -1322,11 +1328,11 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText('✏️ 언니 이름 변경 — 선택', {
+    await bot.editMessageText('✏️ 언니 이름 변경 — 선택', htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.ladyRenameKeyboard() },
-    });
+    }));
     return;
   }
 
@@ -1355,11 +1361,11 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id);
-    await bot.editMessageText('✏️ 룸 이름 변경 — 선택', {
+    await bot.editMessageText('✏️ 룸 이름 변경 — 선택', htmlOpts({
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { inline_keyboard: flows.roomRenameKeyboard() },
-    });
+    }));
     return;
   }
 

@@ -75,23 +75,61 @@ function roomPickKeyboard() {
 }
 
 function coursePickKeyboard(roomId) {
+  const courses = db.getCourses();
+  const btns = courses.map((c) => ({
+    text: `${c.name}(${c.minutes}분)`,
+    callback_data: `rs:cr:${roomId}:${c.id}`,
+  }));
   return [
-    [
-      { text: 'A코스(60분)', callback_data: `rs:cr:${roomId}:A` },
-      { text: 'B코스(90분)', callback_data: `rs:cr:${roomId}:B` },
-    ],
+    ...chunk(btns, 2),
     [{ text: '← 룸 다시', callback_data: 'op:rs_menu' }],
   ];
 }
 
 function extendCourseKeyboard(sessionId) {
+  const courses = db.getCourses();
+  const btns = courses.map((c) => ({
+    text: `${c.name}(${c.minutes}분)`,
+    callback_data: `sess:extc:${sessionId}:${c.id}`,
+  }));
   return [
-    [
-      { text: 'A코스(60분)', callback_data: `sess:extc:${sessionId}:A` },
-      { text: 'B코스(90분)', callback_data: `sess:extc:${sessionId}:B` },
-    ],
+    ...chunk(btns, 2),
     [{ text: '← 취소', callback_data: `sess:mgmt:${sessionId}` }],
   ];
+}
+
+function courseMenuText() {
+  return (
+    '📋 코스 관리\n\n' +
+    `${db.coursesListText()}\n\n` +
+    '아래에서 선택하거나 명령어로 입력하세요.\n' +
+    '· /코스추가 이름 분\n' +
+    '· /코스수정 ID 이름 분\n' +
+    '· /코스삭제 ID'
+  );
+}
+
+function courseMenuKeyboard() {
+  return [
+    [
+      { text: '코스추가', callback_data: 'op:course_add' },
+      { text: '코스수정', callback_data: 'op:course_edit' },
+    ],
+    [
+      { text: '코스삭제', callback_data: 'op:course_del' },
+    ],
+    [{ text: '← 출근부', callback_data: 'nav:all' }],
+  ];
+}
+
+function coursePickForEditKeyboard(mode) {
+  const courses = db.getCourses();
+  const prefix = mode === 'del' ? 'course:del' : 'course:edit';
+  const btns = courses.map((c) => ({
+    text: `${c.name}(${c.minutes}분)`,
+    callback_data: `${prefix}:${c.id}`,
+  }));
+  return [...chunk(btns, 2), [{ text: '← 코스', callback_data: 'op:course_menu' }]];
 }
 
 function customerPickKeyboard(roomId, course) {
@@ -292,6 +330,9 @@ module.exports = {
   clearRoomFlow,
   checkinKeyboard,
   checkinMenuText,
+  courseMenuText,
+  courseMenuKeyboard,
+  coursePickForEditKeyboard,
   roomPickKeyboard,
   coursePickKeyboard,
   extendCourseKeyboard,

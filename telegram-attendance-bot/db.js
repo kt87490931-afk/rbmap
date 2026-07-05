@@ -7,18 +7,86 @@ const DB_FILE =
   path.join(__dirname, '..', 'data', 'attendance-data.json');
 const VALID_ALERTS = [5, 10, 15];
 const DEFAULT_ALERT_MINUTES = 5;
+/** @deprecated — settings.courses 사용 */
 const COURSE_DURATIONS = { A: 60, B: 90 };
 /** 종료 예정(end_scheduled) 후 자동 마감까지 대기 (분) */
 const AUTO_END_GRACE_MINUTES = 30;
 const MAX_AUDIT = 200;
 const LEGACY_ALERT_MAP = { 55: 5, 50: 10, 45: 15 };
 
-function courseDuration(course) {
-  return COURSE_DURATIONS[course] || 60;
+function defaultCourses() {
+  return [
+    { id: 'A', name: 'A코스', minutes: 60 },
+    { id: 'B', name: 'B코스', minutes: 90 },
+  ];
 }
 
-function courseLabel(course) {
-  return course === 'B' ? 'B코스(90분)' : 'A코스(60분)';
+function ensureCourses(settings) {
+  if (!settings.courses || settings.courses.length === 0) {
+    settings.courses = defaultCourses();
+  }
+}
+
+function getCourses() {
+  const data = loadData();
+  ensureCourses(data.settings);
+  return [...data.settings.courses];
+}
+
+function findCourse(courseKey) {
+  if (!courseKey) return null;
+  const k = String(courseKey).trim();
+  const courses = getCourses();
+  return courses.find((c) => c.id === k || c.name === k) || null;
+}
+
+function makeCourseId(name, existing) {
+  let base = String(name).replace(/\s+/g, '').slice(0, 12) || 'C';
+  let id = base;
+  let n = 1;
+  while (existing.some((c) => c.id === id)) {
+    id = `${base}${n++}`;
+  }
+  return id;
+}
+
+function courseDuration(courseId) {
+  const c = findCourse(courseId);
+  if (c) return c.minutes;
+  if (COURSE_DURATIONS[courseId]) return COURSE_DURATIONS[courseId];
+  return 60;
+}
+
+function courseLabel(courseId) {
+  const c = findCourse(courseId);
+  if (c) return `${c.name}(${c.minutes}분)`;
+  const mins = courseDuration(courseId);
+  return `${courseId}코스(${mins}분)`;
+}
+
+function minutesBetween(startIso, endIso) {
+  if (!startIso || !endIso) return 0;
+  return Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000);
+}
+
+function repairMislabeledLegacySession(sess) {
+  if (sess.course_user_set) return false;
+  const seg = sess.course_segments?.[0];
+  const start = seg?.start_time || sess.start_time;
+  const end = seg?.end_scheduled || sess.end_scheduled;
+  const schedMins = minutesBetween(start, end);
+  if (schedMins <= 0) return false;
+  const catMins = courseDuration(sess.course);
+  const isLegacyHourly =
+    (sess.hour_count > 1 || [45, 50, 55].includes(sess.alert_minutes)) &&
+    (!sess.course_segments || sess.course_segments.length <= 1) &&
+    Math.abs(schedMins - catMins) > 10;
+  if (!isLegacyHourly) return false;
+  sess.course = 'A';
+  sess.duration_minutes = schedMins;
+  sess.legacy_repaired = true;
+  if (seg) seg.course = 'A';
+  return true;
 }
 
 function calcEndScheduled(startIso, course) {
@@ -42,6 +110,7 @@ function initialData() {
       delegated_labels: {},
       last_alert_change: null,
       last_alert_changed_by: null,
+      courses: defaultCourses(),
     },
     ladies: [],
     rooms: [],
@@ -59,21 +128,26 @@ function migrateAlertMinutes(m) {
   return DEFAULT_ALERT_MINUTES;
 }
 
-function normalizeCompletedEntry(val) {
+function normalizeCompletedEntry(val, courseIds) {
+  const ids = courseIds || getCourses().map((c) => c.id);
+  const out = {};
+  for (const id of ids) out[id] = 0;
   if (val && typeof val === 'object') {
-    return { A: val.A || 0, B: val.B || 0 };
+    for (const [k, v] of Object.entries(val)) {
+      if (typeof v === 'number') out[k] = v;
+    }
+  } else if (typeof val === 'number') {
+    out[ids[0] || 'A'] = val;
   }
-  if (typeof val === 'number') return { A: val, B: 0 };
-  return { A: 0, B: 0 };
+  return out;
 }
 
 function normalizeSession(sess) {
-  if (!sess.course) {
-    const mins = sess.hour_count ? sess.hour_count * 60 : 60;
-    sess.course = mins >= 90 ? 'B' : 'A';
-  }
+  if (!sess.course) sess.course = 'A';
+  repairMislabeledLegacySession(sess);
   if (!sess.duration_minutes) {
-    sess.duration_minutes = courseDuration(sess.course);
+    const segMins = minutesBetween(sess.start_time, sess.end_scheduled);
+    sess.duration_minutes = segMins > 0 ? segMins : courseDuration(sess.course);
   }
   if (!sess.alert_before_minutes) {
     sess.alert_before_minutes = migrateAlertMinutes(sess.alert_minutes);
@@ -98,10 +172,12 @@ function normalizeSession(sess) {
   return sess;
 }
 
-function normalizeDay(day) {
+function normalizeDay(day, settings) {
+  ensureCourses(settings || loadData().settings);
+  const courseIds = (settings?.courses || defaultCourses()).map((c) => c.id);
   if (!day.completed_counts) day.completed_counts = {};
   for (const key of Object.keys(day.completed_counts)) {
-    day.completed_counts[key] = normalizeCompletedEntry(day.completed_counts[key]);
+    day.completed_counts[key] = normalizeCompletedEntry(day.completed_counts[key], courseIds);
   }
   if (!day.sessions) day.sessions = [];
   day.sessions = day.sessions.map(normalizeSession);
@@ -160,14 +236,19 @@ function normalize(data) {
   if (!data.settings.delegated_ids) data.settings.delegated_ids = [];
   if (!data.settings.delegated_labels) data.settings.delegated_labels = {};
   ensureRoleSettings(data.settings);
+  ensureCourses(data.settings);
   data.settings.alert_minutes = migrateAlertMinutes(data.settings.alert_minutes);
   if (!data.ladies) data.ladies = [];
   if (!data.rooms) data.rooms = [];
   if (!data.days) data.days = {};
   if (!data.audit_log) data.audit_log = [];
+  let dirty = false;
   for (const date of Object.keys(data.days)) {
-    data.days[date] = normalizeDay(data.days[date]);
+    const before = JSON.stringify(data.days[date].sessions);
+    data.days[date] = normalizeDay(data.days[date], data.settings);
+    if (JSON.stringify(data.days[date].sessions) !== before) dirty = true;
   }
+  if (dirty) saveData(data);
   return data;
 }
 
@@ -403,7 +484,7 @@ function ensureDay(date) {
 function getDay(date) {
   const data = loadData();
   const day = data.days[date] || { ladies: {}, sessions: [], completed_counts: {} };
-  return normalizeDay(JSON.parse(JSON.stringify(day)));
+  return normalizeDay(JSON.parse(JSON.stringify(day)), data.settings);
 }
 
 function getLadyDayState(date, ladyId) {
@@ -452,21 +533,25 @@ function isLadyInActiveSession(date, ladyId) {
   );
 }
 
-function incrementCompletedCount(day, ladyId, course) {
+function incrementCompletedCount(day, ladyId, courseId, courseIds) {
   const key = String(ladyId);
-  day.completed_counts[key] = normalizeCompletedEntry(day.completed_counts[key]);
-  const c = course === 'B' ? 'B' : 'A';
+  const ids = courseIds || getCourses().map((c) => c.id);
+  day.completed_counts[key] = normalizeCompletedEntry(day.completed_counts[key], ids);
+  const c = findCourse(courseId)?.id || courseId || 'A';
+  if (day.completed_counts[key][c] == null) day.completed_counts[key][c] = 0;
   day.completed_counts[key][c] += 1;
 }
 
 function getLadyCourseCounts(date, ladyId) {
   const day = getDay(date);
   const key = String(ladyId);
-  const counts = normalizeCompletedEntry(day.completed_counts[key]);
+  const courseIds = getCourses().map((c) => c.id);
+  const counts = normalizeCompletedEntry(day.completed_counts[key], courseIds);
   for (const s of day.sessions) {
     if (s.status !== 'active') continue;
     if (!s.assignments.some((a) => a.lady_id === ladyId && !a.removed_at)) continue;
-    const c = s.course === 'B' ? 'B' : 'A';
+    const c = s.course || 'A';
+    if (counts[c] == null) counts[c] = 0;
     counts[c] += 1;
   }
   return counts;
@@ -475,7 +560,7 @@ function getLadyCourseCounts(date, ladyId) {
 /** @deprecated — getLadyCourseCounts 사용 */
 function getCompletedCount(date, ladyId) {
   const c = getLadyCourseCounts(date, ladyId);
-  return c.A + c.B;
+  return Object.values(c).reduce((a, b) => a + b, 0);
 }
 
 function findSessionById(sessionId) {
@@ -501,8 +586,10 @@ function startRoomSession(date, { roomId, chatId, customerCount, ladyIds, startT
     if (isLadyInActiveSession(date, lid)) return 'LADY_BUSY';
   }
 
-  const c = course === 'B' ? 'B' : 'A';
-  const duration = courseDuration(c);
+  const foundCourse = findCourse(course);
+  if (!foundCourse) return 'INVALID_COURSE';
+  const c = foundCourse.id;
+  const duration = foundCourse.minutes;
   const alertBefore = getAlertMinutes();
   const endScheduled = calcEndScheduled(startTime, c);
   const alertTime = calcAlertTime(endScheduled, alertBefore);
@@ -524,6 +611,7 @@ function startRoomSession(date, { roomId, chatId, customerCount, ladyIds, startT
     alert_minutes: alertBefore,
     alert_time: alertTime,
     alert_sent: false,
+    course_user_set: true,
     assignments: ladyIds.map((ladyId) => ({
       lady_id: ladyId,
       from_start: true,
@@ -576,9 +664,11 @@ function extendSession(sessionId, course) {
   if (!found || found.session.status !== 'active') return null;
   const data = loadData();
   const sess = data.days[found.date].sessions.find((s) => s.id === sessionId);
-  const c = course === 'B' ? 'B' : 'A';
+  const foundCourse = findCourse(course);
+  if (!foundCourse) return null;
+  const c = foundCourse.id;
   const segmentStart = sess.end_scheduled;
-  const duration = courseDuration(c);
+  const duration = foundCourse.minutes;
   const alertBefore = getAlertMinutes();
   const newEnd = addMinutesIso(segmentStart, duration);
 
@@ -613,7 +703,8 @@ function endSession(sessionId) {
   const day = data.days[found.date];
   const sess = day.sessions.find((s) => s.id === sessionId);
   const now = new Date().toISOString();
-  const course = sess.course === 'B' ? 'B' : 'A';
+  const course = sess.course || 'A';
+  const courseIds = getCourses().map((co) => co.id);
 
   sess.status = 'ended';
   sess.ended_at = now;
@@ -622,7 +713,7 @@ function endSession(sessionId) {
   if (lastSeg && !lastSeg.ended_at) lastSeg.ended_at = now;
 
   for (const a of sess.assignments) {
-    if (!a.removed_at) incrementCompletedCount(day, a.lady_id, course);
+    if (!a.removed_at) incrementCompletedCount(day, a.lady_id, course, courseIds);
   }
 
   saveData(data);
@@ -751,6 +842,53 @@ function addRoomFromAdmin(name) {
   return addRoom(name);
 }
 
+function coursesListText() {
+  const courses = getCourses();
+  if (courses.length === 0) return '(등록된 코스 없음)';
+  return courses.map((c) => `· ${c.id}: ${c.name} (${c.minutes}분)`).join('\n');
+}
+
+function addCourse(name, minutes) {
+  const mins = parseInt(minutes, 10);
+  if (!name || !mins || mins < 1 || mins > 600) return 'INVALID';
+  const data = loadData();
+  ensureCourses(data.settings);
+  if (data.settings.courses.some((c) => c.name === name)) return 'DUPLICATE';
+  const id = makeCourseId(name, data.settings.courses);
+  data.settings.courses.push({ id, name, minutes: mins });
+  saveData(data);
+  return { id, name, minutes: mins };
+}
+
+function updateCourse(courseKey, name, minutes) {
+  const mins = parseInt(minutes, 10);
+  if (!name || !mins || mins < 1 || mins > 600) return 'INVALID';
+  const data = loadData();
+  ensureCourses(data.settings);
+  const idx = data.settings.courses.findIndex(
+    (c) => c.id === courseKey || c.name === courseKey
+  );
+  if (idx < 0) return 'NOT_FOUND';
+  const id = data.settings.courses[idx].id;
+  if (data.settings.courses.some((c) => c.name === name && c.id !== id)) return 'DUPLICATE';
+  data.settings.courses[idx] = { id, name, minutes: mins };
+  saveData(data);
+  return data.settings.courses[idx];
+}
+
+function removeCourse(courseKey) {
+  const data = loadData();
+  ensureCourses(data.settings);
+  if (data.settings.courses.length <= 1) return 'LAST_ONE';
+  const idx = data.settings.courses.findIndex(
+    (c) => c.id === courseKey || c.name === courseKey
+  );
+  if (idx < 0) return 'NOT_FOUND';
+  const removed = data.settings.courses.splice(idx, 1)[0];
+  saveData(data);
+  return removed;
+}
+
 module.exports = {
   DB_FILE,
   VALID_ALERTS,
@@ -759,6 +897,13 @@ module.exports = {
   AUTO_END_GRACE_MINUTES,
   courseDuration,
   courseLabel,
+  getCourses,
+  findCourse,
+  coursesListText,
+  addCourse,
+  updateCourse,
+  removeCourse,
+  defaultCourses,
   getSettings,
   getAlertMinutes,
   setAlertMinutes,

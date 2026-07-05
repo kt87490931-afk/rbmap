@@ -158,8 +158,9 @@ export default function AdminAttendancePage() {
             {ladies.length === 0 ? <p style={{ fontSize: 13, opacity: 0.6 }}>등록 없음</p> : (
               <p style={{ fontSize: 13 }}>{ladies.map((l) => {
                 const c = completed[String(l.id)]
-                const ab = typeof c === 'object' && c ? c : { A: typeof c === 'number' ? c : 0, B: 0 }
-                return `[${l.name} A${ab.A} / B${ab.B}]`
+                const ab = typeof c === 'object' && c ? c : { A: typeof c === 'number' ? c : 0 }
+                const parts = Object.entries(ab).map(([k, v]) => `${k}${v}`).join(' / ')
+                return `[${l.name} ${parts}]`
               }).join(' ')}</p>
             )}
           </div>

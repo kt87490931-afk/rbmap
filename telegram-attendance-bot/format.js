@@ -38,8 +38,10 @@ function sessionLine(session) {
 }
 
 function ladyCourseCountTag(lady, date) {
-  const c = db.getLadyCourseCounts(date, lady.id);
-  return `[${lady.name} A${c.A}개 / B${c.B}개]`;
+  const counts = db.getLadyCourseCounts(date, lady.id);
+  const courses = db.getCourses();
+  const parts = courses.map((co) => `${co.id}${counts[co.id] || 0}개`).join(' / ');
+  return `[${lady.name} ${parts}]`;
 }
 
 function registeredBlock(date) {
@@ -131,7 +133,7 @@ function segmentLine(session, seg) {
   const rn = roomName(session.room_id);
   const start = formatTimeKST(seg.start_time);
   const end = formatTimeKST(seg.ended_at || seg.end_scheduled);
-  const dur = db.courseDuration(seg.course);
+  const label = db.courseLabel(seg.course);
   const ladies = activeAssignments(session)
     .map((a) => ladyName(a.lady_id))
     .join(', ');
@@ -139,7 +141,7 @@ function segmentLine(session, seg) {
     session.status === 'active' && !seg.ended_at
       ? '진행중'
       : '종료';
-  return `❤️${rn} · ${seg.course}코스(${dur}분) · ${start}~${end} · ${ladies || '-'} · ${st}`;
+  return `❤️${rn} · ${label} · ${start}~${end} · ${ladies || '-'} · ${st}`;
 }
 
 function dailyProgressBlock(date) {
@@ -238,14 +240,17 @@ function buildHelpText(canOperate, isSuperAdmin) {
   lines.push('👪전체인원 — 등록·출근·진행·퇴근 한눈에');
 
   if (canOperate) {
+    lines.push('', '【코스 관리】');
+    lines.push('코스 — 코스추가/수정/삭제 (이름·시간 직접 입력)');
+    lines.push('/코스추가 A코스 60 · /코스수정 A A코스 60 · /코스삭제 A');
     lines.push('', '【운영자 — 조작 권한】');
-    lines.push('▶️방시작 — 룸 → A/B코스 → 손님 → 언니(0명 가능)');
+    lines.push('▶️방시작 — 룸 → 코스 → 손님 → 언니(0명 가능)');
     lines.push('🚀진행중인방 — 방별 관리 (시간·연장·언니·손님·종료)');
     lines.push('📝출근처리 — 전체 언니 출근/퇴근 (토글 가능)');
     lines.push('⏰알람설정 — 종료 5·10·15분 전 알림');
     lines.push('+언니 / +룸 / ✏️이름변경 — 등록·이름 변경');
     lines.push('', '※ 영업일: 15:00~익일 15:00 = 같은 날짜');
-    lines.push('※ 연장 시 A/B 코스 재선택 (A→B 전환 가능)');
+    lines.push('※ 연장 시 코스 재선택 (A→B 등 변경 가능)');
     lines.push('※ 종료 예정 +30분 후 자동 종료');
   }
 
@@ -304,7 +309,10 @@ function navKeyboard(canOperate, isOperator) {
     ]);
   }
 
-  rows.push([{ text: '📖도움말', callback_data: 'nav:help' }]);
+  rows.push([
+    ...(canOperate ? [{ text: '코스', callback_data: 'op:course_menu' }] : []),
+    { text: '📖도움말', callback_data: 'nav:help' },
+  ]);
 
   return rows;
 }

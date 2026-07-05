@@ -192,6 +192,11 @@ function navKeyboard(canOperate, isOperator) {
     ],
   ];
   if (canOperate) {
+    rows.push([
+      { text: '📝 출근처리', callback_data: 'op:ci_menu' },
+      { text: '▶️ 방시작', callback_data: 'op:rs_menu' },
+    ]);
+    rows.push([{ text: '🎛 방관리', callback_data: 'op:rm_menu' }]);
     rows.push([{ text: '알람설정', callback_data: 'nav:alert' }]);
   }
   if (isOperator) {

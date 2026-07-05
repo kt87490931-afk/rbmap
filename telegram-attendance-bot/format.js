@@ -318,23 +318,19 @@ function navKeyboard(canOperate, isOperator) {
   const showManage = canOperate || isOperator;
 
   if (canOperate) {
-    rows.push([{ text: '▶️방시작', callback_data: 'op:rs_menu' }]);
-    rows.push([{ text: '💡방관리(연장)', callback_data: 'op:rm_menu' }]);
+    rows.push([
+      { text: '▶️방시작', callback_data: 'op:rs_menu' },
+      { text: '💡방관리(연장)', callback_data: 'op:rm_menu' },
+    ]);
   }
 
-  rows.push(
-    [
-      { text: '🚀진행중인방', callback_data: 'nav:act' },
-      { text: '👀언니상태', callback_data: 'nav:status' },
-    ],
-    [
-      { text: '🏃‍♀️금일진행현황', callback_data: 'nav:stats' },
-      { text: '🛑종료된방', callback_data: 'nav:end' },
-    ]
-  );
+  rows.push([
+    { text: '🏃‍♀️금일진행현황', callback_data: 'nav:stats' },
+    { text: '🚀진행중인방', callback_data: 'nav:act' },
+    { text: '🛑종료된방', callback_data: 'nav:end' },
+  ]);
 
   if (canOperate) {
-    rows.push([{ text: '🚨바쁨', callback_data: 'op:busy' }]);
     rows.push([{ text: '📝출근처리', callback_data: 'op:ci_menu' }]);
   }
 
@@ -345,7 +341,10 @@ function navKeyboard(canOperate, isOperator) {
   ]);
 
   if (canOperate) {
-    rows.push([{ text: '⏰알람설정', callback_data: 'nav:alert' }]);
+    rows.push([
+      { text: '⏰알람설정', callback_data: 'nav:alert' },
+      { text: '🚨바쁨', callback_data: 'op:busy' },
+    ]);
   }
 
   if (showManage) {

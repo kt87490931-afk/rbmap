@@ -30,21 +30,36 @@ if (!TOKEN) {
 const bot = new TelegramBot(TOKEN, { polling: true });
 const scheduledTimers = new Map();
 
-function isOperator(userId) {
+function isSuperAdmin(userId) {
   return ADMIN_IDS.includes(String(userId));
 }
 
+function isOperator(userId) {
+  return isSuperAdmin(userId) || db.isOperatorUser(userId);
+}
+
+function isStaff(userId) {
+  return db.isStaffUser(userId) && !isOperator(userId);
+}
+
 function canOperate(userId) {
-  if (ADMIN_IDS.length === 0) return false;
-  return isOperator(userId) || db.isDelegated(userId);
+  return isOperator(userId);
 }
 
 function operatorName(from) {
   return from.first_name + (from.last_name ? ` ${from.last_name}` : '');
 }
 
-function deny(chatId) {
-  bot.sendMessage(chatId, '⛔ 운영자 또는 지정된 직원만 사용할 수 있습니다.');
+function deny(chatId, text = '⛔ 권한이 없습니다.') {
+  bot.sendMessage(chatId, text);
+}
+
+function denyOperate(chatId) {
+  deny(chatId, '⛔ 운영자만 사용할 수 있습니다.');
+}
+
+function denySuper(chatId) {
+  deny(chatId, '⛔ 슈퍼관리자만 사용할 수 있습니다.');
 }
 
 async function broadcast(text, chatId) {
@@ -173,7 +188,8 @@ function sendBoardWithPerm(chatId, view, from, messageId = null) {
   const date = todayDateStringKST();
   const op = isOperator(from.id);
   const co = canOperate(from.id);
-  const { text } = fmt.buildView(view, date, { canOperate: co, isOperator: op });
+  const sa = isSuperAdmin(from.id);
+  const { text } = fmt.buildView(view, date, { canOperate: co, isOperator: op, isSuperAdmin: sa });
   let keyboard = fmt.navKeyboard(co, op);
 
   if (view === 'alert' && co) {
@@ -205,7 +221,7 @@ bot.onText(/^\/도움말(?:@\w+)?$/, (msg) => {
   sendBoardWithPerm(msg.chat.id, 'help', msg.from);
 });
 
-// ---------- 마스터 등록 ----------
+// ---------- 마스터 등록 (운영자) ----------
 function registerLady(msg, name) {
   const id = db.addLady(name);
   if (!id) return bot.sendMessage(msg.chat.id, `이미 등록된 이름입니다: ${name}`);
@@ -214,12 +230,12 @@ function registerLady(msg, name) {
 }
 
 bot.onText(/^\/(?:아가씨등록|언니등록)(?:@\w+)?\s+(.+)$/, (msg, m) => {
-  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   registerLady(msg, m[1].trim());
 });
 
 bot.onText(/^\/(?:아가씨해제|언니해제)(?:@\w+)?\s+(.+)$/, (msg, m) => {
-  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const name = m[1].trim();
   if (!db.deactivateLady(name)) return bot.sendMessage(msg.chat.id, `없음: ${name}`);
   db.appendAudit('lady_remove', name, operatorName(msg.from));
@@ -236,12 +252,12 @@ function renameLadyCmd(msg, oldName, newName) {
 }
 
 bot.onText(/^\/(?:아가씨이름변경|언니이름변경)(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
-  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   renameLadyCmd(msg, m[1].trim(), m[2].trim());
 });
 
 bot.onText(/^\/룸등록(?:@\w+)?\s+(.+)$/, (msg, m) => {
-  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const name = m[1].trim();
   const id = db.addRoom(name);
   if (!id) return bot.sendMessage(msg.chat.id, `이미 등록된 룸: ${name}`);
@@ -250,7 +266,7 @@ bot.onText(/^\/룸등록(?:@\w+)?\s+(.+)$/, (msg, m) => {
 });
 
 bot.onText(/^\/룸해제(?:@\w+)?\s+(.+)$/, (msg, m) => {
-  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const name = m[1].trim();
   if (!db.deactivateRoom(name)) return bot.sendMessage(msg.chat.id, `없음: ${name}`);
   db.appendAudit('room_remove', name, operatorName(msg.from));
@@ -258,7 +274,7 @@ bot.onText(/^\/룸해제(?:@\w+)?\s+(.+)$/, (msg, m) => {
 });
 
 bot.onText(/^\/룸이름변경(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
-  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const oldName = m[1].trim();
   const newName = m[2].trim();
   const r = db.renameRoom(oldName, newName);
@@ -271,7 +287,7 @@ bot.onText(/^\/룸이름변경(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
 
 // ---------- 출근 / 퇴근 ----------
 bot.onText(/^\/출근(?:@\w+)?\s+(\S+)(?:\s+(\d{1,2}:\d{2}))?$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const name = m[1];
   const date = todayDateStringKST();
   const lady = db.findLadyByName(name);
@@ -291,7 +307,7 @@ bot.onText(/^\/출근(?:@\w+)?\s+(\S+)(?:\s+(\d{1,2}:\d{2}))?$/, (msg, m) => {
 });
 
 bot.onText(/^\/퇴근(?:@\w+)?\s+(\S+)(?:\s+(\d{1,2}:\d{2}))?$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const name = m[1];
   const date = todayDateStringKST();
   const lady = db.findLadyByName(name);
@@ -311,7 +327,7 @@ bot.onText(/^\/퇴근(?:@\w+)?\s+(\S+)(?:\s+(\d{1,2}:\d{2}))?$/, (msg, m) => {
 
 // ---------- 방 세션 ----------
 bot.onText(/^\/방시작(?:@\w+)?\s+(\S+)\s+(\d+)\s+([^\s]+)(?:\s+(\d{1,2}:\d{2}))?$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const roomName = m[1];
   const customerCount = parseInt(m[2], 10);
   const ladyStr = m[3];
@@ -351,7 +367,7 @@ bot.onText(/^\/방시작(?:@\w+)?\s+(\S+)\s+(\d+)\s+([^\s]+)(?:\s+(\d{1,2}:\d{2}
 });
 
 bot.onText(/^\/방종료(?:@\w+)?\s+(\S+)$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const date = todayDateStringKST();
   const sess = findActiveSessionByRoomName(date, m[1].trim());
   if (!sess) return bot.sendMessage(msg.chat.id, '진행중인 방 없음');
@@ -366,7 +382,7 @@ bot.onText(/^\/방종료(?:@\w+)?\s+(\S+)$/, (msg, m) => {
 });
 
 bot.onText(/^\/방연장(?:@\w+)?\s+(\S+)$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const date = todayDateStringKST();
   const sess = findActiveSessionByRoomName(date, m[1].trim());
   if (!sess) return bot.sendMessage(msg.chat.id, '진행중인 방 없음');
@@ -380,7 +396,7 @@ bot.onText(/^\/방연장(?:@\w+)?\s+(\S+)$/, (msg, m) => {
 });
 
 bot.onText(/^\/방시작수정(?:@\w+)?\s+(\S+)\s+(\d{1,2}:\d{2})$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const roomName = m[1].trim();
   const timeStr = m[2].trim();
   if (!isValidTimeString(timeStr)) return bot.sendMessage(msg.chat.id, 'HH:MM 형식 (예: 22:33)');
@@ -400,7 +416,7 @@ bot.onText(/^\/방시작수정(?:@\w+)?\s+(\S+)\s+(\d{1,2}:\d{2})$/, (msg, m) =>
 });
 
 bot.onText(/^\/방추가(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const date = todayDateStringKST();
   const sess = findActiveSessionByRoomName(date, m[1].trim());
   if (!sess) return bot.sendMessage(msg.chat.id, '진행중인 방 없음');
@@ -413,7 +429,7 @@ bot.onText(/^\/방추가(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
 });
 
 bot.onText(/^\/방빼(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  if (!canOperate(msg.from.id)) return denyOperate(msg.chat.id);
   const date = todayDateStringKST();
   const sess = findActiveSessionByRoomName(date, m[1].trim());
   if (!sess) return bot.sendMessage(msg.chat.id, '진행중인 방 없음');
@@ -424,27 +440,65 @@ bot.onText(/^\/방빼(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
   bot.sendMessage(msg.chat.id, `👥 ${m[1]} - ${lady.name} (이번 방 완료횟수 제외)\n${fmt.sessionLine(r)}`);
 });
 
-// ---------- 권한 ----------
-bot.onText(/^\/권한추가(?:@\w+)?\s+(\d+)(?:\s+(.+))?$/, (msg, m) => {
-  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
-  db.addDelegated(m[1], m[2]?.trim() || null);
-  bot.sendMessage(msg.chat.id, `✅ 권한 부여: ${m[1]}`);
+// ---------- 권한 (슈퍼관리자 전용) ----------
+function formatRoleList() {
+  const labels = db.getRoleLabels();
+  const ops = db.getOperatorIds();
+  const staff = db.getStaffIds();
+  const lines = ['👑 슈퍼관리자 (서버 설정)', ADMIN_IDS.join(', ') || '(없음)', '', '🔧 운영자'];
+  if (ops.length === 0) lines.push('(없음)');
+  else ops.forEach((id) => lines.push(`· ${id}${labels[id] ? ` (${labels[id]})` : ''}`));
+  lines.push('', '👀 스탭 (보기만)');
+  if (staff.length === 0) lines.push('(없음)');
+  else staff.forEach((id) => lines.push(`· ${id}${labels[id] ? ` (${labels[id]})` : ''}`));
+  return lines.join('\n');
+}
+
+bot.onText(/^\/운영자추가(?:@\w+)?\s+(\d+)(?:\s+(.+))?$/, (msg, m) => {
+  if (!isSuperAdmin(msg.from.id)) return denySuper(msg.chat.id);
+  db.addOperator(m[1], m[2]?.trim() || null);
+  db.appendAudit('operator_add', m[1], operatorName(msg.from));
+  bot.sendMessage(msg.chat.id, `✅ 운영자 등록: ${m[1]}${m[2] ? ` (${m[2].trim()})` : ''}`);
 });
 
-bot.onText(/^\/권한제거(?:@\w+)?\s+(\d+)$/, (msg, m) => {
-  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
-  db.removeDelegated(m[1]);
-  bot.sendMessage(msg.chat.id, `✅ 권한 해제: ${m[1]}`);
+bot.onText(/^\/운영자제거(?:@\w+)?\s+(\d+)$/, (msg, m) => {
+  if (!isSuperAdmin(msg.from.id)) return denySuper(msg.chat.id);
+  db.removeOperator(m[1]);
+  db.appendAudit('operator_remove', m[1], operatorName(msg.from));
+  bot.sendMessage(msg.chat.id, `✅ 운영자 해제: ${m[1]}`);
+});
+
+bot.onText(/^\/스탭추가(?:@\w+)?\s+(\d+)(?:\s+(.+))?$/, (msg, m) => {
+  if (!isSuperAdmin(msg.from.id)) return denySuper(msg.chat.id);
+  db.addStaff(m[1], m[2]?.trim() || null);
+  db.appendAudit('staff_add', m[1], operatorName(msg.from));
+  bot.sendMessage(msg.chat.id, `✅ 스탭 등록: ${m[1]}${m[2] ? ` (${m[2].trim()})` : ''}\n(출근부 조회만 가능)`);
+});
+
+bot.onText(/^\/스탭제거(?:@\w+)?\s+(\d+)$/, (msg, m) => {
+  if (!isSuperAdmin(msg.from.id)) return denySuper(msg.chat.id);
+  db.removeStaff(m[1]);
+  db.appendAudit('staff_remove', m[1], operatorName(msg.from));
+  bot.sendMessage(msg.chat.id, `✅ 스탭 해제: ${m[1]}`);
 });
 
 bot.onText(/^\/권한목록(?:@\w+)?$/, (msg) => {
-  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
-  const ids = db.getDelegatedIds();
-  const labels = db.getDelegatedLabels();
-  bot.sendMessage(
-    msg.chat.id,
-    ids.length ? ids.map((id) => `${id}${labels[id] ? ` (${labels[id]})` : ''}`).join('\n') : '없음'
-  );
+  if (!isSuperAdmin(msg.from.id)) return denySuper(msg.chat.id);
+  bot.sendMessage(msg.chat.id, formatRoleList());
+});
+
+/** 하위 호환 — 운영자로 등록 */
+bot.onText(/^\/권한추가(?:@\w+)?\s+(\d+)(?:\s+(.+))?$/, (msg, m) => {
+  if (!isSuperAdmin(msg.from.id)) return denySuper(msg.chat.id);
+  db.addOperator(m[1], m[2]?.trim() || null);
+  bot.sendMessage(msg.chat.id, `✅ 운영자 등록: ${m[1]} (/운영자추가 사용 권장)`);
+});
+
+bot.onText(/^\/권한제거(?:@\w+)?\s+(\d+)$/, (msg, m) => {
+  if (!isSuperAdmin(msg.from.id)) return denySuper(msg.chat.id);
+  db.removeOperator(m[1]);
+  db.removeStaff(m[1]);
+  bot.sendMessage(msg.chat.id, `✅ 권한 해제: ${m[1]}`);
 });
 
 // ---------- 콜백 ----------
@@ -790,7 +844,7 @@ bot.on('callback_query', async (q) => {
   }
 
   if (data === 'op:renlady') {
-    if (!isOperator(from.id)) {
+    if (!canOperate(from.id)) {
       await bot.answerCallbackQuery(q.id, { text: '운영자만', show_alert: true });
       return;
     }
@@ -804,7 +858,7 @@ bot.on('callback_query', async (q) => {
   }
 
   if (data.startsWith('lady:ren:')) {
-    if (!isOperator(from.id)) {
+    if (!canOperate(from.id)) {
       await bot.answerCallbackQuery(q.id, { text: '운영자만', show_alert: true });
       return;
     }
@@ -823,7 +877,7 @@ bot.on('callback_query', async (q) => {
   }
 
   if (data === 'op:renroom') {
-    if (!isOperator(from.id)) {
+    if (!canOperate(from.id)) {
       await bot.answerCallbackQuery(q.id, { text: '운영자만', show_alert: true });
       return;
     }
@@ -837,7 +891,7 @@ bot.on('callback_query', async (q) => {
   }
 
   if (data.startsWith('room:ren:')) {
-    if (!isOperator(from.id)) {
+    if (!canOperate(from.id)) {
       await bot.answerCallbackQuery(q.id, { text: '운영자만', show_alert: true });
       return;
     }

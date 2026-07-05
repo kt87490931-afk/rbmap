@@ -17,6 +17,9 @@ function initialData() {
     settings: {
       store_name: '간지',
       alert_minutes: DEFAULT_ALERT_MINUTES,
+      operator_ids: [],
+      staff_ids: [],
+      role_labels: {},
       delegated_ids: [],
       delegated_labels: {},
       last_alert_change: null,
@@ -66,9 +69,27 @@ function loadData() {
   }
 }
 
+function syncLegacyDelegated(settings) {
+  settings.delegated_ids = [...(settings.operator_ids || [])];
+  const labels = { ...(settings.role_labels || {}) };
+  settings.delegated_labels = labels;
+}
+
+function ensureRoleSettings(settings) {
+  if (!settings.operator_ids) {
+    settings.operator_ids = [...(settings.delegated_ids || [])];
+  }
+  if (!settings.staff_ids) settings.staff_ids = [];
+  if (!settings.role_labels) {
+    settings.role_labels = { ...(settings.delegated_labels || {}) };
+  }
+  syncLegacyDelegated(settings);
+}
+
 function normalize(data) {
   if (!data.settings.delegated_ids) data.settings.delegated_ids = [];
   if (!data.settings.delegated_labels) data.settings.delegated_labels = {};
+  ensureRoleSettings(data.settings);
   if (!data.ladies) data.ladies = [];
   if (!data.rooms) data.rooms = [];
   if (!data.days) data.days = {};
@@ -110,32 +131,91 @@ function setAlertMinutes(minutes, changedBy = null) {
   return true;
 }
 
+function getOperatorIds() {
+  return loadData().settings.operator_ids.map(String);
+}
+
+function getStaffIds() {
+  return loadData().settings.staff_ids.map(String);
+}
+
+function getRoleLabels() {
+  return { ...loadData().settings.role_labels };
+}
+
+function isOperatorUser(userId) {
+  return getOperatorIds().includes(String(userId));
+}
+
+function isStaffUser(userId) {
+  return getStaffIds().includes(String(userId));
+}
+
+/** @deprecated — operator_ids 사용 */
 function getDelegatedIds() {
-  return loadData().settings.delegated_ids.map(String);
+  return getOperatorIds();
 }
 
+/** @deprecated */
 function getDelegatedLabels() {
-  return { ...loadData().settings.delegated_labels };
+  return getRoleLabels();
 }
 
+function addOperator(userId, label = null) {
+  const id = String(userId);
+  const data = loadData();
+  ensureRoleSettings(data.settings);
+  data.settings.staff_ids = data.settings.staff_ids.filter((x) => x !== id);
+  if (!data.settings.operator_ids.includes(id)) data.settings.operator_ids.push(id);
+  if (label) data.settings.role_labels[id] = label;
+  syncLegacyDelegated(data.settings);
+  saveData(data);
+}
+
+function removeOperator(userId) {
+  const id = String(userId);
+  const data = loadData();
+  ensureRoleSettings(data.settings);
+  data.settings.operator_ids = data.settings.operator_ids.filter((x) => x !== id);
+  delete data.settings.role_labels[id];
+  syncLegacyDelegated(data.settings);
+  saveData(data);
+}
+
+function addStaff(userId, label = null) {
+  const id = String(userId);
+  const data = loadData();
+  ensureRoleSettings(data.settings);
+  data.settings.operator_ids = data.settings.operator_ids.filter((x) => x !== id);
+  if (!data.settings.staff_ids.includes(id)) data.settings.staff_ids.push(id);
+  if (label) data.settings.role_labels[id] = label;
+  syncLegacyDelegated(data.settings);
+  saveData(data);
+}
+
+function removeStaff(userId) {
+  const id = String(userId);
+  const data = loadData();
+  ensureRoleSettings(data.settings);
+  data.settings.staff_ids = data.settings.staff_ids.filter((x) => x !== id);
+  delete data.settings.role_labels[id];
+  syncLegacyDelegated(data.settings);
+  saveData(data);
+}
+
+/** @deprecated — addOperator */
 function addDelegated(userId, label = null) {
-  const id = String(userId);
-  const data = loadData();
-  if (!data.settings.delegated_ids.includes(id)) data.settings.delegated_ids.push(id);
-  if (label) data.settings.delegated_labels[id] = label;
-  saveData(data);
+  addOperator(userId, label);
 }
 
+/** @deprecated */
 function removeDelegated(userId) {
-  const id = String(userId);
-  const data = loadData();
-  data.settings.delegated_ids = data.settings.delegated_ids.filter((x) => x !== id);
-  delete data.settings.delegated_labels[id];
-  saveData(data);
+  removeOperator(userId);
 }
 
+/** @deprecated */
 function isDelegated(userId) {
-  return getDelegatedIds().includes(String(userId));
+  return isOperatorUser(userId);
 }
 
 // ---------- 아가씨 / 룸 마스터 ----------
@@ -483,8 +563,20 @@ function replaceSettings(partial) {
     data.settings.last_alert_change = new Date().toISOString();
     data.settings.last_alert_changed_by = partial.last_alert_changed_by || 'admin-web';
   }
-  if (partial.delegated_ids != null) data.settings.delegated_ids = partial.delegated_ids.map(String);
-  if (partial.delegated_labels != null) data.settings.delegated_labels = partial.delegated_labels;
+  if (partial.delegated_ids != null) partial.operator_ids = partial.delegated_ids;
+  if (partial.delegated_labels != null) partial.role_labels = partial.delegated_labels;
+  if (partial.operator_ids != null) {
+    data.settings.operator_ids = partial.operator_ids.map(String);
+    ensureRoleSettings(data.settings);
+  }
+  if (partial.staff_ids != null) {
+    data.settings.staff_ids = partial.staff_ids.map(String);
+    ensureRoleSettings(data.settings);
+  }
+  if (partial.role_labels != null) {
+    data.settings.role_labels = partial.role_labels;
+    ensureRoleSettings(data.settings);
+  }
   saveData(data);
   return data.settings;
 }
@@ -505,6 +597,15 @@ module.exports = {
   getSettings,
   getAlertMinutes,
   setAlertMinutes,
+  getOperatorIds,
+  getStaffIds,
+  getRoleLabels,
+  isOperatorUser,
+  isStaffUser,
+  addOperator,
+  removeOperator,
+  addStaff,
+  removeStaff,
   getDelegatedIds,
   getDelegatedLabels,
   addDelegated,

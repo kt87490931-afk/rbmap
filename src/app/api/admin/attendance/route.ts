@@ -17,6 +17,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const date = searchParams.get('date') || todayDateStringKST()
   const data = loadAttendanceData()
+  ensureRoles(data.settings)
   const day = data.days[date] || { ladies: {}, sessions: [], completed_counts: {} }
 
   const adminIds = (process.env.ATTENDANCE_ADMIN_IDS || process.env.ADMIN_IDS || '')
@@ -40,13 +41,29 @@ export async function GET(request: Request) {
 type PatchBody = {
   store_name?: string
   alert_minutes?: number
+  add_operator?: { id: string; label?: string }
+  remove_operator?: string
+  add_staff?: { id: string; label?: string }
+  remove_staff?: string
+  /** @deprecated add_operator */
   add_delegated?: { id: string; label?: string }
+  /** @deprecated remove_operator */
   remove_delegated?: string
   add_lady?: string
   remove_lady?: string
   add_room?: string
   remove_room?: string
 }
+
+function ensureRoles(settings: AttendanceData['settings']) {
+  if (!settings.operator_ids) settings.operator_ids = [...(settings.delegated_ids || [])]
+  if (!settings.staff_ids) settings.staff_ids = []
+  if (!settings.role_labels) settings.role_labels = { ...(settings.delegated_labels || {}) }
+  settings.delegated_ids = [...settings.operator_ids]
+  settings.delegated_labels = { ...settings.role_labels }
+}
+
+type AttendanceData = ReturnType<typeof loadAttendanceData>
 
 export async function PATCH(request: Request) {
   const authErr = await requireAdminOrSetup()
@@ -60,6 +77,7 @@ export async function PATCH(request: Request) {
   }
 
   const data = loadAttendanceData()
+  ensureRoles(data.settings)
 
   if (body.store_name != null) {
     data.settings.store_name = body.store_name.trim() || '간지'
@@ -77,18 +95,43 @@ export async function PATCH(request: Request) {
     appendAudit(data, 'alert_change', `${prev}→${body.alert_minutes}`)
   }
 
-  if (body.add_delegated?.id) {
-    const id = String(body.add_delegated.id)
-    if (!data.settings.delegated_ids.includes(id)) data.settings.delegated_ids.push(id)
-    if (body.add_delegated.label) data.settings.delegated_labels[id] = body.add_delegated.label
-    appendAudit(data, 'delegate_add', id)
+  if (body.add_operator?.id || body.add_delegated?.id) {
+    const item = body.add_operator || body.add_delegated!
+    const id = String(item.id)
+    ensureRoles(data.settings)
+    data.settings.staff_ids = data.settings.staff_ids.filter((x) => x !== id)
+    if (!data.settings.operator_ids.includes(id)) data.settings.operator_ids.push(id)
+    if (item.label) data.settings.role_labels[id] = item.label
+    ensureRoles(data.settings)
+    appendAudit(data, 'operator_add', id)
   }
 
-  if (body.remove_delegated) {
-    const id = String(body.remove_delegated)
-    data.settings.delegated_ids = data.settings.delegated_ids.filter((x) => x !== id)
-    delete data.settings.delegated_labels[id]
-    appendAudit(data, 'delegate_remove', id)
+  if (body.remove_operator || body.remove_delegated) {
+    const id = String(body.remove_operator || body.remove_delegated)
+    ensureRoles(data.settings)
+    data.settings.operator_ids = data.settings.operator_ids.filter((x) => x !== id)
+    delete data.settings.role_labels[id]
+    ensureRoles(data.settings)
+    appendAudit(data, 'operator_remove', id)
+  }
+
+  if (body.add_staff?.id) {
+    const id = String(body.add_staff.id)
+    ensureRoles(data.settings)
+    data.settings.operator_ids = data.settings.operator_ids.filter((x) => x !== id)
+    if (!data.settings.staff_ids.includes(id)) data.settings.staff_ids.push(id)
+    if (body.add_staff.label) data.settings.role_labels[id] = body.add_staff.label
+    ensureRoles(data.settings)
+    appendAudit(data, 'staff_add', id)
+  }
+
+  if (body.remove_staff) {
+    const id = String(body.remove_staff)
+    ensureRoles(data.settings)
+    data.settings.staff_ids = data.settings.staff_ids.filter((x) => x !== id)
+    delete data.settings.role_labels[id]
+    ensureRoles(data.settings)
+    appendAudit(data, 'staff_remove', id)
   }
 
   if (body.add_lady) {

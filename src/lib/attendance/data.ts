@@ -36,6 +36,10 @@ export type DayData = {
 export type AttendanceSettings = {
   store_name: string
   alert_minutes: number
+  operator_ids: string[]
+  staff_ids: string[]
+  role_labels: Record<string, string>
+  /** @deprecated operator_ids 와 동기화 */
   delegated_ids: string[]
   delegated_labels: Record<string, string>
   last_alert_change: string | null
@@ -70,6 +74,9 @@ function initialData(): AttendanceDataV2 {
     settings: {
       store_name: '간지',
       alert_minutes: DEFAULT_ALERT,
+      operator_ids: [],
+      staff_ids: [],
+      role_labels: {},
       delegated_ids: [],
       delegated_labels: {},
       last_alert_change: null,

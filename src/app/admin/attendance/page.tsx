@@ -17,8 +17,11 @@ type Session = {
 type Settings = {
   store_name: string
   alert_minutes: number
-  delegated_ids: string[]
-  delegated_labels: Record<string, string>
+  operator_ids: string[]
+  staff_ids: string[]
+  role_labels: Record<string, string>
+  delegated_ids?: string[]
+  delegated_labels?: Record<string, string>
 }
 
 export default function AdminAttendancePage() {
@@ -34,7 +37,8 @@ export default function AdminAttendancePage() {
   const [newLady, setNewLady] = useState('')
   const [newRoom, setNewRoom] = useState('')
   const [newDelegateId, setNewDelegateId] = useState('')
-  const [newDelegateLabel, setNewDelegateLabel] = useState('')
+  const [newStaffId, setNewStaffId] = useState('')
+  const [newStaffLabel, setNewStaffLabel] = useState('')
   const [storeName, setStoreName] = useState('간지')
 
   const fetchData = useCallback(async () => {
@@ -169,18 +173,35 @@ export default function AdminAttendancePage() {
           </div>
 
           <div className="admin-card">
-            <h2 style={{ fontSize: 16, marginBottom: 12 }}>👥 권한 (텔레그램 ID)</h2>
-            <p style={{ fontSize: 13, marginBottom: 8 }}>운영자: {adminIds.join(', ') || '(ATTENDANCE_ADMIN_IDS 설정)'}</p>
-            {(settings?.delegated_ids ?? []).map((id) => (
-              <div key={id} style={{ fontSize: 13, marginBottom: 4 }}>
-                {id}{settings!.delegated_labels[id] ? ` (${settings!.delegated_labels[id]})` : ''}
-                <button type="button" className="btn-save" style={{ marginLeft: 8, fontSize: 11, padding: '2px 6px' }} onClick={() => patch({ remove_delegated: id })}>제거</button>
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>👥 권한 (3등급)</h2>
+            <p style={{ fontSize: 13, marginBottom: 12, lineHeight: 1.6 }}>
+              <strong>슈퍼관리자</strong> (서버 env): {adminIds.join(', ') || '(ATTENDANCE_ADMIN_IDS)'} — /운영자추가 · /스탭추가
+            </p>
+
+            <h3 style={{ fontSize: 14, marginBottom: 8 }}>🔧 운영자 (전체 조작)</h3>
+            {(settings?.operator_ids ?? settings?.delegated_ids ?? []).map((id) => (
+              <div key={`op-${id}`} style={{ fontSize: 13, marginBottom: 4 }}>
+                {id}{(settings!.role_labels?.[id] || settings!.delegated_labels?.[id]) ? ` (${settings!.role_labels?.[id] || settings!.delegated_labels?.[id]})` : ''}
+                <button type="button" className="btn-save" style={{ marginLeft: 8, fontSize: 11, padding: '2px 6px' }} onClick={() => patch({ remove_operator: id })}>제거</button>
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 16 }}>
+              <input className="form-input" placeholder="텔레그램 ID" value={newDelegateId} onChange={(e) => setNewDelegateId(e.target.value)} style={{ width: 140 }} />
+              <input className="form-input" placeholder="별칭" value={newDelegateLabel} onChange={(e) => setNewDelegateLabel(e.target.value)} style={{ width: 80 }} />
+              <button type="button" className="btn-success" onClick={() => { patch({ add_operator: { id: newDelegateId, label: newDelegateLabel || undefined } }); setNewDelegateId(''); setNewDelegateLabel('') }}>운영자 추가</button>
+            </div>
+
+            <h3 style={{ fontSize: 14, marginBottom: 8 }}>👀 스탭 (보기만)</h3>
+            {(settings?.staff_ids ?? []).map((id) => (
+              <div key={`st-${id}`} style={{ fontSize: 13, marginBottom: 4 }}>
+                {id}{settings!.role_labels?.[id] ? ` (${settings!.role_labels[id]})` : ''}
+                <button type="button" className="btn-save" style={{ marginLeft: 8, fontSize: 11, padding: '2px 6px' }} onClick={() => patch({ remove_staff: id })}>제거</button>
               </div>
             ))}
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <input className="form-input" placeholder="텔레그램 ID" value={newDelegateId} onChange={(e) => setNewDelegateId(e.target.value)} style={{ width: 140 }} />
-              <input className="form-input" placeholder="별칭" value={newDelegateLabel} onChange={(e) => setNewDelegateLabel(e.target.value)} style={{ width: 80 }} />
-              <button type="button" className="btn-success" onClick={() => { patch({ add_delegated: { id: newDelegateId, label: newDelegateLabel || undefined } }); setNewDelegateId(''); setNewDelegateLabel('') }}>추가</button>
+              <input className="form-input" placeholder="텔레그램 ID" value={newStaffId} onChange={(e) => setNewStaffId(e.target.value)} style={{ width: 140 }} />
+              <input className="form-input" placeholder="별칭" value={newStaffLabel} onChange={(e) => setNewStaffLabel(e.target.value)} style={{ width: 80 }} />
+              <button type="button" className="btn-success" onClick={() => { patch({ add_staff: { id: newStaffId, label: newStaffLabel || undefined } }); setNewStaffId(''); setNewStaffLabel('') }}>스탭 추가</button>
             </div>
           </div>
 
@@ -192,8 +213,8 @@ export default function AdminAttendancePage() {
 /출근 하나 · /퇴근 하나
 /방시작 1T 3 하나,사랑,이슬 [01:00]
 /방시작수정 1T 22:33 · /방종료 1T · /방연장 1T
+/운영자추가 ID · /스탭추가 ID · /권한목록
 /언니이름변경 하나 하니 · /룸이름변경 1T 2T · /방추가 1T 사월 · /방빼 1T 이슬`}
-            </pre>
           </div>
         </div>
       )}

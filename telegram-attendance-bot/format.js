@@ -115,7 +115,7 @@ function dashboardAlertLine() {
 }
 
 function buildDashboardView(date, header) {
-  const { registered, absent, waiting, checkedOut } = classifyLadies(date);
+  const { registered, waiting, checkedOut } = classifyLadies(date);
   let checkedInToday = 0;
   const inTags = [];
 
@@ -127,14 +127,12 @@ function buildDashboardView(date, header) {
     inTags.push(`[💋${e(lady.name)}]`);
   }
 
-  const absentTagList = absent.map((l) => `[☠️${e(l.name)}]`);
   const waitTagList = waiting.map((l) => `[💋${e(l.name)}]`);
   const outTagList = checkedOut.map((l) => `[💋${e(l.name)}]`);
 
   const parts = [
     b(`${header} 출근부`),
     dashSection(`출근인원 : ${checkedInToday}명\n${ladyTagsLines(inTags)}`),
-    dashSection(`미출근인원 : ${absent.length}명\n${ladyTagsLines(absentTagList)}`),
     dashSection(`대기인원 : ${waiting.length}명\n${ladyTagsLines(waitTagList)}`),
     dashSection(`퇴근 ${checkedOut.length}명\n${ladyTagsLines(outTagList)}`),
     dashSection(dashboardActiveRoomsContent(date)),

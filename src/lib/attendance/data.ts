@@ -113,14 +113,24 @@ export function saveAttendanceData(data: AttendanceDataV2): void {
   fs.renameSync(tmp, file)
 }
 
-export function todayDateStringKST(): string {
+/** 영업일 전환 15:00 — 18:00~익일 15:00 = 같은 영업일 */
+export const BUSINESS_ROLLOVER_HOUR = 15
+
+export function businessDateStringKST(): string {
   const now = new Date()
   const utc = now.getTime() + now.getTimezoneOffset() * 60000
   const kst = new Date(utc + 9 * 60 * 60000)
+  if (kst.getHours() < BUSINESS_ROLLOVER_HOUR) {
+    kst.setDate(kst.getDate() - 1)
+  }
   const y = kst.getFullYear()
   const m = String(kst.getMonth() + 1).padStart(2, '0')
   const d = String(kst.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
+}
+
+export function todayDateStringKST(): string {
+  return businessDateStringKST()
 }
 
 export function formatTimeKST(iso: string): string {

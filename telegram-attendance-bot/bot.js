@@ -10,7 +10,7 @@ const {
   todayDateStringKST,
   formatTimeKST,
   isValidTimeString,
-  parseTimeOnDateKST,
+  parseTimeOnBusinessDate,
 } = require('./time-utils');
 
 // 출근부 전용 봇 토큰 우선 (룸빵여지도 알림 봇과 분리)
@@ -299,7 +299,7 @@ bot.onText(/^\/출근(?:@\w+)?\s+(\S+)(?:\s+(\d{1,2}:\d{2}))?$/, (msg, m) => {
   let iso = new Date().toISOString();
   if (m[2]) {
     if (!isValidTimeString(m[2])) return bot.sendMessage(msg.chat.id, 'HH:MM 형식');
-    iso = parseTimeOnDateKST(date, m[2]);
+    iso = parseTimeOnBusinessDate(date, m[2]);
   }
   db.checkInLady(date, lady.id, iso);
   db.appendAudit('checkin', name, operatorName(msg.from));
@@ -315,7 +315,7 @@ bot.onText(/^\/퇴근(?:@\w+)?\s+(\S+)(?:\s+(\d{1,2}:\d{2}))?$/, (msg, m) => {
   let iso = new Date().toISOString();
   if (m[2]) {
     if (!isValidTimeString(m[2])) return bot.sendMessage(msg.chat.id, 'HH:MM 형식');
-    iso = parseTimeOnDateKST(date, m[2]);
+    iso = parseTimeOnBusinessDate(date, m[2]);
   }
   const r = db.checkOutLady(date, lady.id, iso);
   if (r === 'IN_SESSION') return bot.sendMessage(msg.chat.id, `${name} — 진행중인 방에서 먼저 빼주세요.`);
@@ -342,7 +342,7 @@ bot.onText(/^\/방시작(?:@\w+)?\s+(\S+)\s+(\d+)\s+([^\s]+)(?:\s+(\d{1,2}:\d{2}
   let startTime = new Date().toISOString();
   if (m[4]) {
     if (!isValidTimeString(m[4])) return bot.sendMessage(msg.chat.id, 'HH:MM 형식');
-    startTime = parseTimeOnDateKST(date, m[4]);
+    startTime = parseTimeOnBusinessDate(date, m[4]);
   }
 
   const alertMin = db.getAlertMinutes();
@@ -403,7 +403,7 @@ bot.onText(/^\/방시작수정(?:@\w+)?\s+(\S+)\s+(\d{1,2}:\d{2})$/, (msg, m) =>
   const date = todayDateStringKST();
   const sess = findActiveSessionByRoomName(date, roomName);
   if (!sess) return bot.sendMessage(msg.chat.id, `${roomName} — 진행중인 방 없음`);
-  const newStart = parseTimeOnDateKST(date, timeStr);
+  const newStart = parseTimeOnBusinessDate(date, timeStr);
   const updated = db.updateSessionStartTime(sess.id, newStart);
   if (!updated) return bot.sendMessage(msg.chat.id, '변경 실패');
   clearTimer(sess.id);
@@ -923,6 +923,23 @@ bot.on('callback_query', async (q) => {
 
 tickMaintenance();
 setInterval(tickMaintenance, 60000);
+
+/** 초대·입장 시 기본 스탭 등록 */
+function autoRegisterStaff(member) {
+  const uid = String(member.id);
+  if (member.is_bot || isSuperAdmin(uid) || db.isOperatorUser(uid)) return;
+  if (db.isStaffUser(uid)) return;
+  const name = member.first_name + (member.last_name ? ` ${member.last_name}` : '');
+  db.addStaff(uid, name);
+  db.appendAudit('staff_auto_join', uid, 'system');
+}
+
+bot.on('message', (msg) => {
+  if (!msg.new_chat_members?.length) return;
+  for (const member of msg.new_chat_members) {
+    autoRegisterStaff(member);
+  }
+});
 
 console.log(
   `출근부 v2 실행 (DB: ${db.DB_FILE}, 운영자 ${ADMIN_IDS.length}명, 알람 ${db.getAlertMinutes()}분, 자동종료 ${db.AUTO_END_GRACE_MINUTES}분)`

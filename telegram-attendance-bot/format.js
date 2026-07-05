@@ -136,8 +136,12 @@ function ladyStatsBlock(date) {
 
 function ladyStatusBlock(date) {
   const { checkedIn, waiting } = classifyLadies(date);
-  const inTags = checkedIn.map((l) => `[🙆${l.name}]`).join(' ');
-  const waitTags = waiting.map((l) => `[🙋${l.name}]`).join(' ');
+  const inTags = checkedIn
+    .map((l) => `[🙆${l.name} ${db.getCompletedCount(date, l.id)}개]`)
+    .join(' ');
+  const waitTags = waiting
+    .map((l) => `[🙋${l.name} ${db.getCompletedCount(date, l.id)}개]`)
+    .join(' ');
   return (
     `🙆 진행중 ${checkedIn.length}명\n${inTags || '(없음)'}\n\n` +
     `🙋 대기중 ${waiting.length}명\n${waitTags || '(없음)'}`
@@ -211,7 +215,7 @@ function buildHelpText(canOperate, isSuperAdmin) {
     lines.push('📝출근처리 — 언니 출근·퇴근 버튼 처리');
     lines.push('⏰알람설정 — 45·50·55분 알림 선택');
     lines.push('+언니 / +룸 / ✏️이름변경 — 등록·이름 변경');
-    lines.push('', '※ 종료 예정 +30분 후 자동 종료 (+1 처리)');
+    lines.push('', '※ 영업일: 15:00~익일 15:00 = 같은 날짜 (00시 넘어도 유지)');
     lines.push('※ 알람 후 ➕연장 또는 ⏹종료 선택');
   }
 

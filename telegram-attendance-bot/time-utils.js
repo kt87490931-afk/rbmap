@@ -8,12 +8,26 @@ function nowKST() {
   return new Date(utc + 9 * 60 * 60000);
 }
 
-function todayDateStringKST() {
-  const d = nowKST();
+/** 영업일 전환: 15:00 미만이면 전날 영업일 (18:00~익일 15:00 = 같은 영업일) */
+const BUSINESS_ROLLOVER_HOUR = 15;
+
+function calendarDateStringKST(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+function businessDateStringKST() {
+  const d = nowKST();
+  if (d.getHours() < BUSINESS_ROLLOVER_HOUR) {
+    d.setDate(d.getDate() - 1);
+  }
+  return calendarDateStringKST(d);
+}
+
+function todayDateStringKST() {
+  return businessDateStringKST();
 }
 
 function parseDateKST(dateStr) {
@@ -56,6 +70,20 @@ function parseTimeOnDateKST(dateStr, timeStr) {
   return new Date(kstMs).toISOString();
 }
 
+/** 영업일 + HH:MM → ISO (00:00~14:59는 익일 새벽으로 해석) */
+function parseTimeOnBusinessDate(businessDateStr, timeStr) {
+  const [hh] = timeStr.split(':').map(Number);
+  let calDate = businessDateStr;
+  if (hh < BUSINESS_ROLLOVER_HOUR) {
+    const [y, m, d] = businessDateStr.split('-').map(Number);
+    const next = new Date(Date.UTC(y, m - 1, d + 1));
+    calDate = calendarDateStringKST(
+      new Date(next.getUTCFullYear(), next.getUTCMonth(), next.getUTCDate())
+    );
+  }
+  return parseTimeOnDateKST(calDate, timeStr);
+}
+
 function addMinutesIso(iso, minutes) {
   return new Date(new Date(iso).getTime() + minutes * 60000).toISOString();
 }
@@ -66,13 +94,16 @@ function addHoursIso(iso, hours) {
 
 module.exports = {
   nowKST,
+  businessDateStringKST,
   todayDateStringKST,
+  BUSINESS_ROLLOVER_HOUR,
   weekdayKST,
   formatDateHeader,
   formatTimeKST,
   isValidDateString,
   isValidTimeString,
   parseTimeOnDateKST,
+  parseTimeOnBusinessDate,
   addMinutesIso,
   addHoursIso,
 };

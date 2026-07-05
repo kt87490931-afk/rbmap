@@ -290,7 +290,8 @@ function buildHelpText(canOperate, isSuperAdmin) {
     lines.push('/코스추가 A코스 60 · /코스수정 A A코스 60 · /코스삭제 A');
     lines.push('', b('【운영자 — 조작 권한】'));
     lines.push('▶️방시작 — 룸 → 코스 → 손님 → 언니(0명 가능)');
-    lines.push('🚀진행중인방 — 방별 관리 (시간·연장·언니·손님·종료)');
+    lines.push('💡방관리(연장) — 진행 중 방 선택 → 연장·종료·언니·손님·시간');
+    lines.push('🚀진행중인방 — 지금 돌아가는 방 목록 (조회)');
     lines.push('🚨바쁨 — 전체에 바쁨 알림 (운영자)');
     lines.push('📝출근처리 — 전체 언니 출근/퇴근 (토글 가능)');
     lines.push('⏰알람설정 — 종료 5·10·15분 전 알림');
@@ -318,6 +319,7 @@ function navKeyboard(canOperate, isOperator) {
 
   if (canOperate) {
     rows.push([{ text: '▶️방시작', callback_data: 'op:rs_menu' }]);
+    rows.push([{ text: '💡방관리(연장)', callback_data: 'op:rm_menu' }]);
   }
 
   rows.push(

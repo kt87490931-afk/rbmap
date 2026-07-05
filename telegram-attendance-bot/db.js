@@ -1020,6 +1020,25 @@ function addDrinkToSession(sessionId, drinkId) {
   return normalizeSession(sess);
 }
 
+function removeDrinkFromSession(sessionId, drinkKey) {
+  const found = findSessionById(sessionId);
+  if (!found || found.session.status !== 'active') return 'NO_SESSION';
+  const key = String(drinkKey || '').trim();
+  const drink =
+    findDrinkByName(key) ||
+    (Number.isFinite(parseInt(key, 10)) ? findDrinkById(parseInt(key, 10)) : null);
+  if (!drink) return 'NOT_FOUND';
+  const data = loadData();
+  const sess = data.days[found.date].sessions.find((s) => s.id === sessionId);
+  if (!sess?.drinks?.length) return 'NOT_IN_SESSION';
+  const idx = sess.drinks.findIndex((d) => d.drink_id === drink.id);
+  if (idx < 0) return 'NOT_IN_SESSION';
+  if (sess.drinks[idx].count > 1) sess.drinks[idx].count -= 1;
+  else sess.drinks.splice(idx, 1);
+  saveData(data);
+  return normalizeSession(sess);
+}
+
 function sessionDrinkLabels(session) {
   if (!session.drinks?.length) return [];
   return session.drinks.map((item) => {
@@ -1106,6 +1125,7 @@ module.exports = {
   addDrink,
   deactivateDrink,
   addDrinkToSession,
+  removeDrinkFromSession,
   sessionDrinkLabels,
   ensureDay,
   getDay,

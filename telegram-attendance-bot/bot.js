@@ -588,6 +588,27 @@ bot.onText(/^\/방빼(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
   );
 });
 
+bot.onText(/^\/방술빼(?:@\w+)?\s+(\S+)\s+(.+)$/, (msg, m) => {
+  if (!canOperateFrom(msg.from)) return denyOperate(msg.chat.id);
+  const date = todayDateStringKST();
+  const roomLabel = m[1].trim();
+  const drinkName = m[2].trim();
+  const sess = findActiveSessionByRoomName(date, roomLabel);
+  if (!sess) return bot.sendMessage(msg.chat.id, `${roomLabel} — 진행중인 방 없음`);
+  const r = db.removeDrinkFromSession(sess.id, drinkName);
+  if (r === 'NO_SESSION') return bot.sendMessage(msg.chat.id, '진행중인 방 없음');
+  if (r === 'NOT_FOUND') return bot.sendMessage(msg.chat.id, `등록되지 않은 술: ${drinkName}`);
+  if (r === 'NOT_IN_SESSION') {
+    return bot.sendMessage(msg.chat.id, `${roomLabel} — ${drinkName} 기록 없음`);
+  }
+  db.appendAudit('session_drink_remove', `${roomLabel} -${drinkName}`, operatorName(msg.from));
+  bot.sendMessage(
+    msg.chat.id,
+    `🥃 ${e(roomLabel)} - ${e(drinkName)} 1병\n${fmt.sessionLine(r)}`,
+    htmlOpts()
+  );
+});
+
 bot.onText(/^\/코스목록(?:@\w+)?$/, (msg) => {
   bot.sendMessage(msg.chat.id, `📋 등록 코스\n\n${db.coursesListText()}`);
 });

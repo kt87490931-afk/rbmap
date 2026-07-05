@@ -375,43 +375,78 @@ function buildView(view, date, perm = { canOperate: false, isSuperAdmin: false }
 }
 
 function buildHelpText(canOperate, isSuperAdmin) {
-  const lines = [b('📖 버튼 도움말'), ''];
+  const lines = [b('📖 출근부 도움말'), ''];
 
-  lines.push(b('【조회 — 누구나 / 스탭】'));
-  lines.push('🚀진행중인방 — 지금 돌아가는 방 (코스·손님·시간·언니)');
-  lines.push('👀언니상태 — A/B 코스별 완료·진행 건수');
+  lines.push(b('【공통 — 조회】'));
+  lines.push('/출근부 — 오늘 대시보드 (출근·대기·퇴근·진행중·술판매)');
+  lines.push('/알림확인 — 현재 알람 설정 (종료 N분 전)');
+  lines.push('/도움말 — 이 설명');
+  lines.push('');
+  lines.push(b('【버튼 — 조회】'));
+  lines.push('👪전체인원 — /출근부 대시보드');
+  lines.push('🚀진행중인방 — 진행 중 방 목록·상세');
+  lines.push('🛑종료된방 — 오늘 종료된 방');
   lines.push('🏃‍♀️금일진행현황 — 방·코스·시간·언니 상세');
-  lines.push('🛑종료된방 — 오늘 끝난 방 기록');
-  lines.push('✔️출근인원 — 오늘 출근·대기 인원');
+  lines.push('👀언니상태 — 언니별 A/B 코스 완료 건수');
+  lines.push('✔️출근인원 — 출근·미출근·대기');
   lines.push('❌미출근인원 — 퇴근 처리된 언니');
-  lines.push('👪전체인원 — 등록·출근·진행·퇴근 한눈에');
 
   if (canOperate) {
-    lines.push('', b('【코스 관리】'));
-    lines.push('코스 — 코스추가/수정/삭제 (이름·시간 직접 입력)');
-    lines.push('/코스추가 A코스 60 · /코스수정 A A코스 60 · /코스삭제 A');
-    lines.push('🥃술 목록 — 등록 술 조회 · /술추가 12년산 · /술삭제 12년산');
-    lines.push('', b('【운영자 — 조작 권한】'));
+    lines.push('', b('【버튼 — 운영】'));
     lines.push('▶️방시작 — 룸 → 코스 → 손님 → 언니(0명 가능)');
-    lines.push('💡방관리(연장) — 진행 중 방 → 연장·종료·언니·손님·🥃술·시간');
-    lines.push('🚀진행중인방 — 지금 돌아가는 방 목록 (조회)');
-    lines.push('🚨바쁨 — 전체에 바쁨 알림 (운영자)');
-    lines.push('📝출근처리 — 전체 언니 출근/퇴근 (토글 가능)');
-    lines.push('⏰알람설정 — 종료 5·10·15분 전 알림');
-    lines.push('+언니 / +룸 / ✏️이름변경 — 등록·이름 변경');
-    lines.push('', '※ 영업일: 15:00~익일 15:00 = 같은 날짜');
-    lines.push('※ 연장 시 코스 재선택 (A→B 등 변경 가능)');
-    lines.push('※ 종료 예정 시각에 자동 마감 (재개 시 ▶️방시작)');
+    lines.push('💡방관리(연장) — 연장·종료·언니·손님·🥃술·시작시간');
+    lines.push('📝출근처리 — 언니 출근/퇴근');
+    lines.push('⏰알람설정 — 종료 5·10·15분 전');
+    lines.push('🚨바쁨 — 바쁨 알림');
+    lines.push('코스 / 🥃술 목록 — 코스·술 마스터 관리');
+    lines.push('+언니 · ✏️언니이름변경 · +룸 · ✏️룸이름변경');
+
+    lines.push('', b('【명령 — 출근·퇴근】'));
+    lines.push('/출근 이름 [HH:MM]');
+    lines.push('/퇴근 이름 [HH:MM]');
+
+    lines.push('', b('【명령 — 방】'));
+    lines.push('/방시작 룸 손님수 언니1,언니2 [HH:MM] [코스]');
+    lines.push('  · 언니 없음: - 또는 없음');
+    lines.push('/방종료 룸');
+    lines.push('/방연장 룸 [코스]');
+    lines.push('/방시작수정 룸 HH:MM');
+    lines.push('/방추가 룸 언니 — 진행 중 방에 언니');
+    lines.push('/방빼 룸 언니 — 진행 중 방에서 언니 제외');
+    lines.push('/방술빼 룸 술이름 — 실수로 추가한 술 1병 차감');
+
+    lines.push('', b('【명령 — 코스】'));
+    lines.push('/코스목록');
+    lines.push('/코스추가 이름 분  (예: /코스추가 A코스 60)');
+    lines.push('/코스수정 ID 이름 분');
+    lines.push('/코스삭제 ID');
+
+    lines.push('', b('【명령 — 술】'));
+    lines.push('/술추가 12년산 — 매장 술 목록 등록');
+    lines.push('/술삭제 12년산 — 매장 술 목록 삭제');
+    lines.push('방 술 추가: 💡방관리(연장) → 🥃술 추가');
+    lines.push('/방술빼 5T 12년산 — 방 기록에서 1병 제거');
+
+    lines.push('', b('【명령 — 등록】'));
+    lines.push('/언니등록 이름 · /언니해제 이름');
+    lines.push('/언니이름변경 옛이름 새이름');
+    lines.push('/룸등록 1T · /룸해제 1T');
+    lines.push('/룸이름변경 옛이름 새이름');
+
+    lines.push('', b('【운영 메모】'));
+    lines.push('※ 영업일: 15:00~익일 15:00');
+    lines.push('※ 연장 시 코스 재선택 가능');
+    lines.push('※ 종료 예정 시각에 자동 마감 (재개: ▶️방시작)');
+    lines.push('※ 시작시간: 방관리 → ⏳시작시간 → HH:MM 입력');
   }
 
   if (isSuperAdmin) {
-    lines.push('', b('【슈퍼관리자 — 권한 부여】'));
-    lines.push('/운영자추가 @username · /스탭추가 @username · /권한목록');
-    lines.push('/내id — 본인 숫자 ID 확인');
+    lines.push('', b('【슈퍼관리자 — 권한】'));
+    lines.push('/내id — 본인 텔레그램 ID');
+    lines.push('/운영자추가 ID [별칭] · /운영자제거 ID');
+    lines.push('/스탭추가 ID [별칭] · /스탭제거 ID');
+    lines.push('/권한목록');
   }
-
-  lines.push('', '/출근부 — 출근부 다시 열기');
-  lines.push('/알림확인 — 현재 알람 조회');
 
   return lines.join('\n');
 }

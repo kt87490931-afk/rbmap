@@ -560,6 +560,38 @@ function isLadyInActiveSession(date, ladyId) {
   );
 }
 
+function sessionSegments(session) {
+  return (
+    session.course_segments || [
+      {
+        course: session.course || 'A',
+        start_time: session.start_time,
+        end_scheduled: session.end_scheduled,
+        ended_at: session.ended_at,
+      },
+    ]
+  );
+}
+
+/** 세그먼트 구간에 참여한 언니 (연장·중도 합류/제외 반영) */
+function assignmentsInSegment(session, seg) {
+  const segStart = new Date(seg.start_time).getTime();
+  const segEnd = new Date(seg.ended_at || seg.end_scheduled).getTime();
+  return session.assignments.filter((a) => {
+    const joined = new Date(a.joined_at || session.start_time).getTime();
+    if (joined > segEnd) return false;
+    if (a.removed_at) {
+      const removed = new Date(a.removed_at).getTime();
+      if (removed <= segStart) return false;
+    }
+    return true;
+  });
+}
+
+function sessionExtensionCount(session) {
+  return Math.max(0, sessionSegments(session).length - 1);
+}
+
 function incrementCompletedCount(day, ladyId, courseId, courseIds) {
   const key = String(ladyId);
   const ids = courseIds || getCourses().map((c) => c.id);
@@ -571,15 +603,15 @@ function incrementCompletedCount(day, ladyId, courseId, courseIds) {
 
 function getLadyCourseCounts(date, ladyId) {
   const day = getDay(date);
-  const key = String(ladyId);
   const courseIds = getCourses().map((c) => c.id);
-  const counts = normalizeCompletedEntry(day.completed_counts[key], courseIds);
+  const counts = normalizeCompletedEntry({}, courseIds);
+
   for (const s of day.sessions) {
-    if (!isSessionInProgress(s)) continue;
-    if (!s.assignments.some((a) => a.lady_id === ladyId && !a.removed_at)) continue;
-    const c = s.course || 'A';
-    if (counts[c] == null) counts[c] = 0;
-    counts[c] += 1;
+    for (const seg of sessionSegments(s)) {
+      if (!assignmentsInSegment(s, seg).some((a) => a.lady_id === ladyId)) continue;
+      const c = findCourse(seg.course)?.id || seg.course || 'A';
+      counts[c] = (counts[c] || 0) + 1;
+    }
   }
   return counts;
 }
@@ -1005,6 +1037,9 @@ module.exports = {
   isLadyInActiveSession,
   getCompletedCount,
   getLadyCourseCounts,
+  sessionSegments,
+  assignmentsInSegment,
+  sessionExtensionCount,
   findSessionById,
   startRoomSession,
   updateSessionStartTime,

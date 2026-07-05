@@ -16,19 +16,9 @@ function activeAssignments(session) {
   return session.assignments.filter((a) => !a.removed_at);
 }
 
-/** 세그먼트 구간에 참여한 언니 (연장·중도 합류/제외 반영) */
+/** @deprecated — db.assignmentsInSegment 사용 */
 function segmentAssignments(session, seg) {
-  const segStart = new Date(seg.start_time).getTime();
-  const segEnd = new Date(seg.ended_at || seg.end_scheduled).getTime();
-  return session.assignments.filter((a) => {
-    const joined = new Date(a.joined_at || session.start_time).getTime();
-    if (joined > segEnd) return false;
-    if (a.removed_at) {
-      const removed = new Date(a.removed_at).getTime();
-      if (removed <= segStart) return false;
-    }
-    return true;
-  });
+  return db.assignmentsInSegment(session, seg);
 }
 
 function courseTag(session) {
@@ -43,11 +33,13 @@ function sessionLine(session) {
   const end = formatTimeKST(session.end_scheduled);
   const running = db.isSessionInProgress(session);
   const status = running ? `${ct} ${b('진행중')}` : `${ct} ${b('종료')}`;
+  const ext = db.sessionExtensionCount(session);
+  const extTag = ext > 0 ? `[연장+${ext}]` : '';
   const ladies = activeAssignments(session)
     .map((a) => `[💋${e(ladyName(a.lady_id))}]`)
     .join(' ');
   return (
-    `[❤️${rn}][${ct}][🤵손님 ${session.customer_count}명]\n` +
+    `[❤️${rn}][${ct}][🤵손님 ${session.customer_count}명]${extTag}\n` +
     `[⏳${start}][⌛️${end}][${status}]\n` +
     `${ladies || '(언니 없음)'}`
   );
@@ -56,7 +48,9 @@ function sessionLine(session) {
 function ladyCourseCountTag(lady, date) {
   const counts = db.getLadyCourseCounts(date, lady.id);
   const courses = db.getCourses();
-  const parts = courses.map((co) => `${co.id}${counts[co.id] || 0}개`).join(' / ');
+  const parts = courses
+    .map((co) => `${e(db.courseLabel(co.id))} ${counts[co.id] || 0}개`)
+    .join(' / ');
   return `[💋${e(lady.name)} ${parts}]`;
 }
 
@@ -184,17 +178,10 @@ function courseDayCountBlock(date) {
   const day = db.getDay(date);
   const counts = {};
   for (const s of day.sessions) {
-    const segments = s.course_segments || [
-      {
-        course: s.course || 'A',
-        start_time: s.start_time,
-        end_scheduled: s.end_scheduled,
-        ended_at: s.ended_at,
-      },
-    ];
+    const segments = db.sessionSegments(s);
     for (const seg of segments) {
       const label = db.courseLabel(seg.course);
-      const n = segmentAssignments(s, seg).length;
+      const n = db.assignmentsInSegment(s, seg).length;
       counts[label] = (counts[label] || 0) + n;
     }
   }
@@ -220,8 +207,8 @@ function ladyStatsBlock(date) {
 
 function ladyStatusBlock(date) {
   const { checkedIn, waiting } = classifyLadies(date);
-  const inTags = checkedIn.map((l) => ladyCourseCountTag(l, date)).join(' ');
-  const waitTags = waiting.map((l) => ladyCourseCountTag(l, date)).join(' ');
+  const inTags = checkedIn.map((l) => ladyCourseCountTag(l, date)).join('\n');
+  const waitTags = waiting.map((l) => ladyCourseCountTag(l, date)).join('\n');
   return (
     `${b(`🙆 진행중 ${checkedIn.length}명`)}\n${inTags || '(없음)'}\n\n` +
     `${b(`🙋 대기중 ${waiting.length}명`)}\n${waitTags || '(없음)'}`

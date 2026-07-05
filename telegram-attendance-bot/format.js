@@ -36,7 +36,7 @@ function sessionLine(session) {
     .join(' ');
   return (
     `[❤️${rn}][${courseTag(session)}][🤵손님 ${session.customer_count}명]\n` +
-    `[💘${start}][💔${end}][${status}]\n` +
+    `[⏳${start}][⌛️${end}][${status}]\n` +
     `${ladies || '(언니 없음)'}`
   );
 }
@@ -355,8 +355,8 @@ function formatRoomEndNotice(session, by, countsText) {
   return text;
 }
 
-function formatBusyNotice(storeName, by) {
-  return `🚨 바쁨 — ${storeName}\n\n지금 바쁩니다. 확인해 주세요.\n(${by})`;
+function formatBusyNotice(storeName) {
+  return `🚨 바쁨 — ${storeName}\n\n지금 바쁩니다. 확인해 주세요.`;
 }
 
 module.exports = {

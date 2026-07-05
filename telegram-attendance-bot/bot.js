@@ -509,7 +509,7 @@ bot.onText(/^\/방시작수정(?:@\w+)?\s+(\S+)\s+(\d{1,2}:\d{2})$/, (msg, m) =>
   db.appendAudit('room_start_edit', `${roomName} ${formatTimeKST(updated.oldStart)}→${timeStr}`, operatorName(msg.from));
   bot.sendMessage(
     msg.chat.id,
-    `🕐 ${roomName} 시작 시각 변경\n${formatTimeKST(updated.oldStart)} → ${timeStr}\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`
+    `⏳ ${roomName} 시작 시각 변경\n${formatTimeKST(updated.oldStart)} → ${timeStr}\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`
   );
 });
 
@@ -671,7 +671,7 @@ bot.on('callback_query', async (q) => {
     }
     const store = db.getSettings().store_name || '매장';
     await bot.answerCallbackQuery(q.id, { text: '🚨 바쁨 알림 전송' });
-    await notifyChat(chatId, fmt.formatBusyNotice(store, operatorName(from)));
+    await notifyChat(chatId, fmt.formatBusyNotice(store));
     return;
   }
 
@@ -1210,7 +1210,7 @@ bot.on('callback_query', async (q) => {
     db.appendAudit('room_start_edit', `${rn} -${minutesAgo}분`, operatorName(from));
     await bot.answerCallbackQuery(q.id, { text: `${minutesAgo}분 전으로 변경` });
     await bot.editMessageText(
-      `🕐 ${rn} 시작 시각 변경됨\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`,
+      `⏳ ${rn} 시작 시각 변경됨\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`,
       {
         chat_id: chatId,
         message_id: messageId,

@@ -189,7 +189,7 @@ function activeRoomListKeyboard(date) {
 function sessionManageKeyboard(sessionId) {
   return [
     [
-      { text: '🕐 시작시간', callback_data: `sess:time:${sessionId}` },
+      { text: '⏳ 시작시간', callback_data: `sess:time:${sessionId}` },
       { text: '➕ 연장', callback_data: `sess:ext:${sessionId}` },
     ],
     [
@@ -271,7 +271,7 @@ function startTimeAdjustKeyboard(sessionId) {
 function startTimeMenuText(roomLabel, currentStartIso, course) {
   const { formatTimeKST } = require('./time-utils');
   return (
-    `🕐 ${roomLabel} 시작 시각 변경 (${course || 'A'}코스)\n\n` +
+    `⏳ ${roomLabel} 시작 시각 변경 (${course || 'A'}코스)\n\n` +
     `현재: ${formatTimeKST(currentStartIso)}\n\n` +
     '아래 버튼 또는\n' +
     '/방시작수정 룸이름 22:33'

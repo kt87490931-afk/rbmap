@@ -117,8 +117,9 @@ function processAutoEnds() {
       .join(', ');
     const endAt = formatTimeKST(result.session.end_scheduled);
     const text =
-      `⏰ [자동 종료] ❤️${rn}\n` +
-      `💔종료 예정 ${endAt} + ${db.AUTO_END_GRACE_MINUTES}분 경과\n\n` +
+      `⏰ ❤️${rn}\n` +
+      `해당방이 종료되었습니다.\n\n` +
+      `(종료 예정 ${endAt} + ${db.AUTO_END_GRACE_MINUTES}분 경과)\n\n` +
       `${fmt.sessionLine(result.session)}\n\n` +
       `완료 세션: ${counts || '-'}`;
     bot.sendMessage(session.chat_id, text).catch((e) => console.error('자동종료 알림 실패:', e.message));
@@ -170,9 +171,9 @@ async function sendBoard(chatId, view = 'all', messageId = null) {
 
 function sendBoardWithPerm(chatId, view, from, messageId = null) {
   const date = todayDateStringKST();
-  const { text } = fmt.buildView(view, date);
   const op = isOperator(from.id);
   const co = canOperate(from.id);
+  const { text } = fmt.buildView(view, date, { canOperate: co, isOperator: op });
   let keyboard = fmt.navKeyboard(co, op);
 
   if (view === 'alert' && co) {
@@ -201,25 +202,7 @@ bot.onText(/^\/알림확인(?:@\w+)?$/, (msg) => {
 });
 
 bot.onText(/^\/도움말(?:@\w+)?$/, (msg) => {
-  const co = canOperate(msg.from.id);
-  const lines = [
-    '📌 출근부 봇',
-    '/출근부 — 출근부 보드 + 버튼',
-    '/알림확인 — 알람 45/50/55분 조회',
-  ];
-  if (co) {
-    lines.push(
-      '',
-      '【버튼】',
-      '📝출근처리 · ▶️방시작 · 💡방관리(연장)',
-      '',
-      '【명령 (선택)】',
-      '/언니등록 이름 · /룸등록 1T',
-      '/방시작수정 1T 22:33 · /언니이름변경 하나 하니 · /룸이름변경 1T 2T',
-      '/방추가 1T 사월 · /방빼 1T 이슬'
-    );
-  }
-  bot.sendMessage(msg.chat.id, lines.join('\n'));
+  sendBoardWithPerm(msg.chat.id, 'help', msg.from);
 });
 
 // ---------- 마스터 등록 ----------

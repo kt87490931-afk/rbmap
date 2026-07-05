@@ -132,6 +132,11 @@ async function broadcast(text, chatId) {
   }
 }
 
+/** 그룹/채널 전체에 알림 (방시작·연장·종료·바쁨) */
+async function notifyChat(chatId, text) {
+  await bot.sendMessage(chatId, text).catch((e) => console.error('알림 전송 실패:', e.message));
+}
+
 function clearTimer(sessionId) {
   const h = scheduledTimers.get(sessionId);
   if (h) {
@@ -189,14 +194,8 @@ function processAutoEnds() {
       .filter((a) => !a.removed_at)
       .map((a) => `${fmt.ladyName(a.lady_id)} +1`)
       .join(', ');
-    const endAt = formatTimeKST(result.session.end_scheduled);
-    const text =
-      `⏰ ❤️${rn}\n` +
-      `해당방이 종료되었습니다.\n\n` +
-      `(종료 예정 ${endAt} + ${db.AUTO_END_GRACE_MINUTES}분 경과)\n\n` +
-      `${fmt.sessionLine(result.session)}\n\n` +
-      `완료 세션: ${counts || '-'}`;
-    bot.sendMessage(session.chat_id, text).catch((e) => console.error('자동종료 알림 실패:', e.message));
+    const text = fmt.formatRoomEndNotice(result.session, '자동종료', counts || '-');
+    notifyChat(session.chat_id, text).catch((e) => console.error('자동종료 알림 실패:', e.message));
   }
 }
 
@@ -452,9 +451,9 @@ bot.onText(/^\/방시작(?:@\w+)?\s+(\S+)\s+(\d+)\s+(\S+)(?:\s+(\d{1,2}:\d{2}))?
   scheduleAlert(session);
   const alertMin = db.getAlertMinutes();
   db.appendAudit('room_start', `${roomName} ${courseDef.id}`, operatorName(msg.from));
-  bot.sendMessage(
+  notifyChat(
     msg.chat.id,
-    `▶️ 방 시작\n${fmt.sessionLine(session)}\n\n종료 ${alertMin}분 전 알림 (${formatTimeKST(session.alert_time)})`
+    fmt.formatRoomStartNotice(session, operatorName(msg.from), alertMin)
   );
 });
 
@@ -470,7 +469,10 @@ bot.onText(/^\/방종료(?:@\w+)?\s+(\S+)$/, (msg, m) => {
     .filter((a) => !a.removed_at)
     .map((a) => `${fmt.ladyName(a.lady_id)} +1`)
     .join(', ');
-  bot.sendMessage(msg.chat.id, `⏹ ${m[1]} 종료\n완료 세션: ${counts || '-'}`);
+  notifyChat(
+    msg.chat.id,
+    fmt.formatRoomEndNotice(result.session, operatorName(msg.from), counts || '-')
+  );
 });
 
 bot.onText(/^\/방연장(?:@\w+)?\s+(\S+)(?:\s+([ABab]))?$/, (msg, m) => {
@@ -485,9 +487,9 @@ bot.onText(/^\/방연장(?:@\w+)?\s+(\S+)(?:\s+([ABab]))?$/, (msg, m) => {
   const updated = db.extendSession(sess.id, courseDef.id);
   clearTimer(sess.id);
   scheduleAlert(updated.session);
-  bot.sendMessage(
+  notifyChat(
     msg.chat.id,
-    `➕ ${m[1]} ${courseDef.name} 연장\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`
+    fmt.formatRoomExtendNotice(updated.session, operatorName(msg.from))
   );
 });
 
@@ -659,6 +661,17 @@ bot.on('callback_query', async (q) => {
 
   if (data === 'noop') {
     await bot.answerCallbackQuery(q.id);
+    return;
+  }
+
+  if (data === 'op:busy') {
+    if (!canOperateFrom(from)) {
+      await bot.answerCallbackQuery(q.id, { text: '권한 없음', show_alert: true });
+      return;
+    }
+    const store = db.getSettings().store_name || '매장';
+    await bot.answerCallbackQuery(q.id, { text: '🚨 바쁨 알림 전송' });
+    await notifyChat(chatId, fmt.formatBusyNotice(store, operatorName(from)));
     return;
   }
 
@@ -900,6 +913,10 @@ bot.on('callback_query', async (q) => {
     const room = db.findRoomById(rid);
     db.appendAudit('room_start', `${room?.name || rid} ${c}`, operatorName(from));
     await bot.answerCallbackQuery(q.id, { text: '시작!' });
+    await notifyChat(
+      chatId,
+      fmt.formatRoomStartNotice(session, operatorName(from), alertMin)
+    );
     await bot.editMessageText(
       `✅ ${room?.name || rid} ${c}코스 시작\n${fmt.sessionLine(session)}\n\n종료 ${alertMin}분 전 알림 (${formatTimeKST(session.alert_time)})`,
       { chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: fmt.navKeyboard(true, isOperatorFrom(from)) } }
@@ -969,6 +986,7 @@ bot.on('callback_query', async (q) => {
     clearTimer(sid);
     scheduleAlert(updated.session);
     await bot.answerCallbackQuery(q.id, { text: `${c}코스 연장됨` });
+    await notifyChat(chatId, fmt.formatRoomExtendNotice(updated.session, operatorName(from)));
     await bot.editMessageText(
       `➕ ${db.courseLabel(c)} 연장\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`,
       {
@@ -993,7 +1011,14 @@ bot.on('callback_query', async (q) => {
       return;
     }
     await bot.answerCallbackQuery(q.id, { text: '종료됨' });
-    bot.sendMessage(chatId, `⏹ 종료\n${fmt.sessionLine(result.session)}`);
+    const counts = result.session.assignments
+      .filter((a) => !a.removed_at)
+      .map((a) => `${fmt.ladyName(a.lady_id)} +1`)
+      .join(', ');
+    await notifyChat(
+      chatId,
+      fmt.formatRoomEndNotice(result.session, operatorName(from), counts || '-')
+    );
     return;
   }
 

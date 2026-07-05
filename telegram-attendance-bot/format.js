@@ -34,7 +34,11 @@ function sessionLine(session) {
       return `[${emoji}${ladyName(a.lady_id)}]`;
     })
     .join(' ');
-  return `[❤️${rn}][${courseTag(session)}][🤵손님 ${session.customer_count}명][💘${start}][💔${end}][${status}]\n${ladies || '(언니 없음)'}`;
+  return (
+    `[❤️${rn}][${courseTag(session)}][🤵손님 ${session.customer_count}명]\n` +
+    `[💘${start}][💔${end}][${status}]\n` +
+    `${ladies || '(언니 없음)'}`
+  );
 }
 
 function ladyCourseCountTag(lady, date) {
@@ -193,8 +197,7 @@ function buildView(view, date, perm = { canOperate: false, isSuperAdmin: false }
       return {
         text: [
           `${header} 출근부\n`,
-          registeredBlock(date),
-          `\n\n${formatDateHeader(date, store)} 출근 인원`,
+          `${formatDateHeader(date, store)} 출근 인원`,
           checkinBlock(date),
           `\n\n${formatDateHeader(date, store)} 퇴근 인원`,
           checkoutBlock(date),
@@ -286,6 +289,7 @@ function navKeyboard(canOperate, isOperator) {
   );
 
   if (canOperate) {
+    rows.push([{ text: '🚨바쁨', callback_data: 'op:busy' }]);
     rows.push([{ text: '📝출근처리', callback_data: 'op:ci_menu' }]);
   }
 
@@ -327,7 +331,31 @@ function alertKeyboard() {
 
 function formatAlertMessage(session) {
   const before = session.alert_before_minutes || db.getAlertMinutes();
-  return `⏰ ${courseTag(session)} — 종료 ${before}분 전\n\n${sessionLine(session)}`;
+  const rn = roomName(session.room_id);
+  return `⏰ [❤️${rn}] 종료 ${before}분 전\n\n${sessionLine(session)}`;
+}
+
+function formatRoomStartNotice(session, by, alertMin) {
+  const endAlert = formatTimeKST(session.alert_time);
+  return (
+    `▶️ 방 시작 — ${by}\n\n${sessionLine(session)}\n\n` +
+    `(종료 ${alertMin}분 전 알림 예정 · ${endAlert})`
+  );
+}
+
+function formatRoomExtendNotice(session, by) {
+  const endAlert = formatTimeKST(session.alert_time);
+  return `➕ 방 연장 — ${by}\n\n${sessionLine(session)}\n\n(다음 알림: ${endAlert})`;
+}
+
+function formatRoomEndNotice(session, by, countsText) {
+  let text = `⏹ 방 종료 — ${by}\n\n${sessionLine(session)}`;
+  if (countsText) text += `\n\n완료: ${countsText}`;
+  return text;
+}
+
+function formatBusyNotice(storeName, by) {
+  return `🚨 바쁨 — ${storeName}\n\n지금 바쁩니다. 확인해 주세요.\n(${by})`;
 }
 
 module.exports = {
@@ -336,6 +364,10 @@ module.exports = {
   navKeyboard,
   alertKeyboard,
   formatAlertMessage,
+  formatRoomStartNotice,
+  formatRoomExtendNotice,
+  formatRoomEndNotice,
+  formatBusyNotice,
   sessionLine,
   ladyName,
   roomName,

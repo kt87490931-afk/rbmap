@@ -120,6 +120,20 @@ function buildActiveRoomsView(date, header) {
   return `${header}\n\n${activeRoomsFormattedBody(date)}\n\n${DASH_SEP}\n\n${dashboardAlertLine()}`;
 }
 
+function endedRoomsFormattedBody(date) {
+  const day = db.getDay(date);
+  const ended = day.sessions.filter((s) => db.isSessionEndedForDisplay(s));
+  if (ended.length === 0) {
+    return `🏁종료된 방\n${DASH_SEP}\n(없음)`;
+  }
+  const roomBlocks = ended.map((s) => sessionLine(s, { plain: true }));
+  return `🏁종료된 방\n${DASH_SEP}\n\n${roomBlocks.join(`\n\n${DASH_SEP}\n\n`)}`;
+}
+
+function buildEndedRoomsView(date, header) {
+  return `${header}\n\n${endedRoomsFormattedBody(date)}\n\n${DASH_SEP}\n\n${dashboardAlertLine()}`;
+}
+
 function dashboardActiveRoomsContent(date) {
   return activeRoomsFormattedBody(date);
 }
@@ -241,10 +255,7 @@ function activeRoomsBlock(date) {
 }
 
 function endedRoomsBlock(date) {
-  const day = db.getDay(date);
-  const ended = day.sessions.filter((s) => db.isSessionEndedForDisplay(s));
-  if (ended.length === 0) return `${b('🏁종료된 방')}\n(없음)`;
-  return `${b('🏁종료된 방')}\n\n${ended.map(sessionLine).join('\n\n')}`;
+  return endedRoomsFormattedBody(date);
 }
 
 function segmentLine(session, seg) {
@@ -353,7 +364,7 @@ function buildView(view, date, perm = { canOperate: false, isSuperAdmin: false }
     case 'act':
       return { text: buildActiveRoomsView(date, header) };
     case 'end':
-      return { text: `${b(header)}\n\n${endedRoomsBlock(date)}\n\n${alertInfoBlock()}` };
+      return { text: buildEndedRoomsView(date, header) };
     case 'stats': {
       const counter = courseDayCountBlock(date);
       const counterPart = counter ? `\n${counter}` : '';

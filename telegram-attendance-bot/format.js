@@ -4,6 +4,17 @@ const { escapeHtml: e, bold: b } = require('./text-html');
 
 /** 출근부 대시보드 구분선 (모바일 한 줄 기준) */
 const DASH_SEP = '━━━━━━━━━━━━━━━━';
+const LADY_TAGS_PER_LINE = 5;
+
+/** 언니 태그 목록 — 한 줄에 5명, 6번째부터 줄바꿈 */
+function ladyTagsLines(tags, emptyLabel = '(없음)') {
+  if (!tags.length) return emptyLabel;
+  const lines = [];
+  for (let i = 0; i < tags.length; i += LADY_TAGS_PER_LINE) {
+    lines.push(tags.slice(i, i + LADY_TAGS_PER_LINE).join(' '));
+  }
+  return lines.join('\n');
+}
 
 function ladyName(id) {
   const l = db.findLadyById(id);
@@ -53,9 +64,10 @@ function sessionLine(session, opts = {}) {
   const ext = db.sessionExtensionCount(session);
   const extTag = ext > 0 ? `[연장+${ext}]` : '';
   const drinksTag = includeDrinks ? sessionDrinksTag(session) : '';
-  const ladies = activeAssignments(session)
-    .map((a) => `[💋${e(ladyName(a.lady_id))}]`)
-    .join(' ');
+  const ladyTagList = activeAssignments(session).map(
+    (a) => `[💋${e(ladyName(a.lady_id))}]`
+  );
+  const ladies = ladyTagList.length ? ladyTagsLines(ladyTagList, '(언니 없음)') : '(언니 없음)';
   const drinksLine = drinksTag ? `\n${drinksTag}` : '';
   return (
     `[❤️${rn}][${ct}][🤵손님 ${session.customer_count}명]${extTag}\n` +
@@ -115,16 +127,16 @@ function buildDashboardView(date, header) {
     inTags.push(`[💋${e(lady.name)}]`);
   }
 
-  const absentTags = absent.map((l) => `[☠️${e(l.name)}]`).join(' ');
-  const waitTags = waiting.map((l) => `[💋${e(l.name)}]`).join(' ');
-  const outTags = checkedOut.map((l) => `[💋${e(l.name)}]`).join(' ');
+  const absentTagList = absent.map((l) => `[☠️${e(l.name)}]`);
+  const waitTagList = waiting.map((l) => `[💋${e(l.name)}]`);
+  const outTagList = checkedOut.map((l) => `[💋${e(l.name)}]`);
 
   const parts = [
     b(`${header} 출근부`),
-    dashSection(`출근인원 : ${checkedInToday}명\n${inTags.join(' ') || '(없음)'}`),
-    dashSection(`미출근인원 : ${absent.length}명\n${absentTags || '(없음)'}`),
-    dashSection(`대기인원 : ${waiting.length}명\n${waitTags || '(없음)'}`),
-    dashSection(`퇴근 ${checkedOut.length}명\n${outTags || '(없음)'}`),
+    dashSection(`출근인원 : ${checkedInToday}명\n${ladyTagsLines(inTags)}`),
+    dashSection(`미출근인원 : ${absent.length}명\n${ladyTagsLines(absentTagList)}`),
+    dashSection(`대기인원 : ${waiting.length}명\n${ladyTagsLines(waitTagList)}`),
+    dashSection(`퇴근 ${checkedOut.length}명\n${ladyTagsLines(outTagList)}`),
     dashSection(dashboardActiveRoomsContent(date)),
   ];
 
@@ -147,10 +159,10 @@ function ladyCourseCountTag(lady, date) {
 function registeredBlock(date) {
   const ladies = db.getActiveLadies();
   const rooms = db.getActiveRooms();
-  const names = ladies.map((l) => `[💋${e(l.name)}]`).join('');
+  const nameTags = ladies.map((l) => `[💋${e(l.name)}]`);
   const roomTags = rooms.map((r) => `[❤️${e(r.name)}]`).join(' ');
   return (
-    `${b(`언니 등록인원 : ${ladies.length}명`)}\n${names || '(없음)'}\n\n` +
+    `${b(`언니 등록인원 : ${ladies.length}명`)}\n${ladyTagsLines(nameTags)}\n\n` +
     `${b('룸이름')}\n${roomTags || '(없음)'}`
   );
 }
@@ -195,20 +207,20 @@ function checkinBlock(date) {
     inTags.push(`[💋${e(lady.name)}]`);
   }
 
-  const absentTags = absent.map((l) => `[☠️${e(l.name)}]`).join(' ');
-  const waitTags = waiting.map((l) => `[💋${e(l.name)}]`).join(' ');
+  const absentTagList = absent.map((l) => `[☠️${e(l.name)}]`);
+  const waitTagList = waiting.map((l) => `[💋${e(l.name)}]`);
 
   return (
-    `${b(`출근인원 : ${checkedInToday}명`)}\n${inTags.join(' ') || '(없음)'}\n\n` +
-    `${b(`미출근인원 : ${absent.length}명`)}\n${absentTags || '(없음)'}\n\n` +
-    `${b(`대기인원 : ${waiting.length}명`)}\n${waitTags || '(없음)'}`
+    `${b(`출근인원 : ${checkedInToday}명`)}\n${ladyTagsLines(inTags)}\n\n` +
+    `${b(`미출근인원 : ${absent.length}명`)}\n${ladyTagsLines(absentTagList)}\n\n` +
+    `${b(`대기인원 : ${waiting.length}명`)}\n${ladyTagsLines(waitTagList)}`
   );
 }
 
 function checkoutBlock(date) {
   const { checkedOut } = classifyLadies(date);
-  const tags = checkedOut.map((l) => `[💋${e(l.name)}]`).join(' ');
-  return `${b(`퇴근 ${checkedOut.length}명`)}\n${tags || '(없음)'}`;
+  const tags = checkedOut.map((l) => `[💋${e(l.name)}]`);
+  return `${b(`퇴근 ${checkedOut.length}명`)}\n${ladyTagsLines(tags)}`;
 }
 
 function activeRoomsBlock(date) {
@@ -323,9 +335,9 @@ function buildView(view, date, perm = { canOperate: false, isSuperAdmin: false }
       };
     case 'abs': {
       const out = classifyLadies(date).checkedOut;
-      const outTags = out.map((l) => `[💋${e(l.name)}]`).join(' ') || '(없음)';
+      const outTagList = out.map((l) => `[💋${e(l.name)}]`);
       return {
-        text: `${b(`${header} 미출근`)}\n\n${b(`퇴근 ${out.length}명`)}\n${outTags}\n\n${alertInfoBlock()}`,
+        text: `${b(`${header} 미출근`)}\n\n${b(`퇴근 ${out.length}명`)}\n${ladyTagsLines(outTagList)}\n\n${alertInfoBlock()}`,
       };
     }
     case 'act':
@@ -500,6 +512,7 @@ module.exports = {
   formatBusyNotice,
   sessionLine,
   sessionDrinksTag,
+  ladyTagsLines,
   ladyName,
   roomName,
   activeAssignments,

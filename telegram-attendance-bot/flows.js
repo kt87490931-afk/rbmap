@@ -1,4 +1,5 @@
 const db = require('./db');
+const fmt = require('./format');
 const { bold: b, escapeHtml: e } = require('./text-html');
 
 /** @type {Map<string, { sessionId: number, roomName: string }>} */
@@ -73,8 +74,8 @@ function checkinMenuText(date) {
   return (
     `${b('📝 출근 / 퇴근 처리')}\n\n` +
     `출근 ${checkedInList.length}명 · 퇴근 ${checkedOutList.length}명\n\n` +
-    `${b('출근')}\n${checkedInList.map((n) => `[💋${e(n)}]`).join(' ') || '(없음)'}\n\n` +
-    `${b('퇴근')}\n${checkedOutList.map((n) => `[💋${e(n)}]`).join(' ') || '(없음)'}\n\n` +
+    `${b('출근')}\n${fmt.ladyTagsLines(checkedInList.map((n) => `[💋${e(n)}]`))}\n\n` +
+    `${b('퇴근')}\n${fmt.ladyTagsLines(checkedOutList.map((n) => `[💋${e(n)}]`))}\n\n` +
     '아래 버튼을 눌러주세요.'
   );
 }
@@ -360,7 +361,6 @@ function roomStartText(roomId, course, customers, selectedIds) {
 }
 
 function sessionManageText(session) {
-  const fmt = require('./format');
   return `${b('🎛 방 관리')}\n\n${fmt.sessionLine(session)}\n\n원하는 항목을 선택하세요.`;
 }
 

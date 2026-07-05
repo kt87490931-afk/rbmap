@@ -179,6 +179,20 @@ function deactivateLady(name) {
   return true;
 }
 
+function renameLady(oldName, newName) {
+  const from = oldName.trim();
+  const to = newName.trim();
+  if (!from || !to) return 'INVALID';
+  if (from === to) return 'SAME';
+  const data = loadData();
+  const lady = data.ladies.find((l) => l.active && l.name === from);
+  if (!lady) return 'NOT_FOUND';
+  if (data.ladies.some((l) => l.active && l.name === to)) return 'DUPLICATE';
+  lady.name = to;
+  saveData(data);
+  return lady;
+}
+
 function addRoom(name) {
   const data = loadData();
   if (data.rooms.some((r) => r.active && r.name === name)) return null;
@@ -317,6 +331,24 @@ function startRoomSession(date, { roomId, chatId, customerCount, ladyIds, startT
   return session;
 }
 
+function updateSessionStartTime(sessionId, newStartTime) {
+  const found = findSessionById(sessionId);
+  if (!found || found.session.status !== 'active') return null;
+  const data = loadData();
+  const sess = data.days[found.date].sessions.find((s) => s.id === sessionId);
+  const oldStart = sess.start_time;
+  sess.start_time = newStartTime;
+  sess.end_scheduled = addHoursIso(newStartTime, sess.hour_count);
+  if (!sess.alert_sent) {
+    sess.alert_time = addMinutesIso(newStartTime, sess.alert_minutes);
+  }
+  for (const a of sess.assignments) {
+    if (a.from_start && !a.removed_at) a.joined_at = newStartTime;
+  }
+  saveData(data);
+  return { date: found.date, session: sess, oldStart };
+}
+
 function extendSession(sessionId) {
   const found = findSessionById(sessionId);
   if (!found || found.session.status !== 'active') return null;
@@ -453,6 +485,7 @@ module.exports = {
   findRoomById,
   addLady,
   deactivateLady,
+  renameLady,
   addRoom,
   deactivateRoom,
   ensureDay,
@@ -464,6 +497,7 @@ module.exports = {
   getCompletedCount,
   findSessionById,
   startRoomSession,
+  updateSessionStartTime,
   extendSession,
   endSession,
   addLadyToSession,

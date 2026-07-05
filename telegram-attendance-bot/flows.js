@@ -127,13 +127,48 @@ function activeRoomKeyboard(date) {
     return [
       { text: `➕ ${rn} 연장`, callback_data: `sess:ext:${s.id}` },
       { text: `⏹ ${rn} 종료`, callback_data: `sess:end:${s.id}` },
+      { text: `🕐 ${rn} 시작`, callback_data: `sess:time:${s.id}` },
     ];
   });
   rows.push([{ text: '← 출근부', callback_data: 'nav:all' }]);
   return rows;
 }
 
-function checkinMenuText(date) {
+/** 시작 시각 변경 — N분 전 버튼 */
+function startTimeAdjustKeyboard(sessionId) {
+  const mins = [10, 20, 30, 45, 60, 90];
+  const btns = mins.map((m) => ({
+    text: `${m}분 전`,
+    callback_data: `sess:back:${sessionId}:${m}`,
+  }));
+  return [
+    ...chunk(btns, 3),
+    [{ text: '← 방관리', callback_data: 'op:rm_menu' }],
+  ];
+}
+
+function startTimeMenuText(roomLabel, currentStartIso) {
+  const { formatTimeKST } = require('./time-utils');
+  return (
+    `🕐 ${roomLabel} 시작 시각 변경\n\n` +
+    `현재: ${formatTimeKST(currentStartIso)}\n\n` +
+    '아래 버튼 또는\n' +
+    '/방시작수정 룸이름 22:33'
+  );
+}
+
+/** 아가씨 이름 변경 — 운영자 */
+function ladyRenameKeyboard() {
+  const ladies = db.getActiveLadies();
+  if (ladies.length === 0) {
+    return [[{ text: '← 출근부', callback_data: 'nav:all' }]];
+  }
+  const btns = ladies.map((l) => ({
+    text: `✏️ ${l.name}`,
+    callback_data: `lady:ren:${l.id}`,
+  }));
+  return [...chunk(btns, 2), [{ text: '← 출근부', callback_data: 'nav:all' }]];
+}
   const ladies = db.getActiveLadies();
   let absent = 0;
   let waiting = 0;
@@ -171,6 +206,9 @@ module.exports = {
   customerPickKeyboard,
   ladyPickKeyboard,
   activeRoomKeyboard,
+  startTimeAdjustKeyboard,
+  startTimeMenuText,
+  ladyRenameKeyboard,
   checkinMenuText,
   roomStartText,
 };

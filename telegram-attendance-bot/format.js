@@ -204,6 +204,7 @@ function navKeyboard(canOperate, isOperator) {
       { text: '➕아가씨', callback_data: 'op:addlady' },
       { text: '➕룸', callback_data: 'op:addroom' },
     ]);
+    rows.push([{ text: '✏️ 이름변경', callback_data: 'op:renlady' }]);
   }
   return rows;
 }

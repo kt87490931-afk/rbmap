@@ -188,6 +188,7 @@ bot.onText(/^\/도움말(?:@\w+)?$/, (msg) => {
       '',
       '【명령 (선택)】',
       '/아가씨등록 이름 · /룸등록 1T',
+      '/방시작수정 1T 22:33 · /아가씨이름변경 하나 하니',
       '/방추가 1T 사월 · /방빼 1T 이슬'
     );
   }
@@ -205,11 +206,23 @@ bot.onText(/^\/아가씨등록(?:@\w+)?\s+(.+)$/, (msg, m) => {
 });
 
 bot.onText(/^\/아가씨해제(?:@\w+)?\s+(.+)$/, (msg, m) => {
-  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
   const name = m[1].trim();
   if (!db.deactivateLady(name)) return bot.sendMessage(msg.chat.id, `없음: ${name}`);
   db.appendAudit('lady_remove', name, operatorName(msg.from));
   bot.sendMessage(msg.chat.id, `✅ 아가씨 해제: ${name}`);
+});
+
+bot.onText(/^\/아가씨이름변경(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
+  if (!isOperator(msg.from.id)) return deny(msg.chat.id);
+  const oldName = m[1].trim();
+  const newName = m[2].trim();
+  const r = db.renameLady(oldName, newName);
+  if (r === 'NOT_FOUND') return bot.sendMessage(msg.chat.id, `등록되지 않은 이름: ${oldName}`);
+  if (r === 'DUPLICATE') return bot.sendMessage(msg.chat.id, `이미 사용 중인 이름: ${newName}`);
+  if (r === 'INVALID' || r === 'SAME') return bot.sendMessage(msg.chat.id, '이름을 확인하세요.');
+  db.appendAudit('lady_rename', `${oldName}→${newName}`, operatorName(msg.from));
+  bot.sendMessage(msg.chat.id, `✅ [🙍${oldName}] → [🙍${newName}] 이름 변경`);
 });
 
 bot.onText(/^\/룸등록(?:@\w+)?\s+(.+)$/, (msg, m) => {
@@ -336,6 +349,26 @@ bot.onText(/^\/방연장(?:@\w+)?\s+(\S+)$/, (msg, m) => {
   bot.sendMessage(
     msg.chat.id,
     `➕ ${m[1]} ${updated.session.hour_count}시간째\n${fmt.sessionLine(updated.session)}`
+  );
+});
+
+bot.onText(/^\/방시작수정(?:@\w+)?\s+(\S+)\s+(\d{1,2}:\d{2})$/, (msg, m) => {
+  if (!canOperate(msg.from.id)) return deny(msg.chat.id);
+  const roomName = m[1].trim();
+  const timeStr = m[2].trim();
+  if (!isValidTimeString(timeStr)) return bot.sendMessage(msg.chat.id, 'HH:MM 형식 (예: 22:33)');
+  const date = todayDateStringKST();
+  const sess = findActiveSessionByRoomName(date, roomName);
+  if (!sess) return bot.sendMessage(msg.chat.id, `${roomName} — 진행중인 방 없음`);
+  const newStart = parseTimeOnDateKST(date, timeStr);
+  const updated = db.updateSessionStartTime(sess.id, newStart);
+  if (!updated) return bot.sendMessage(msg.chat.id, '변경 실패');
+  clearTimer(sess.id);
+  scheduleAlert(updated.session);
+  db.appendAudit('room_start_edit', `${roomName} ${formatTimeKST(updated.oldStart)}→${timeStr}`, operatorName(msg.from));
+  bot.sendMessage(
+    msg.chat.id,
+    `🕐 ${roomName} 시작 시각 변경\n${formatTimeKST(updated.oldStart)} → ${timeStr}\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`
   );
 });
 
@@ -669,6 +702,95 @@ bot.on('callback_query', async (q) => {
     bot.sendMessage(
       chatId,
       `인원 변경:\n/방추가 룸이름 아가씨\n/방빼 룸이름 아가씨\n\n(중途 제외 시 완료횟수 +0)`
+    );
+    return;
+  }
+
+  if (data.startsWith('sess:time:')) {
+    if (!canOperate(from.id)) {
+      await bot.answerCallbackQuery(q.id, { text: '권한 없음', show_alert: true });
+      return;
+    }
+    const sid = parseInt(data.split(':')[2], 10);
+    const found = db.findSessionById(sid);
+    if (!found || found.session.status !== 'active') {
+      await bot.answerCallbackQuery(q.id, { text: '세션 없음', show_alert: true });
+      return;
+    }
+    const rn = db.findRoomById(found.session.room_id)?.name || found.session.room_id;
+    await bot.answerCallbackQuery(q.id);
+    await bot.editMessageText(flows.startTimeMenuText(rn, found.session.start_time), {
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup: { inline_keyboard: flows.startTimeAdjustKeyboard(sid) },
+    });
+    return;
+  }
+
+  if (data.startsWith('sess:back:')) {
+    if (!canOperate(from.id)) {
+      await bot.answerCallbackQuery(q.id, { text: '권한 없음', show_alert: true });
+      return;
+    }
+    const parts = data.split(':');
+    const sid = parseInt(parts[2], 10);
+    const minutesAgo = parseInt(parts[3], 10);
+    const found = db.findSessionById(sid);
+    if (!found || found.session.status !== 'active') {
+      await bot.answerCallbackQuery(q.id, { text: '세션 없음', show_alert: true });
+      return;
+    }
+    const newStart = new Date(Date.now() - minutesAgo * 60000).toISOString();
+    const updated = db.updateSessionStartTime(sid, newStart);
+    if (!updated) {
+      await bot.answerCallbackQuery(q.id, { text: '변경 실패', show_alert: true });
+      return;
+    }
+    clearTimer(sid);
+    scheduleAlert(updated.session);
+    const rn = db.findRoomById(updated.session.room_id)?.name || updated.session.room_id;
+    db.appendAudit('room_start_edit', `${rn} -${minutesAgo}분`, operatorName(from));
+    await bot.answerCallbackQuery(q.id, { text: `${minutesAgo}분 전으로 변경` });
+    await bot.editMessageText(
+      `🕐 ${rn} 시작 시각 변경됨\n\n${fmt.sessionLine(updated.session)}\n\n알람: ${formatTimeKST(updated.session.alert_time)}`,
+      {
+        chat_id: chatId,
+        message_id: messageId,
+        reply_markup: { inline_keyboard: flows.activeRoomKeyboard(todayDateStringKST()) },
+      }
+    );
+    return;
+  }
+
+  if (data === 'op:renlady') {
+    if (!isOperator(from.id)) {
+      await bot.answerCallbackQuery(q.id, { text: '운영자만', show_alert: true });
+      return;
+    }
+    await bot.answerCallbackQuery(q.id);
+    await bot.editMessageText('✏️ 이름 변경 — 아가씨 선택', {
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup: { inline_keyboard: flows.ladyRenameKeyboard() },
+    });
+    return;
+  }
+
+  if (data.startsWith('lady:ren:')) {
+    if (!isOperator(from.id)) {
+      await bot.answerCallbackQuery(q.id, { text: '운영자만', show_alert: true });
+      return;
+    }
+    const ladyId = parseInt(data.split(':')[2], 10);
+    const lady = db.findLadyById(ladyId);
+    if (!lady || !lady.active) {
+      await bot.answerCallbackQuery(q.id, { text: '없음', show_alert: true });
+      return;
+    }
+    await bot.answerCallbackQuery(q.id);
+    bot.sendMessage(
+      chatId,
+      `✏️ [🙍${lady.name}] 새 이름 입력:\n/아가씨이름변경 ${lady.name} 새이름`
     );
     return;
   }

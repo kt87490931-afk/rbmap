@@ -798,6 +798,20 @@ function getPendingAlerts() {
   return pending;
 }
 
+function isSessionInProgress(session) {
+  if (session.status !== 'active') return false;
+  return Date.now() < new Date(session.end_scheduled).getTime();
+}
+
+/** 화면 분류용 — 종료 버튼 전이라도 예정 시각이 지나면 종료 목록에 표시 */
+function isSessionEndedForDisplay(session) {
+  if (session.status === 'ended') return true;
+  if (session.status === 'active') {
+    return Date.now() >= new Date(session.end_scheduled).getTime();
+  }
+  return false;
+}
+
 function getSessionsDueForAutoEnd() {
   const data = loadData();
   const now = Date.now();
@@ -985,6 +999,8 @@ module.exports = {
   updateSessionStartTime,
   extendSession,
   endSession,
+  isSessionInProgress,
+  isSessionEndedForDisplay,
   updateSessionCustomerCount,
   addLadyToSession,
   removeLadyFromSession,

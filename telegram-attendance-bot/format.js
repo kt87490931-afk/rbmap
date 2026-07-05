@@ -26,13 +26,10 @@ function sessionLine(session) {
   const ct = e(courseTag(session));
   const start = formatTimeKST(session.start_time);
   const end = formatTimeKST(session.end_scheduled);
-  const status =
-    session.status === 'active' ? `${ct} ${b('진행중')}` : `${ct} ${b('종료')}`;
+  const running = db.isSessionInProgress(session);
+  const status = running ? `${ct} ${b('진행중')}` : `${ct} ${b('종료')}`;
   const ladies = activeAssignments(session)
-    .map((a) => {
-      const emoji = a.from_start ? '🙆' : '🙅';
-      return `[${emoji}${e(ladyName(a.lady_id))}]`;
-    })
+    .map((a) => `[💋${e(ladyName(a.lady_id))}]`)
     .join(' ');
   return (
     `[❤️${rn}][${ct}][🤵손님 ${session.customer_count}명]\n` +
@@ -121,14 +118,14 @@ function checkoutBlock(date) {
 
 function activeRoomsBlock(date) {
   const day = db.getDay(date);
-  const active = day.sessions.filter((s) => s.status === 'active');
-  if (active.length === 0) return `${b('💋진행중')}\n(없음)`;
-  return `${b('💋진행중')}\n\n${active.map(sessionLine).join('\n\n')}`;
+  const active = day.sessions.filter((s) => db.isSessionInProgress(s));
+  if (active.length === 0) return `${b('▶️진행중')}\n(없음)`;
+  return `${b('▶️진행중')}\n\n${active.map(sessionLine).join('\n\n')}`;
 }
 
 function endedRoomsBlock(date) {
   const day = db.getDay(date);
-  const ended = day.sessions.filter((s) => s.status === 'ended');
+  const ended = day.sessions.filter((s) => db.isSessionEndedForDisplay(s));
   if (ended.length === 0) return `${b('🏁종료된 방')}\n(없음)`;
   return `${b('🏁종료된 방')}\n\n${ended.map(sessionLine).join('\n\n')}`;
 }
@@ -142,7 +139,11 @@ function segmentLine(session, seg) {
     .map((a) => e(ladyName(a.lady_id)))
     .join(', ');
   const st =
-    session.status === 'active' && !seg.ended_at ? b('진행중') : b('종료');
+    session.status === 'active' &&
+    !seg.ended_at &&
+    Date.now() < new Date(seg.end_scheduled).getTime()
+      ? b('진행중')
+      : b('종료');
   return `❤️${rn} · ${label} · ${start}~${end} · ${ladies || '-'} · ${st}`;
 }
 

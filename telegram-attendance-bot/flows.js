@@ -174,7 +174,7 @@ function ladyPickKeyboard(date, roomId, course, customers, selectedIds) {
 
 function activeRoomListKeyboard(date) {
   const day = db.getDay(date);
-  const active = day.sessions.filter((s) => s.status === 'active');
+  const active = day.sessions.filter((s) => db.isSessionInProgress(s));
   if (active.length === 0) {
     return [[{ text: '← 출근부', callback_data: 'nav:all' }]];
   }

@@ -523,7 +523,7 @@ bot.onText(/^\/방추가(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
   if (r === 'ALREADY') return bot.sendMessage(msg.chat.id, '이미 배정됨');
   bot.sendMessage(
     msg.chat.id,
-    `👥 ${e(m[1])} + [🙅${e(lady.name)}]\n${fmt.sessionLine(r)}`,
+    `👥 ${e(m[1])} + [💋${e(lady.name)}]\n${fmt.sessionLine(r)}`,
     htmlOpts()
   );
 });

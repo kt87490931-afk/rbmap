@@ -169,6 +169,8 @@ function ladyRenameKeyboard() {
   }));
   return [...chunk(btns, 2), [{ text: '← 출근부', callback_data: 'nav:all' }]];
 }
+
+function checkinMenuText(date) {
   const ladies = db.getActiveLadies();
   let absent = 0;
   let waiting = 0;

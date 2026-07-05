@@ -42,13 +42,13 @@ function ladyCourseCountTag(lady, date) {
   const counts = db.getLadyCourseCounts(date, lady.id);
   const courses = db.getCourses();
   const parts = courses.map((co) => `${co.id}${counts[co.id] || 0}개`).join(' / ');
-  return `[${e(lady.name)} ${parts}]`;
+  return `[💋${e(lady.name)} ${parts}]`;
 }
 
 function registeredBlock(date) {
   const ladies = db.getActiveLadies();
   const rooms = db.getActiveRooms();
-  const names = ladies.map((l) => `[🙍${e(l.name)}]`).join('');
+  const names = ladies.map((l) => `[💋${e(l.name)}]`).join('');
   const roomTags = rooms.map((r) => `[❤️${e(r.name)}]`).join(' ');
   return (
     `${b(`언니 등록인원 : ${ladies.length}명`)}\n${names || '(없음)'}\n\n` +
@@ -93,15 +93,11 @@ function checkinBlock(date) {
     if (!st || !st.checked_in) continue;
     checkedInToday += 1;
     if (st.checked_out) continue;
-    if (db.isLadyInActiveSession(date, lady.id)) {
-      inTags.push(`[🙆${e(lady.name)}]`);
-    } else {
-      inTags.push(`[🙋${e(lady.name)}]`);
-    }
+    inTags.push(`[💋${e(lady.name)}]`);
   }
 
   const absentTags = absent.map((l) => `[☠️${e(l.name)}]`).join(' ');
-  const waitTags = waiting.map((l) => `[🙋${e(l.name)}]`).join(' ');
+  const waitTags = waiting.map((l) => `[💋${e(l.name)}]`).join(' ');
 
   return (
     `${b(`출근인원 : ${checkedInToday}명`)}\n${inTags.join(' ') || '(없음)'}\n\n` +
@@ -112,7 +108,7 @@ function checkinBlock(date) {
 
 function checkoutBlock(date) {
   const { checkedOut } = classifyLadies(date);
-  const tags = checkedOut.map((l) => `[${e(l.name)}]`).join(' ');
+  const tags = checkedOut.map((l) => `[💋${e(l.name)}]`).join(' ');
   return `${b(`퇴근 ${checkedOut.length}명`)}\n${tags || '(없음)'}`;
 }
 
@@ -136,7 +132,7 @@ function segmentLine(session, seg) {
   const end = formatTimeKST(seg.ended_at || seg.end_scheduled);
   const label = e(db.courseLabel(seg.course));
   const ladies = activeAssignments(session)
-    .map((a) => e(ladyName(a.lady_id)))
+    .map((a) => `💋${e(ladyName(a.lady_id))}`)
     .join(', ');
   const st =
     session.status === 'active' &&
@@ -244,7 +240,7 @@ function buildView(view, date, perm = { canOperate: false, isSuperAdmin: false }
       };
     case 'abs': {
       const out = classifyLadies(date).checkedOut;
-      const outTags = out.map((l) => `[${e(l.name)}]`).join(' ') || '(없음)';
+      const outTags = out.map((l) => `[💋${e(l.name)}]`).join(' ') || '(없음)';
       return {
         text: `${b(`${header} 미출근`)}\n\n${b(`퇴근 ${out.length}명`)}\n${outTags}\n\n${alertInfoBlock()}`,
       };

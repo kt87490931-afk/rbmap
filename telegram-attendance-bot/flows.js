@@ -54,8 +54,8 @@ function checkinMenuText(date) {
   return (
     `${b('📝 출근 / 퇴근 처리')}\n\n` +
     `출근 ${checkedInList.length}명 · 퇴근 ${checkedOutList.length}명\n\n` +
-    `${b('출근')}\n${checkedInList.map((n) => `[${e(n)}]`).join(' ') || '(없음)'}\n\n` +
-    `${b('퇴근')}\n${checkedOutList.map((n) => `[${e(n)}]`).join(' ') || '(없음)'}\n\n` +
+    `${b('출근')}\n${checkedInList.map((n) => `[💋${e(n)}]`).join(' ') || '(없음)'}\n\n` +
+    `${b('퇴근')}\n${checkedOutList.map((n) => `[💋${e(n)}]`).join(' ') || '(없음)'}\n\n` +
     '아래 버튼을 눌러주세요.'
   );
 }

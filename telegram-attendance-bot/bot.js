@@ -374,7 +374,7 @@ function renameLadyCmd(msg, oldName, newName) {
   if (r === 'DUPLICATE') return bot.sendMessage(msg.chat.id, `이미 사용 중인 이름: ${newName}`);
   if (r === 'INVALID' || r === 'SAME') return bot.sendMessage(msg.chat.id, '이름을 확인하세요.');
   db.appendAudit('lady_rename', `${oldName}→${newName}`, operatorName(msg.from));
-  bot.sendMessage(msg.chat.id, `✅ [🙍${oldName}] → [🙍${newName}] 언니 이름 변경`);
+  bot.sendMessage(msg.chat.id, `✅ [💋${oldName}] → [💋${newName}] 언니 이름 변경`);
 }
 
 bot.onText(/^\/(?:아가씨이름변경|언니이름변경)(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
@@ -429,7 +429,7 @@ bot.onText(/^\/출근(?:@\w+)?\s+(\S+)(?:\s+(\d{1,2}:\d{2}))?$/, (msg, m) => {
   }
   db.checkInLady(date, lady.id, iso);
   db.appendAudit('checkin', name, operatorName(msg.from));
-  bot.sendMessage(msg.chat.id, `✅ [🙋${name}] 출근 (${formatTimeKST(iso)})`);
+  bot.sendMessage(msg.chat.id, `✅ [💋${name}] 출근 (${formatTimeKST(iso)})`);
 });
 
 bot.onText(/^\/퇴근(?:@\w+)?\s+(\S+)(?:\s+(\d{1,2}:\d{2}))?$/, (msg, m) => {
@@ -448,7 +448,7 @@ bot.onText(/^\/퇴근(?:@\w+)?\s+(\S+)(?:\s+(\d{1,2}:\d{2}))?$/, (msg, m) => {
   if (r === 'ALREADY') return bot.sendMessage(msg.chat.id, '이미 퇴근 처리됨');
   if (!r) return bot.sendMessage(msg.chat.id, '출근 기록 없음');
   db.appendAudit('checkout', name, operatorName(msg.from));
-  bot.sendMessage(msg.chat.id, `🏁 [🤮${name}] 퇴근 (${formatTimeKST(iso)})`);
+  bot.sendMessage(msg.chat.id, `🏁 [💋${name}] 퇴근 (${formatTimeKST(iso)})`);
 });
 
 // ---------- 방 세션 ----------
@@ -582,7 +582,7 @@ bot.onText(/^\/방빼(?:@\w+)?\s+(\S+)\s+(\S+)$/, (msg, m) => {
   if (!r) return bot.sendMessage(msg.chat.id, '배정되지 않음');
   bot.sendMessage(
     msg.chat.id,
-    `👥 ${e(m[1])} - ${e(lady.name)} (이번 방 완료횟수 제외)\n${fmt.sessionLine(r)}`,
+    `👥 ${e(m[1])} - [💋${e(lady.name)}] (이번 방 완료횟수 제외)\n${fmt.sessionLine(r)}`,
     htmlOpts()
   );
 });
@@ -1393,7 +1393,7 @@ bot.on('callback_query', async (q) => {
     await bot.answerCallbackQuery(q.id);
     bot.sendMessage(
       chatId,
-      `✏️ [🙍${lady.name}] 새 이름 입력:\n/언니이름변경 ${lady.name} 새이름`
+      `✏️ [💋${lady.name}] 새 이름 입력:\n/언니이름변경 ${lady.name} 새이름`
     );
     return;
   }

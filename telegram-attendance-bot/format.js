@@ -29,7 +29,7 @@ function courseTag(session) {
 function sessionDrinksTag(session) {
   const labels = db.sessionDrinkLabels(session);
   if (labels.length === 0) return '';
-  return labels.map((d) => `[${e(d.name)} ${d.count}병]`).join(' ');
+  return labels.map((d) => `[🥃${e(d.name)} ${d.count}병]`).join(' ');
 }
 
 function sessionLine(session) {
@@ -157,9 +157,7 @@ function segmentLine(session, seg) {
     Date.now() < new Date(seg.end_scheduled).getTime()
       ? b('진행중')
       : b('종료');
-  const drinksTag = sessionDrinksTag(session);
-  const drinksPart = drinksTag ? ` · ${drinksTag}` : '';
-  return `❤️${rn} · ${label} · ${start}~${end} · ${ladies || '-'} · ${st}${drinksPart}`;
+  return `❤️${rn} · ${label} · ${start}~${end} · ${ladies || '-'} · ${st}`;
 }
 
 function dailyProgressBlock(date) {

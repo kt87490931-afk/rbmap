@@ -2,6 +2,9 @@ const db = require('./db');
 const { formatDateHeader, formatTimeKST } = require('./time-utils');
 const { escapeHtml: e, bold: b } = require('./text-html');
 
+/** 출근부 대시보드 구분선 (모바일 한 줄 기준) */
+const DASH_SEP = '━━━━━━━━━━━━━━━━';
+
 function ladyName(id) {
   const l = db.findLadyById(id);
   return l ? l.name : `#${id}`;
@@ -32,16 +35,24 @@ function sessionDrinksTag(session) {
   return labels.map((d) => `[🥃${e(d.name)} ${d.count}병]`).join(' ');
 }
 
-function sessionLine(session) {
+function sessionLine(session, opts = {}) {
+  const includeDrinks = opts.includeDrinks !== false;
+  const plain = opts.plain === true;
   const rn = e(roomName(session.room_id));
   const ct = e(courseTag(session));
   const start = formatTimeKST(session.start_time);
   const end = formatTimeKST(session.end_scheduled);
   const running = db.isSessionInProgress(session);
-  const status = running ? `${ct} ${b('진행중')}` : `${ct} ${b('종료')}`;
+  const status = running
+    ? plain
+      ? `${ct} 진행중`
+      : `${ct} ${b('진행중')}`
+    : plain
+      ? `${ct} 종료`
+      : `${ct} ${b('종료')}`;
   const ext = db.sessionExtensionCount(session);
   const extTag = ext > 0 ? `[연장+${ext}]` : '';
-  const drinksTag = sessionDrinksTag(session);
+  const drinksTag = includeDrinks ? sessionDrinksTag(session) : '';
   const ladies = activeAssignments(session)
     .map((a) => `[💋${e(ladyName(a.lady_id))}]`)
     .join(' ');
@@ -51,6 +62,77 @@ function sessionLine(session) {
     `[⏳${start}][⌛️${end}][${status}]${drinksLine}\n` +
     `${ladies || '(언니 없음)'}`
   );
+}
+
+function dashSection(body) {
+  return `${DASH_SEP}\n${body}`;
+}
+
+/** 금일 전체 세션 술 판매 합산 */
+function dayDrinksSalesBlock(date) {
+  const day = db.getDay(date);
+  const totals = new Map();
+
+  for (const s of day.sessions) {
+    for (const item of db.sessionDrinkLabels(s)) {
+      totals.set(item.name, (totals.get(item.name) || 0) + item.count);
+    }
+  }
+  if (totals.size === 0) return '';
+
+  const lines = ['🥃술 판매'];
+  for (const [name, count] of totals) {
+    lines.push(`🥃${e(name)} ${count}병`);
+  }
+  return lines.join('\n');
+}
+
+function dashboardActiveRoomsContent(date) {
+  const day = db.getDay(date);
+  const active = day.sessions.filter((s) => db.isSessionInProgress(s));
+  if (active.length === 0) {
+    return `▶️진행중\n\n(없음)`;
+  }
+  const roomBlocks = active.map((s) => sessionLine(s, { includeDrinks: false, plain: true }));
+  return `▶️진행중\n\n${roomBlocks.join(`\n${DASH_SEP}\n`)}`;
+}
+
+function dashboardAlertLine() {
+  const m = db.getAlertMinutes();
+  return `⏰ 현재 알람설정: ${m}분전`;
+}
+
+function buildDashboardView(date, header) {
+  const { registered, absent, waiting, checkedOut } = classifyLadies(date);
+  let checkedInToday = 0;
+  const inTags = [];
+
+  for (const lady of registered) {
+    const st = db.getLadyDayState(date, lady.id);
+    if (!st || !st.checked_in) continue;
+    checkedInToday += 1;
+    if (st.checked_out) continue;
+    inTags.push(`[💋${e(lady.name)}]`);
+  }
+
+  const absentTags = absent.map((l) => `[☠️${e(l.name)}]`).join(' ');
+  const waitTags = waiting.map((l) => `[💋${e(l.name)}]`).join(' ');
+  const outTags = checkedOut.map((l) => `[💋${e(l.name)}]`).join(' ');
+
+  const parts = [
+    b(`${header} 출근부`),
+    dashSection(`출근인원 : ${checkedInToday}명\n${inTags.join(' ') || '(없음)'}`),
+    dashSection(`미출근인원 : ${absent.length}명\n${absentTags || '(없음)'}`),
+    dashSection(`대기인원 : ${waiting.length}명\n${waitTags || '(없음)'}`),
+    dashSection(`퇴근 ${checkedOut.length}명\n${outTags || '(없음)'}`),
+    dashSection(dashboardActiveRoomsContent(date)),
+  ];
+
+  const drinks = dayDrinksSalesBlock(date);
+  if (drinks) parts.push(dashSection(drinks));
+
+  parts.push('', dashboardAlertLine());
+  return parts.join('\n\n');
 }
 
 function ladyCourseCountTag(lady, date) {
@@ -234,17 +316,7 @@ function buildView(view, date, perm = { canOperate: false, isSuperAdmin: false }
 
   switch (view) {
     case 'all':
-      return {
-        text: [
-          b(`${header} 출근부`),
-          `${b(`${header} 출근 인원`)}`,
-          checkinBlock(date),
-          `\n\n${b(`${header} 퇴근 인원`)}`,
-          checkoutBlock(date),
-          `\n\n${activeRoomsBlock(date)}`,
-          `\n\n${alertInfoBlock()}`,
-        ].join('\n'),
-      };
+      return { text: buildDashboardView(date, header) };
     case 'in':
       return {
         text: `${b(`${header} 출근 인원`)}\n\n${checkinBlock(date)}\n\n${alertInfoBlock()}`,

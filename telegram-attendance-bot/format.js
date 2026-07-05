@@ -249,6 +249,7 @@ function buildHelpText(canOperate, isSuperAdmin) {
     lines.push('', '【운영자 — 조작 권한】');
     lines.push('▶️방시작 — 룸 → 코스 → 손님 → 언니(0명 가능)');
     lines.push('🚀진행중인방 — 방별 관리 (시간·연장·언니·손님·종료)');
+    lines.push('🚨바쁨 — 전체에 바쁨 알림 (운영자)');
     lines.push('📝출근처리 — 전체 언니 출근/퇴근 (토글 가능)');
     lines.push('⏰알람설정 — 종료 5·10·15분 전 알림');
     lines.push('+언니 / +룸 / ✏️이름변경 — 등록·이름 변경');

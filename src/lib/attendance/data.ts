@@ -75,18 +75,31 @@ const VALID_ALERTS = [5, 10, 15]
 const DEFAULT_ALERT = 5
 const COURSE_DURATIONS = { A: 60, B: 90 } as const
 
-export function getAttendanceDataPath(): string {
+import {
+  getAttendanceDataPathForStore,
+  getAdminIdsForStore,
+  listStores,
+  resolveStoreId,
+} from '@/lib/attendance/stores'
+
+export function getAttendanceDataPath(storeId = 'ganji'): string {
+  return getAttendanceDataPathForStore(storeId)
+}
+
+/** @deprecated storeId 없이 호출 — ganji 기본 */
+export function getAttendanceDataPathLegacy(): string {
   if (process.env.ATTENDANCE_DATA_PATH) return process.env.ATTENDANCE_DATA_PATH
   const fromRoot = path.join(process.cwd(), '..', '..', 'data', 'attendance-data.json')
   if (fs.existsSync(fromRoot)) return fromRoot
   return path.join(process.cwd(), 'data', 'attendance-data.json')
 }
 
-function initialData(): AttendanceDataV2 {
+function initialData(storeId = 'ganji'): AttendanceDataV2 {
+  const store = listStores().find((s) => s.id === storeId)
   return {
     version: 2,
     settings: {
-      store_name: '간지',
+      store_name: store?.defaultStoreName || '간지',
       alert_minutes: DEFAULT_ALERT,
       operator_ids: [],
       staff_ids: [],
@@ -106,20 +119,22 @@ function initialData(): AttendanceDataV2 {
   }
 }
 
-export function loadAttendanceData(): AttendanceDataV2 {
-  const file = getAttendanceDataPath()
+export function loadAttendanceData(storeId = 'ganji'): AttendanceDataV2 {
+  const sid = resolveStoreId(storeId)
+  const file = getAttendanceDataPath(sid)
   const dir = path.dirname(file)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
   if (!fs.existsSync(file)) {
-    const init = initialData()
+    const init = initialData(sid)
     fs.writeFileSync(file, JSON.stringify(init, null, 2))
     return init
   }
   return JSON.parse(fs.readFileSync(file, 'utf8')) as AttendanceDataV2
 }
 
-export function saveAttendanceData(data: AttendanceDataV2): void {
-  const file = getAttendanceDataPath()
+export function saveAttendanceData(data: AttendanceDataV2, storeId = 'ganji'): void {
+  const sid = resolveStoreId(storeId)
+  const file = getAttendanceDataPath(sid)
   const dir = path.dirname(file)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
   const tmp = `${file}.tmp`

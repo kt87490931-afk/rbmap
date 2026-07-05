@@ -256,7 +256,8 @@ function buildHelpText(canOperate, isSuperAdmin) {
 
   if (isSuperAdmin) {
     lines.push('', '【슈퍼관리자 — 권한 부여】');
-    lines.push('/운영자추가 ID · /스탭추가 ID · /권한목록');
+    lines.push('/운영자추가 @username · /스탭추가 @username · /권한목록');
+    lines.push('/내id — 본인 숫자 ID 확인');
   }
 
   lines.push('', '/출근부 — 출근부 다시 열기');

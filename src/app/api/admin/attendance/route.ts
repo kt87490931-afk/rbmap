@@ -7,6 +7,7 @@ import {
   appendAudit,
   VALID_ALERTS,
 } from '@/lib/attendance/data'
+import { getAdminIdsForStore, listStores, resolveStoreId } from '@/lib/attendance/stores'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,17 +16,22 @@ export async function GET(request: Request) {
   if (authErr) return authErr
 
   const { searchParams } = new URL(request.url)
+  let storeId = 'ganji'
+  try {
+    storeId = resolveStoreId(searchParams.get('store'))
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'invalid store' }, { status: 400 })
+  }
   const date = searchParams.get('date') || todayDateStringKST()
-  const data = loadAttendanceData()
+  const data = loadAttendanceData(storeId)
   ensureRoles(data.settings)
   const day = data.days[date] || { ladies: {}, sessions: [], completed_counts: {} }
 
-  const adminIds = (process.env.ATTENDANCE_ADMIN_IDS || process.env.ADMIN_IDS || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
+  const adminIds = getAdminIdsForStore(storeId)
 
   return NextResponse.json({
+    storeId,
+    stores: listStores().map((s) => ({ id: s.id, label: s.label })),
     version: data.version,
     settings: data.settings,
     ladies: data.ladies.filter((l) => l.active),
@@ -69,6 +75,14 @@ export async function PATCH(request: Request) {
   const authErr = await requireAdminOrSetup()
   if (authErr) return authErr
 
+  const { searchParams } = new URL(request.url)
+  let storeId = 'ganji'
+  try {
+    storeId = resolveStoreId(searchParams.get('store'))
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'invalid store' }, { status: 400 })
+  }
+
   let body: PatchBody
   try {
     body = await request.json()
@@ -76,7 +90,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'JSON 필요' }, { status: 400 })
   }
 
-  const data = loadAttendanceData()
+  const data = loadAttendanceData(storeId)
   ensureRoles(data.settings)
 
   if (body.store_name != null) {
@@ -166,6 +180,6 @@ export async function PATCH(request: Request) {
     }
   }
 
-  saveAttendanceData(data)
-  return NextResponse.json({ ok: true, settings: data.settings })
+  saveAttendanceData(data, storeId)
+  return NextResponse.json({ ok: true, storeId, settings: data.settings })
 }

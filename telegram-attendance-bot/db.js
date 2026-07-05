@@ -101,7 +101,7 @@ function initialData() {
   return {
     version: 2,
     settings: {
-      store_name: '간지',
+      store_name: process.env.STORE_DEFAULT_NAME || '간지',
       alert_minutes: DEFAULT_ALERT_MINUTES,
       operator_ids: [],
       staff_ids: [],
@@ -142,12 +142,21 @@ function normalizeCompletedEntry(val, courseIds) {
   return out;
 }
 
-function normalizeSession(sess) {
+function courseDurationFromList(courseId, courses) {
+  const c = courses.find((x) => x.id === courseId || x.name === courseId);
+  if (c) return c.minutes;
+  if (COURSE_DURATIONS[courseId]) return COURSE_DURATIONS[courseId];
+  return 60;
+}
+
+function normalizeSession(sess, ctx = {}) {
+  const courses = ctx.courses || defaultCourses();
+  const defaultAlert = ctx.alertMinutes ?? DEFAULT_ALERT_MINUTES;
   if (!sess.course) sess.course = 'A';
   repairMislabeledLegacySession(sess);
   if (!sess.duration_minutes) {
     const segMins = minutesBetween(sess.start_time, sess.end_scheduled);
-    sess.duration_minutes = segMins > 0 ? segMins : courseDuration(sess.course);
+    sess.duration_minutes = segMins > 0 ? segMins : courseDurationFromList(sess.course, courses);
   }
   if (!sess.alert_before_minutes) {
     sess.alert_before_minutes = migrateAlertMinutes(sess.alert_minutes);
@@ -163,7 +172,7 @@ function normalizeSession(sess) {
     ];
   }
   if (sess.status === 'active') {
-    const before = sess.alert_before_minutes || getAlertMinutes();
+    const before = sess.alert_before_minutes || defaultAlert;
     sess.alert_time = calcAlertTime(sess.end_scheduled, before);
   }
   if (!sess.hour_count) {
@@ -173,14 +182,17 @@ function normalizeSession(sess) {
 }
 
 function normalizeDay(day, settings) {
-  ensureCourses(settings || loadData().settings);
-  const courseIds = (settings?.courses || defaultCourses()).map((c) => c.id);
+  const s = settings || { courses: defaultCourses(), alert_minutes: DEFAULT_ALERT_MINUTES };
+  ensureCourses(s);
+  const courseIds = s.courses.map((c) => c.id);
+  const alertMinutes = migrateAlertMinutes(s.alert_minutes);
+  const ctx = { courses: s.courses, alertMinutes };
   if (!day.completed_counts) day.completed_counts = {};
   for (const key of Object.keys(day.completed_counts)) {
     day.completed_counts[key] = normalizeCompletedEntry(day.completed_counts[key], courseIds);
   }
   if (!day.sessions) day.sessions = [];
-  day.sessions = day.sessions.map(normalizeSession);
+  day.sessions = day.sessions.map((sess) => normalizeSession(sess, ctx));
   return day;
 }
 
@@ -242,6 +254,7 @@ function normalize(data) {
   if (!data.rooms) data.rooms = [];
   if (!data.days) data.days = {};
   if (!data.audit_log) data.audit_log = [];
+  if (!data.telegram_users) data.telegram_users = {};
   let dirty = false;
   for (const date of Object.keys(data.days)) {
     const before = JSON.stringify(data.days[date].sessions);
@@ -889,6 +902,30 @@ function removeCourse(courseKey) {
   return removed;
 }
 
+/** 봇과 대화한 적 있는 사용자 @username → ID (운영자 등록용) */
+function rememberTelegramUser(from) {
+  if (!from?.id || from.is_bot || !from.username) return;
+  const data = loadData();
+  if (!data.telegram_users) data.telegram_users = {};
+  const key = String(from.username).toLowerCase();
+  data.telegram_users[key] = {
+    id: String(from.id),
+    name: [from.first_name, from.last_name].filter(Boolean).join(' ') || null,
+    seen_at: new Date().toISOString(),
+  };
+  saveData(data);
+}
+
+function findUserByUsername(raw) {
+  const key = String(raw || '')
+    .trim()
+    .replace(/^@/, '')
+    .toLowerCase();
+  if (!key) return null;
+  const entry = loadData().telegram_users?.[key];
+  return entry ? { id: entry.id, name: entry.name } : null;
+}
+
 module.exports = {
   DB_FILE,
   VALID_ALERTS,
@@ -916,6 +953,8 @@ module.exports = {
   removeOperator,
   addStaff,
   removeStaff,
+  rememberTelegramUser,
+  findUserByUsername,
   getDelegatedIds,
   getDelegatedLabels,
   addDelegated,

@@ -1,0 +1,22 @@
+{
+  "stores": [
+    {
+      "id": "ganji",
+      "label": "간지",
+      "botTokenEnv": "ATTENDANCE_BOT_TOKEN_GANJI",
+      "adminIdsEnv": "ATTENDANCE_ADMIN_IDS_GANJI",
+      "channelIdEnv": "TELEGRAM_CHANNEL_ID_GANJI",
+      "dataFile": "data/ganji/attendance-data.json",
+      "defaultStoreName": "간지"
+    },
+    {
+      "id": "benz",
+      "label": "Benz",
+      "botTokenEnv": "ATTENDANCE_BOT_TOKEN_BENZ",
+      "adminIdsEnv": "ATTENDANCE_ADMIN_IDS_BENZ",
+      "channelIdEnv": "TELEGRAM_CHANNEL_ID_BENZ",
+      "dataFile": "data/benz/attendance-data.json",
+      "defaultStoreName": "Benz"
+    }
+  ]
+}

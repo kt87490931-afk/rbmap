@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 
 type Lady = { id: number; name: string }
 type Room = { id: number; name: string }
@@ -25,7 +26,14 @@ type Settings = {
   delegated_labels?: Record<string, string>
 }
 
+type StoreOption = { id: string; label: string }
+
 export default function AdminAttendancePage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const storeId = searchParams.get('store') || 'ganji'
+
+  const [stores, setStores] = useState<StoreOption[]>([])
   const [loading, setLoading] = useState(true)
   const [settings, setSettings] = useState<Settings | null>(null)
   const [ladies, setLadies] = useState<Lady[]>([])
@@ -46,9 +54,10 @@ export default function AdminAttendancePage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/admin/attendance', { credentials: 'include' })
+      const res = await fetch(`/api/admin/attendance?store=${encodeURIComponent(storeId)}`, { credentials: 'include' })
       const json = await res.json()
       if (res.ok) {
+        setStores(json.stores ?? [])
         setSettings(json.settings)
         setStoreName(json.settings?.store_name || '간지')
         setLadies(json.ladies ?? [])
@@ -59,14 +68,18 @@ export default function AdminAttendancePage() {
       }
     } catch { /* ignore */ }
     setLoading(false)
-  }, [])
+  }, [storeId])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  function switchStore(id: string) {
+    router.push(`/admin/attendance?store=${encodeURIComponent(id)}`)
+  }
 
   async function patch(body: Record<string, unknown>) {
     setMsg('')
     try {
-      const res = await fetch('/api/admin/attendance', {
+      const res = await fetch(`/api/admin/attendance?store=${encodeURIComponent(storeId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -96,11 +109,27 @@ export default function AdminAttendancePage() {
     return rooms.find((r) => r.id === id)?.name ?? `#${id}`
   }
 
+  const currentStoreLabel = stores.find((s) => s.id === storeId)?.label || storeId
+
   return (
     <>
-      <h1 className="admin-page-title">📋 출근부 · 룸 타이머 (v2)</h1>
+      <h1 className="admin-page-title">📋 출근부 · {currentStoreLabel}</h1>
+      {stores.length > 1 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+          {stores.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              className={s.id === storeId ? 'btn-success' : 'btn-save'}
+              onClick={() => switchStore(s.id)}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
       <p style={{ fontSize: 13, color: 'var(--text-muted, #888)', marginBottom: 16, lineHeight: 1.6 }}>
-        텔레그램 <code>/출근부</code> 와 동일 데이터 · A/B 코스 · 알람 종료 5/10/15분 전 · 종료 시 A/B별 +1
+        텔레그램 <code>/출근부</code> 와 동일 데이터 · 매장별 봇·JSON 분리 ({storeId})
       </p>
 
       {msg && (
@@ -182,7 +211,7 @@ export default function AdminAttendancePage() {
           <div className="admin-card">
             <h2 style={{ fontSize: 16, marginBottom: 12 }}>👥 권한 (3등급)</h2>
             <p style={{ fontSize: 13, marginBottom: 12, lineHeight: 1.6 }}>
-              <strong>슈퍼관리자</strong> (서버 env): {adminIds.join(', ') || '(ATTENDANCE_ADMIN_IDS)'} — /운영자추가 · /스탭추가
+              <strong>슈퍼관리자</strong> (서버 env): {adminIds.join(', ') || '(매장별 ADMIN_IDS)'} — /운영자추가 · /스탭추가
             </p>
 
             <h3 style={{ fontSize: 14, marginBottom: 8 }}>🔧 운영자 (전체 조작)</h3>
@@ -219,9 +248,8 @@ export default function AdminAttendancePage() {
 /언니등록 하나 · /룸등록 1T
 /출근 하나 · /퇴근 하나
 /방시작 1T 3 하나,사랑,이슬 [01:00]
-/방시작수정 1T 22:33 · /방종료 1T · /방연장 1T
-/운영자추가 ID · /스탭추가 ID · /권한목록
-/언니이름변경 하나 하니 · /룸이름변경 1T 2T · /방추가 1T 사월 · /방빼 1T 이슬`}
+/운영자추가 @username · /스탭추가 @username · /권한목록
+/내id — 본인 ID 확인`}
             </pre>
           </div>
         </div>

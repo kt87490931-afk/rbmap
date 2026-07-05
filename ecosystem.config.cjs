@@ -1,6 +1,33 @@
 /** @type {import('pm2').StartOptions} */
 const path = require('path');
 
+const botEnvBase = {
+  NODE_ENV: 'production',
+  DOTENV_CONFIG_PATH: path.join(__dirname, '.env.production'),
+};
+
+function attendanceBotApp(name, storeId, dataSubdir) {
+  return {
+    name,
+    script: 'bot.js',
+    cwd: path.join(__dirname, 'telegram-attendance-bot'),
+    node_args: '-r dotenv/config',
+    env: {
+      ...botEnvBase,
+      STORE_ID: storeId,
+      ATTENDANCE_DATA_PATH: path.join(__dirname, 'data', dataSubdir, 'attendance-data.json'),
+    },
+    instances: 1,
+    exec_mode: 'fork',
+    max_memory_restart: '200M',
+    error_file: path.join(__dirname, 'logs', `${name}-error.log`),
+    out_file: path.join(__dirname, 'logs', `${name}-out.log`),
+    merge_logs: true,
+    time: true,
+    autorestart: true,
+  };
+}
+
 module.exports = {
   apps: [
     {
@@ -13,7 +40,6 @@ module.exports = {
         PORT: 3000,
         DOTENV_CONFIG_PATH: path.join(__dirname, '.next/standalone/.env.production'),
         NODE_PATH: path.join(__dirname, 'node_modules'),
-        ATTENDANCE_DATA_PATH: path.join(__dirname, 'data', 'attendance-data.json'),
       },
       instances: 1,
       exec_mode: 'fork',
@@ -23,25 +49,7 @@ module.exports = {
       merge_logs: true,
       time: true,
     },
-    {
-      name: 'attendance-bot',
-      script: 'bot.js',
-      cwd: path.join(__dirname, 'telegram-attendance-bot'),
-      node_args: '-r dotenv/config',
-      env: {
-        NODE_ENV: 'production',
-        DOTENV_CONFIG_PATH: path.join(__dirname, '.env.production'),
-        ATTENDANCE_DATA_PATH: path.join(__dirname, 'data', 'attendance-data.json'),
-        // ATTENDANCE_BOT_TOKEN 은 .env.production 에서 dotenv 로 로드
-      },
-      instances: 1,
-      exec_mode: 'fork',
-      max_memory_restart: '200M',
-      error_file: path.join(__dirname, 'logs/attendance-bot-error.log'),
-      out_file: path.join(__dirname, 'logs/attendance-bot-out.log'),
-      merge_logs: true,
-      time: true,
-      autorestart: true,
-    },
+    attendanceBotApp('attendance-bot-ganji', 'ganji', 'ganji'),
+    attendanceBotApp('attendance-bot-benz', 'benz', 'benz'),
   ],
 };

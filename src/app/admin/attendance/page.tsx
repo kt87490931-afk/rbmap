@@ -187,12 +187,12 @@ export default function AdminAttendancePage() {
           <div className="admin-card">
             <h2 style={{ fontSize: 16, marginBottom: 12 }}>📱 텔레그램 명령</h2>
             <pre style={{ fontSize: 11, lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: 0 }}>
-{`/출근부 — 보드 + [전체][출근][미출근][진행중][종료][진행현황][알람설정]
-/아가씨등록 하나 · /룸등록 1T
+{`/출근부 — 보드 + 버튼
+/언니등록 하나 · /룸등록 1T
 /출근 하나 · /퇴근 하나
 /방시작 1T 3 하나,사랑,이슬 [01:00]
 /방시작수정 1T 22:33 · /방종료 1T · /방연장 1T
-/아가씨이름변경 하나 하니 · /방추가 1T 사월 · /방빼 1T 이슬`}
+/언니이름변경 하나 하니 · /룸이름변경 1T 2T · /방추가 1T 사월 · /방빼 1T 이슬`}
             </pre>
           </div>
         </div>

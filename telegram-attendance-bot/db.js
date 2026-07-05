@@ -1,15 +1,33 @@
 const fs = require('fs');
 const path = require('path');
-const { addMinutesIso, addHoursIso } = require('./time-utils');
+const { addMinutesIso } = require('./time-utils');
 
 const DB_FILE =
   process.env.ATTENDANCE_DATA_PATH ||
   path.join(__dirname, '..', 'data', 'attendance-data.json');
-const DEFAULT_ALERT_MINUTES = 55;
-const VALID_ALERTS = [45, 50, 55];
+const VALID_ALERTS = [5, 10, 15];
+const DEFAULT_ALERT_MINUTES = 5;
+const COURSE_DURATIONS = { A: 60, B: 90 };
 /** 종료 예정(end_scheduled) 후 자동 마감까지 대기 (분) */
 const AUTO_END_GRACE_MINUTES = 30;
 const MAX_AUDIT = 200;
+const LEGACY_ALERT_MAP = { 55: 5, 50: 10, 45: 15 };
+
+function courseDuration(course) {
+  return COURSE_DURATIONS[course] || 60;
+}
+
+function courseLabel(course) {
+  return course === 'B' ? 'B코스(90분)' : 'A코스(60분)';
+}
+
+function calcEndScheduled(startIso, course) {
+  return addMinutesIso(startIso, courseDuration(course));
+}
+
+function calcAlertTime(endScheduledIso, alertBeforeMin) {
+  return addMinutesIso(endScheduledIso, -alertBeforeMin);
+}
 
 function initialData() {
   return {
@@ -35,6 +53,61 @@ function initialData() {
   };
 }
 
+function migrateAlertMinutes(m) {
+  if (VALID_ALERTS.includes(m)) return m;
+  if (LEGACY_ALERT_MAP[m] != null) return LEGACY_ALERT_MAP[m];
+  return DEFAULT_ALERT_MINUTES;
+}
+
+function normalizeCompletedEntry(val) {
+  if (val && typeof val === 'object') {
+    return { A: val.A || 0, B: val.B || 0 };
+  }
+  if (typeof val === 'number') return { A: val, B: 0 };
+  return { A: 0, B: 0 };
+}
+
+function normalizeSession(sess) {
+  if (!sess.course) {
+    const mins = sess.hour_count ? sess.hour_count * 60 : 60;
+    sess.course = mins >= 90 ? 'B' : 'A';
+  }
+  if (!sess.duration_minutes) {
+    sess.duration_minutes = courseDuration(sess.course);
+  }
+  if (!sess.alert_before_minutes) {
+    sess.alert_before_minutes = migrateAlertMinutes(sess.alert_minutes);
+  }
+  if (!sess.course_segments || sess.course_segments.length === 0) {
+    sess.course_segments = [
+      {
+        course: sess.course,
+        start_time: sess.start_time,
+        end_scheduled: sess.end_scheduled,
+        ended_at: sess.status === 'ended' ? sess.ended_at || sess.end_scheduled : null,
+      },
+    ];
+  }
+  if (sess.status === 'active') {
+    const before = sess.alert_before_minutes || getAlertMinutes();
+    sess.alert_time = calcAlertTime(sess.end_scheduled, before);
+  }
+  if (!sess.hour_count) {
+    sess.hour_count = Math.max(1, Math.ceil(sess.duration_minutes / 60));
+  }
+  return sess;
+}
+
+function normalizeDay(day) {
+  if (!day.completed_counts) day.completed_counts = {};
+  for (const key of Object.keys(day.completed_counts)) {
+    day.completed_counts[key] = normalizeCompletedEntry(day.completed_counts[key]);
+  }
+  if (!day.sessions) day.sessions = [];
+  day.sessions = day.sessions.map(normalizeSession);
+  return day;
+}
+
 function loadData() {
   const dir = path.dirname(DB_FILE);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -50,9 +123,7 @@ function loadData() {
       fs.copyFileSync(DB_FILE, `${DB_FILE}.v1-backup-${Date.now()}.json`);
       const migrated = initialData();
       if (data.settings) {
-        migrated.settings.alert_minutes = VALID_ALERTS.includes(data.settings.alert_minutes)
-          ? data.settings.alert_minutes
-          : DEFAULT_ALERT_MINUTES;
+        migrated.settings.alert_minutes = migrateAlertMinutes(data.settings.alert_minutes);
         migrated.settings.delegated_ids = data.settings.delegated_ids || [];
         migrated.settings.delegated_labels = data.settings.delegated_labels || {};
       }
@@ -71,8 +142,7 @@ function loadData() {
 
 function syncLegacyDelegated(settings) {
   settings.delegated_ids = [...(settings.operator_ids || [])];
-  const labels = { ...(settings.role_labels || {}) };
-  settings.delegated_labels = labels;
+  settings.delegated_labels = { ...(settings.role_labels || {}) };
 }
 
 function ensureRoleSettings(settings) {
@@ -90,10 +160,14 @@ function normalize(data) {
   if (!data.settings.delegated_ids) data.settings.delegated_ids = [];
   if (!data.settings.delegated_labels) data.settings.delegated_labels = {};
   ensureRoleSettings(data.settings);
+  data.settings.alert_minutes = migrateAlertMinutes(data.settings.alert_minutes);
   if (!data.ladies) data.ladies = [];
   if (!data.rooms) data.rooms = [];
   if (!data.days) data.days = {};
   if (!data.audit_log) data.audit_log = [];
+  for (const date of Object.keys(data.days)) {
+    data.days[date] = normalizeDay(data.days[date]);
+  }
   return data;
 }
 
@@ -117,8 +191,19 @@ function getSettings() {
 }
 
 function getAlertMinutes() {
-  const m = loadData().settings.alert_minutes;
-  return VALID_ALERTS.includes(m) ? m : DEFAULT_ALERT_MINUTES;
+  return migrateAlertMinutes(loadData().settings.alert_minutes);
+}
+
+function recalcActiveAlerts(data, minutes) {
+  for (const date of Object.keys(data.days)) {
+    for (const s of data.days[date].sessions) {
+      if (s.status === 'active' && !s.alert_sent) {
+        s.alert_before_minutes = minutes;
+        s.alert_minutes = minutes;
+        s.alert_time = calcAlertTime(s.end_scheduled, minutes);
+      }
+    }
+  }
 }
 
 function setAlertMinutes(minutes, changedBy = null) {
@@ -127,6 +212,7 @@ function setAlertMinutes(minutes, changedBy = null) {
   data.settings.alert_minutes = minutes;
   data.settings.last_alert_change = new Date().toISOString();
   data.settings.last_alert_changed_by = changedBy;
+  recalcActiveAlerts(data, minutes);
   saveData(data);
   return true;
 }
@@ -151,12 +237,10 @@ function isStaffUser(userId) {
   return getStaffIds().includes(String(userId));
 }
 
-/** @deprecated — operator_ids 사용 */
 function getDelegatedIds() {
   return getOperatorIds();
 }
 
-/** @deprecated */
 function getDelegatedLabels() {
   return getRoleLabels();
 }
@@ -203,22 +287,18 @@ function removeStaff(userId) {
   saveData(data);
 }
 
-/** @deprecated — addOperator */
 function addDelegated(userId, label = null) {
   addOperator(userId, label);
 }
 
-/** @deprecated */
 function removeDelegated(userId) {
   removeOperator(userId);
 }
 
-/** @deprecated */
 function isDelegated(userId) {
   return isOperatorUser(userId);
 }
 
-// ---------- 아가씨 / 룸 마스터 ----------
 function getActiveLadies() {
   return loadData().ladies.filter((l) => l.active).sort((a, b) => a.id - b.id);
 }
@@ -307,7 +387,6 @@ function renameRoom(oldName, newName) {
   return room;
 }
 
-// ---------- 일별 데이터 ----------
 function ensureDay(date) {
   const data = loadData();
   if (!data.days[date]) {
@@ -323,7 +402,8 @@ function ensureDay(date) {
 
 function getDay(date) {
   const data = loadData();
-  return data.days[date] || { ladies: {}, sessions: [], completed_counts: {} };
+  const day = data.days[date] || { ladies: {}, sessions: [], completed_counts: {} };
+  return normalizeDay(JSON.parse(JSON.stringify(day)));
 }
 
 function getLadyDayState(date, ladyId) {
@@ -337,19 +417,23 @@ function checkInLady(date, ladyId, timeIso) {
     data.days[date] = { ladies: {}, sessions: [], completed_counts: {} };
   }
   const key = String(ladyId);
+  const prev = data.days[date].ladies[key];
   data.days[date].ladies[key] = {
     checked_in: true,
     checked_out: false,
     checkin_time: timeIso,
     checkout_time: null,
   };
+  if (prev && prev.checkin_time && !prev.checked_out) {
+    data.days[date].ladies[key].checkin_time = prev.checkin_time;
+  }
   saveData(data);
 }
 
 function checkOutLady(date, ladyId, timeIso) {
   const data = loadData();
   const day = data.days[date];
-  if (!day || !day.ladies[String(ladyId)]) return false;
+  if (!day || !day.ladies[String(ladyId)]) return 'NOT_CHECKED_IN';
   const st = day.ladies[String(ladyId)];
   if (st.checked_out) return 'ALREADY';
   if (isLadyInActiveSession(date, ladyId)) return 'IN_SESSION';
@@ -368,21 +452,42 @@ function isLadyInActiveSession(date, ladyId) {
   );
 }
 
-function getCompletedCount(date, ladyId) {
+function incrementCompletedCount(day, ladyId, course) {
+  const key = String(ladyId);
+  day.completed_counts[key] = normalizeCompletedEntry(day.completed_counts[key]);
+  const c = course === 'B' ? 'B' : 'A';
+  day.completed_counts[key][c] += 1;
+}
+
+function getLadyCourseCounts(date, ladyId) {
   const day = getDay(date);
-  return day.completed_counts[String(ladyId)] || 0;
+  const key = String(ladyId);
+  const counts = normalizeCompletedEntry(day.completed_counts[key]);
+  for (const s of day.sessions) {
+    if (s.status !== 'active') continue;
+    if (!s.assignments.some((a) => a.lady_id === ladyId && !a.removed_at)) continue;
+    const c = s.course === 'B' ? 'B' : 'A';
+    counts[c] += 1;
+  }
+  return counts;
+}
+
+/** @deprecated — getLadyCourseCounts 사용 */
+function getCompletedCount(date, ladyId) {
+  const c = getLadyCourseCounts(date, ladyId);
+  return c.A + c.B;
 }
 
 function findSessionById(sessionId) {
   const data = loadData();
   for (const date of Object.keys(data.days)) {
     const sess = data.days[date].sessions.find((s) => s.id === sessionId);
-    if (sess) return { date, session: sess };
+    if (sess) return { date, session: normalizeSession(sess) };
   }
   return null;
 }
 
-function startRoomSession(date, { roomId, chatId, customerCount, ladyIds, startTime, alertMinutes }) {
+function startRoomSession(date, { roomId, chatId, customerCount, ladyIds, startTime, course }) {
   const data = loadData();
   if (!data.days[date]) {
     data.days[date] = { ladies: {}, sessions: [], completed_counts: {} };
@@ -396,10 +501,12 @@ function startRoomSession(date, { roomId, chatId, customerCount, ladyIds, startT
     if (isLadyInActiveSession(date, lid)) return 'LADY_BUSY';
   }
 
+  const c = course === 'B' ? 'B' : 'A';
+  const duration = courseDuration(c);
+  const alertBefore = getAlertMinutes();
+  const endScheduled = calcEndScheduled(startTime, c);
+  const alertTime = calcAlertTime(endScheduled, alertBefore);
   const id = data.next_session_id++;
-  const hourCount = 1;
-  const endScheduled = addHoursIso(startTime, hourCount);
-  const alertTime = addMinutesIso(startTime, alertMinutes);
 
   const session = {
     id,
@@ -407,11 +514,14 @@ function startRoomSession(date, { roomId, chatId, customerCount, ladyIds, startT
     chat_id: chatId,
     customer_count: customerCount,
     start_time: startTime,
-    hour_count: hourCount,
+    course: c,
+    duration_minutes: duration,
+    hour_count: Math.ceil(duration / 60),
     end_scheduled: endScheduled,
     status: 'active',
     ended_at: null,
-    alert_minutes: alertMinutes,
+    alert_before_minutes: alertBefore,
+    alert_minutes: alertBefore,
     alert_time: alertTime,
     alert_sent: false,
     assignments: ladyIds.map((ladyId) => ({
@@ -420,6 +530,14 @@ function startRoomSession(date, { roomId, chatId, customerCount, ladyIds, startT
       joined_at: startTime,
       removed_at: null,
     })),
+    course_segments: [
+      {
+        course: c,
+        start_time: startTime,
+        end_scheduled: endScheduled,
+        ended_at: null,
+      },
+    ],
   };
 
   data.days[date].sessions.push(session);
@@ -433,31 +551,59 @@ function updateSessionStartTime(sessionId, newStartTime) {
   const data = loadData();
   const sess = data.days[found.date].sessions.find((s) => s.id === sessionId);
   const oldStart = sess.start_time;
+  const duration = sess.duration_minutes || courseDuration(sess.course);
+  const alertBefore = sess.alert_before_minutes || getAlertMinutes();
+
   sess.start_time = newStartTime;
-  sess.end_scheduled = addHoursIso(newStartTime, sess.hour_count);
-  if (!sess.alert_sent) {
-    sess.alert_time = addMinutesIso(newStartTime, sess.alert_minutes);
+  sess.end_scheduled = addMinutesIso(newStartTime, duration);
+  sess.alert_time = calcAlertTime(sess.end_scheduled, alertBefore);
+
+  const curSeg = sess.course_segments[sess.course_segments.length - 1];
+  if (curSeg) {
+    curSeg.start_time = newStartTime;
+    curSeg.end_scheduled = sess.end_scheduled;
   }
+
   for (const a of sess.assignments) {
     if (a.from_start && !a.removed_at) a.joined_at = newStartTime;
   }
   saveData(data);
-  return { date: found.date, session: sess, oldStart };
+  return { date: found.date, session: normalizeSession(sess), oldStart };
 }
 
-function extendSession(sessionId) {
+function extendSession(sessionId, course) {
   const found = findSessionById(sessionId);
   if (!found || found.session.status !== 'active') return null;
   const data = loadData();
   const sess = data.days[found.date].sessions.find((s) => s.id === sessionId);
-  const now = new Date().toISOString();
-  sess.hour_count += 1;
-  sess.end_scheduled = addHoursIso(sess.start_time, sess.hour_count);
-  sess.alert_minutes = getAlertMinutes();
-  sess.alert_time = addMinutesIso(now, sess.alert_minutes);
+  const c = course === 'B' ? 'B' : 'A';
+  const segmentStart = sess.end_scheduled;
+  const duration = courseDuration(c);
+  const alertBefore = getAlertMinutes();
+  const newEnd = addMinutesIso(segmentStart, duration);
+
+  const curSeg = sess.course_segments[sess.course_segments.length - 1];
+  if (curSeg && !curSeg.ended_at) {
+    curSeg.ended_at = segmentStart;
+  }
+
+  sess.course = c;
+  sess.duration_minutes = duration;
+  sess.hour_count = (sess.hour_count || 1) + 1;
+  sess.end_scheduled = newEnd;
+  sess.alert_before_minutes = alertBefore;
+  sess.alert_minutes = alertBefore;
+  sess.alert_time = calcAlertTime(newEnd, alertBefore);
   sess.alert_sent = false;
+  sess.course_segments.push({
+    course: c,
+    start_time: segmentStart,
+    end_scheduled: newEnd,
+    ended_at: null,
+  });
+
   saveData(data);
-  return { date: found.date, session: sess };
+  return { date: found.date, session: normalizeSession(sess) };
 }
 
 function endSession(sessionId) {
@@ -467,18 +613,31 @@ function endSession(sessionId) {
   const day = data.days[found.date];
   const sess = day.sessions.find((s) => s.id === sessionId);
   const now = new Date().toISOString();
+  const course = sess.course === 'B' ? 'B' : 'A';
+
   sess.status = 'ended';
   sess.ended_at = now;
 
+  const lastSeg = sess.course_segments[sess.course_segments.length - 1];
+  if (lastSeg && !lastSeg.ended_at) lastSeg.ended_at = now;
+
   for (const a of sess.assignments) {
-    if (!a.removed_at) {
-      const key = String(a.lady_id);
-      day.completed_counts[key] = (day.completed_counts[key] || 0) + 1;
-    }
+    if (!a.removed_at) incrementCompletedCount(day, a.lady_id, course);
   }
 
   saveData(data);
-  return { date: found.date, session: sess };
+  return { date: found.date, session: normalizeSession(sess) };
+}
+
+function updateSessionCustomerCount(sessionId, customerCount) {
+  const found = findSessionById(sessionId);
+  if (!found || found.session.status !== 'active') return null;
+  if (customerCount < 1 || customerCount > 20) return 'INVALID';
+  const data = loadData();
+  const sess = data.days[found.date].sessions.find((s) => s.id === sessionId);
+  sess.customer_count = customerCount;
+  saveData(data);
+  return sess;
 }
 
 function addLadyToSession(sessionId, ladyId) {
@@ -528,14 +687,13 @@ function getPendingAlerts() {
   for (const date of Object.keys(data.days)) {
     for (const s of data.days[date].sessions) {
       if (s.status === 'active' && !s.alert_sent) {
-        pending.push({ date, session: s });
+        pending.push({ date, session: normalizeSession(s) });
       }
     }
   }
   return pending;
 }
 
-/** end_scheduled + AUTO_END_GRACE_MINUTES 경과한 active 세션 */
 function getSessionsDueForAutoEnd() {
   const data = loadData();
   const now = Date.now();
@@ -558,10 +716,14 @@ function getAllData() {
 function replaceSettings(partial) {
   const data = loadData();
   if (partial.store_name != null) data.settings.store_name = partial.store_name;
-  if (partial.alert_minutes != null && VALID_ALERTS.includes(partial.alert_minutes)) {
-    data.settings.alert_minutes = partial.alert_minutes;
-    data.settings.last_alert_change = new Date().toISOString();
-    data.settings.last_alert_changed_by = partial.last_alert_changed_by || 'admin-web';
+  if (partial.alert_minutes != null) {
+    const m = migrateAlertMinutes(partial.alert_minutes);
+    if (VALID_ALERTS.includes(m)) {
+      data.settings.alert_minutes = m;
+      data.settings.last_alert_change = new Date().toISOString();
+      data.settings.last_alert_changed_by = partial.last_alert_changed_by || 'admin-web';
+      recalcActiveAlerts(data, m);
+    }
   }
   if (partial.delegated_ids != null) partial.operator_ids = partial.delegated_ids;
   if (partial.delegated_labels != null) partial.role_labels = partial.delegated_labels;
@@ -593,7 +755,10 @@ module.exports = {
   DB_FILE,
   VALID_ALERTS,
   DEFAULT_ALERT_MINUTES,
+  COURSE_DURATIONS,
   AUTO_END_GRACE_MINUTES,
+  courseDuration,
+  courseLabel,
   getSettings,
   getAlertMinutes,
   setAlertMinutes,
@@ -630,11 +795,13 @@ module.exports = {
   checkOutLady,
   isLadyInActiveSession,
   getCompletedCount,
+  getLadyCourseCounts,
   findSessionById,
   startRoomSession,
   updateSessionStartTime,
   extendSession,
   endSession,
+  updateSessionCustomerCount,
   addLadyToSession,
   removeLadyFromSession,
   markSessionAlertSent,

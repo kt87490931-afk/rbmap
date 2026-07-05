@@ -8,6 +8,7 @@ type Session = {
   id: number
   room_id: number
   customer_count: number
+  course?: string
   start_time: string
   hour_count: number
   status: string
@@ -30,7 +31,7 @@ export default function AdminAttendancePage() {
   const [ladies, setLadies] = useState<Lady[]>([])
   const [rooms, setRooms] = useState<Room[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
-  const [completed, setCompleted] = useState<Record<string, number>>({})
+  const [completed, setCompleted] = useState<Record<string, { A: number; B: number } | number>>({})
   const [adminIds, setAdminIds] = useState<string[]>([])
   const [msg, setMsg] = useState('')
   const [msgOk, setMsgOk] = useState(true)
@@ -99,7 +100,7 @@ export default function AdminAttendancePage() {
     <>
       <h1 className="admin-page-title">📋 출근부 · 룸 타이머 (v2)</h1>
       <p style={{ fontSize: 13, color: 'var(--text-muted, #888)', marginBottom: 16, lineHeight: 1.6 }}>
-        텔레그램 <code>/출근부</code> 와 동일 데이터 · 룸 단위 · 알람 45/50/55분 · 종료 시 완료 +1
+        텔레그램 <code>/출근부</code> 와 동일 데이터 · A/B 코스 · 알람 종료 5/10/15분 전 · 종료 시 A/B별 +1
       </p>
 
       {msg && (
@@ -123,12 +124,12 @@ export default function AdminAttendancePage() {
           </div>
 
           <div className="admin-card">
-            <h2 style={{ fontSize: 16, marginBottom: 12 }}>⏰ 알람 (시작 + N분 후 알림)</h2>
-            <p style={{ fontSize: 13, marginBottom: 10 }}>현재: <strong>{settings?.alert_minutes ?? 55}분</strong></p>
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>⏰ 알람 (코스 종료 N분 전)</h2>
+            <p style={{ fontSize: 13, marginBottom: 10 }}>현재: <strong>{settings?.alert_minutes ?? 5}분전</strong></p>
             <div style={{ display: 'flex', gap: 8 }}>
-              {[45, 50, 55].map((m) => (
+              {[5, 10, 15].map((m) => (
                 <button key={m} type="button" className={settings?.alert_minutes === m ? 'btn-success' : 'btn-save'} onClick={() => patch({ alert_minutes: m })}>
-                  {m}분
+                  {m}분전
                 </button>
               ))}
             </div>
@@ -155,7 +156,11 @@ export default function AdminAttendancePage() {
           <div className="admin-card">
             <h2 style={{ fontSize: 16, marginBottom: 12 }}>📊 금일 완료 세션</h2>
             {ladies.length === 0 ? <p style={{ fontSize: 13, opacity: 0.6 }}>등록 없음</p> : (
-              <p style={{ fontSize: 13 }}>{ladies.map((l) => `[${l.name} ${completed[String(l.id)] || 0}]`).join(' ')}</p>
+              <p style={{ fontSize: 13 }}>{ladies.map((l) => {
+                const c = completed[String(l.id)]
+                const ab = typeof c === 'object' && c ? c : { A: typeof c === 'number' ? c : 0, B: 0 }
+                return `[${l.name} A${ab.A} / B${ab.B}]`
+              }).join(' ')}</p>
             )}
           </div>
 
@@ -165,7 +170,7 @@ export default function AdminAttendancePage() {
               <ul style={{ fontSize: 12, lineHeight: 1.8, paddingLeft: 16 }}>
                 {sessions.map((s) => (
                   <li key={s.id}>
-                    ❤️{roomName(s.room_id)} · 🤵{s.customer_count} · {s.status} · {s.hour_count}h ·{' '}
+                    ❤️{roomName(s.room_id)} · {s.course || 'A'}코스 · 🤵{s.customer_count} · {s.status} ·{' '}
                     {s.assignments.filter((a) => !a.removed_at).map((a) => ladyName(a.lady_id)).join(', ')}
                   </li>
                 ))}

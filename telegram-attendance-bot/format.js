@@ -15,19 +15,31 @@ function activeAssignments(session) {
   return session.assignments.filter((a) => !a.removed_at);
 }
 
+function courseTag(session) {
+  const c = session.course || 'A';
+  return db.courseLabel(c);
+}
+
 function sessionLine(session) {
   const rn = roomName(session.room_id);
   const start = formatTimeKST(session.start_time);
   const end = formatTimeKST(session.end_scheduled);
   const status =
-    session.status === 'active' ? `${session.hour_count}시간 진행중` : '종료';
+    session.status === 'active'
+      ? `${courseTag(session)} 진행중`
+      : `${courseTag(session)} 종료`;
   const ladies = activeAssignments(session)
     .map((a) => {
       const emoji = a.from_start ? '🙆' : '🙅';
       return `[${emoji}${ladyName(a.lady_id)}]`;
     })
     .join(' ');
-  return `[❤️${rn}][🤵손님 ${session.customer_count}명][💘시작 ${start}][💔종료 ${end}][${status}]\n${ladies}`;
+  return `[❤️${rn}][${courseTag(session)}][🤵손님 ${session.customer_count}명][💘${start}][💔${end}][${status}]\n${ladies || '(언니 없음)'}`;
+}
+
+function ladyCourseCountTag(lady, date) {
+  const c = db.getLadyCourseCounts(date, lady.id);
+  return `[${lady.name} A${c.A}개 / B${c.B}개]`;
 }
 
 function registeredBlock(date) {
@@ -70,12 +82,11 @@ function classifyLadies(date) {
 
 function checkinBlock(date) {
   const { registered, absent, waiting } = classifyLadies(date);
-  const day = db.getDay(date);
   let checkedInToday = 0;
   const inTags = [];
 
   for (const lady of registered) {
-    const st = day.ladies[String(lady.id)];
+    const st = db.getLadyDayState(date, lady.id);
     if (!st || !st.checked_in) continue;
     checkedInToday += 1;
     if (st.checked_out) continue;
@@ -98,8 +109,8 @@ function checkinBlock(date) {
 
 function checkoutBlock(date) {
   const { checkedOut } = classifyLadies(date);
-  const tags = checkedOut.map((l) => `[🤮${l.name}]`).join(' ');
-  return `퇴근인원 : ${checkedOut.length}명\n${tags || '(없음)'}`;
+  const tags = checkedOut.map((l) => `[${l.name}]`).join(' ');
+  return `*퇴근\n${checkedOut.length}명\n${tags || '(없음)'}`;
 }
 
 function activeRoomsBlock(date) {
@@ -116,32 +127,50 @@ function endedRoomsBlock(date) {
   return `🏁종료된 방\n\n${ended.map(sessionLine).join('\n\n')}`;
 }
 
-function ladyStatsBlock(date) {
-  const { registered, day } = classifyLadies(date);
-  const inSessionIds = new Set();
-  for (const s of day.sessions.filter((x) => x.status === 'active')) {
-    for (const a of activeAssignments(s)) {
-      inSessionIds.add(a.lady_id);
+function segmentLine(session, seg) {
+  const rn = roomName(session.room_id);
+  const start = formatTimeKST(seg.start_time);
+  const end = formatTimeKST(seg.ended_at || seg.end_scheduled);
+  const dur = db.courseDuration(seg.course);
+  const ladies = activeAssignments(session)
+    .map((a) => ladyName(a.lady_id))
+    .join(', ');
+  const st =
+    session.status === 'active' && !seg.ended_at
+      ? '진행중'
+      : '종료';
+  return `❤️${rn} · ${seg.course}코스(${dur}분) · ${start}~${end} · ${ladies || '-'} · ${st}`;
+}
+
+function dailyProgressBlock(date) {
+  const day = db.getDay(date);
+  if (day.sessions.length === 0) return '(오늘 기록 없음)';
+
+  const lines = [];
+  for (const s of day.sessions) {
+    const segments = s.course_segments || [
+      {
+        course: s.course || 'A',
+        start_time: s.start_time,
+        end_scheduled: s.end_scheduled,
+        ended_at: s.ended_at,
+      },
+    ];
+    for (const seg of segments) {
+      lines.push(segmentLine(s, seg));
     }
   }
-  const tags = registered
-    .map((l) => {
-      const cnt = db.getCompletedCount(date, l.id);
-      const emoji = inSessionIds.has(l.id) ? '🙆' : '🙅';
-      return `[${emoji}${l.name} ${cnt}]`;
-    })
-    .join(' ');
-  return `[금일언니진행현황]\n${tags || '(등록 없음)'}`;
+  return lines.join('\n');
+}
+
+function ladyStatsBlock(date) {
+  return `[금일진행현황]\n${dailyProgressBlock(date)}`;
 }
 
 function ladyStatusBlock(date) {
   const { checkedIn, waiting } = classifyLadies(date);
-  const inTags = checkedIn
-    .map((l) => `[🙆${l.name} ${db.getCompletedCount(date, l.id)}개]`)
-    .join(' ');
-  const waitTags = waiting
-    .map((l) => `[🙋${l.name} ${db.getCompletedCount(date, l.id)}개]`)
-    .join(' ');
+  const inTags = checkedIn.map((l) => ladyCourseCountTag(l, date)).join(' ');
+  const waitTags = waiting.map((l) => ladyCourseCountTag(l, date)).join(' ');
   return (
     `🙆 진행중 ${checkedIn.length}명\n${inTags || '(없음)'}\n\n` +
     `🙋 대기중 ${waiting.length}명\n${waitTags || '(없음)'}`
@@ -150,7 +179,7 @@ function ladyStatusBlock(date) {
 
 function alertInfoBlock() {
   const m = db.getAlertMinutes();
-  return `⏰ 현재 알람설정: ${m}분\n(시작 시각 + ${m}분 후 텔레그램 알림)`;
+  return `⏰ 현재 알람설정: ${m}분전\n(코스 종료 ${m}분 전 텔레그램 알림)`;
 }
 
 function buildView(view, date, perm = { canOperate: false, isSuperAdmin: false }) {
@@ -177,7 +206,7 @@ function buildView(view, date, perm = { canOperate: false, isSuperAdmin: false }
       };
     case 'abs':
       return {
-        text: `${header} 미출근\n\n${classifyLadies(date).absent.map((l) => `[☠️${l.name}]`).join(' ') || '(없음)'}\n\n${alertInfoBlock()}`,
+        text: `${header} 미출근\n\n*퇴근\n${classifyLadies(date).checkedOut.map((l) => `[${l.name}]`).join(' ') || '(없음)'}\n\n${alertInfoBlock()}`,
       };
     case 'act':
       return { text: `${header}\n\n${activeRoomsBlock(date)}\n\n${alertInfoBlock()}` };
@@ -188,7 +217,7 @@ function buildView(view, date, perm = { canOperate: false, isSuperAdmin: false }
     case 'status':
       return { text: `${header}\n\n👀언니상태\n\n${ladyStatusBlock(date)}\n\n${alertInfoBlock()}` };
     case 'alert':
-      return { text: `${header}\n\n${alertInfoBlock()}\n\n변경할 알람 시간을 선택하세요.` };
+      return { text: `${header}\n\n${alertInfoBlock()}\n\n변경할 알람을 선택하세요.` };
     case 'help':
       return { text: buildHelpText(perm.canOperate, perm.isSuperAdmin) };
     default:
@@ -200,36 +229,33 @@ function buildHelpText(canOperate, isSuperAdmin) {
   const lines = ['📖 버튼 도움말', ''];
 
   lines.push('【조회 — 누구나 / 스탭】');
-  lines.push('🚀진행중인방 — 지금 돌아가는 방 (룸·손님·시간·언니)');
-  lines.push('👀언니상태 — 방 중 / 대기 중 언니 현황');
-  lines.push('🏃‍♀️금일진행현황 — 오늘 언니별 완료 횟수');
+  lines.push('🚀진행중인방 — 지금 돌아가는 방 (코스·손님·시간·언니)');
+  lines.push('👀언니상태 — A/B 코스별 완료·진행 건수');
+  lines.push('🏃‍♀️금일진행현황 — 방·코스·시간·언니 상세');
   lines.push('🛑종료된방 — 오늘 끝난 방 기록');
   lines.push('✔️출근인원 — 오늘 출근·대기 인원');
-  lines.push('❌미출근인원 — 아직 출근 안 한 언니');
+  lines.push('❌미출근인원 — 퇴근 처리된 언니');
   lines.push('👪전체인원 — 등록·출근·진행·퇴근 한눈에');
 
   if (canOperate) {
     lines.push('', '【운영자 — 조작 권한】');
-    lines.push('▶️방시작 — 새 방 시작 (룸 → 손님 수 → 언니)');
-    lines.push('💡방관리(연장) — 연장 / 종료 / 시작시각 변경');
-    lines.push('📝출근처리 — 언니 출근·퇴근 버튼 처리');
-    lines.push('⏰알람설정 — 45·50·55분 알림 선택');
+    lines.push('▶️방시작 — 룸 → A/B코스 → 손님 → 언니(0명 가능)');
+    lines.push('🚀진행중인방 — 방별 관리 (시간·연장·언니·손님·종료)');
+    lines.push('📝출근처리 — 전체 언니 출근/퇴근 (토글 가능)');
+    lines.push('⏰알람설정 — 종료 5·10·15분 전 알림');
     lines.push('+언니 / +룸 / ✏️이름변경 — 등록·이름 변경');
-    lines.push('', '※ 영업일: 15:00~익일 15:00 = 같은 날짜 (00시 넘어도 유지)');
-    lines.push('※ 알람 후 ➕연장 또는 ⏹종료 선택');
+    lines.push('', '※ 영업일: 15:00~익일 15:00 = 같은 날짜');
+    lines.push('※ 연장 시 A/B 코스 재선택 (A→B 전환 가능)');
+    lines.push('※ 종료 예정 +30분 후 자동 종료');
   }
 
   if (isSuperAdmin) {
     lines.push('', '【슈퍼관리자 — 권한 부여】');
-    lines.push('/운영자추가 ID 별칭 — 전체 조작 권한');
-    lines.push('/스탭추가 ID 별칭 — 보기만');
-    lines.push('/운영자제거 ID · /스탭제거 ID');
-    lines.push('/권한목록 — 등급별 목록');
+    lines.push('/운영자추가 ID · /스탭추가 ID · /권한목록');
   }
 
-  lines.push('', '📖도움말 — 이 설명서');
-  lines.push('/출근부 — 출근부 다시 열기');
-  lines.push('/알림확인 — 현재 알람 분 조회');
+  lines.push('', '/출근부 — 출근부 다시 열기');
+  lines.push('/알림확인 — 현재 알람 조회');
 
   return lines.join('\n');
 }
@@ -254,7 +280,6 @@ function navKeyboard(canOperate, isOperator) {
   );
 
   if (canOperate) {
-    rows.push([{ text: '💡방관리(연장)', callback_data: 'op:rm_menu' }]);
     rows.push([{ text: '📝출근처리', callback_data: 'op:ci_menu' }]);
   }
 
@@ -286,13 +311,14 @@ function navKeyboard(canOperate, isOperator) {
 
 function alertKeyboard() {
   return db.VALID_ALERTS.map((m) => ({
-    text: `${m}분`,
+    text: `${m}분전`,
     callback_data: `alert:${m}`,
   }));
 }
 
 function formatAlertMessage(session) {
-  return `⏰ ${session.hour_count}시간째 — 곧 종료 예정\n\n${sessionLine(session)}`;
+  const before = session.alert_before_minutes || db.getAlertMinutes();
+  return `⏰ ${courseTag(session)} — 종료 ${before}분 전\n\n${sessionLine(session)}`;
 }
 
 module.exports = {
@@ -305,4 +331,6 @@ module.exports = {
   ladyName,
   roomName,
   activeAssignments,
+  dailyProgressBlock,
+  ladyCourseCountTag,
 };

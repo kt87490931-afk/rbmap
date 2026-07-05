@@ -86,7 +86,7 @@ export async function PATCH(request: Request) {
 
   if (body.alert_minutes != null) {
     if (!VALID_ALERTS.includes(body.alert_minutes)) {
-      return NextResponse.json({ error: '45, 50, 55만 가능' }, { status: 400 })
+      return NextResponse.json({ error: '5, 10, 15분전만 가능' }, { status: 400 })
     }
     const prev = data.settings.alert_minutes
     data.settings.alert_minutes = body.alert_minutes

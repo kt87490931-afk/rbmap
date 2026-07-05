@@ -11,26 +11,39 @@ export type SessionAssignment = {
   removed_at: string | null
 }
 
+export type CourseSegment = {
+  course: 'A' | 'B'
+  start_time: string
+  end_scheduled: string
+  ended_at: string | null
+}
+
+export type CourseCounts = { A: number; B: number }
+
 export type RoomSession = {
   id: number
   room_id: number
   chat_id: number
   customer_count: number
   start_time: string
+  course: 'A' | 'B'
+  duration_minutes: number
   hour_count: number
   end_scheduled: string
   status: 'active' | 'ended'
   ended_at: string | null
+  alert_before_minutes: number
   alert_minutes: number
   alert_time: string
   alert_sent: boolean
   assignments: SessionAssignment[]
+  course_segments: CourseSegment[]
 }
 
 export type DayData = {
   ladies: Record<string, { checked_in: boolean; checked_out: boolean; checkin_time: string; checkout_time: string | null }>
   sessions: RoomSession[]
-  completed_counts: Record<string, number>
+  completed_counts: Record<string, CourseCounts | number>
 }
 
 export type AttendanceSettings = {
@@ -58,8 +71,9 @@ export type AttendanceDataV2 = {
   audit_log: { at: string; by: string; action: string; detail: string }[]
 }
 
-const VALID_ALERTS = [45, 50, 55]
-const DEFAULT_ALERT = 55
+const VALID_ALERTS = [5, 10, 15]
+const DEFAULT_ALERT = 5
+const COURSE_DURATIONS = { A: 60, B: 90 } as const
 
 export function getAttendanceDataPath(): string {
   if (process.env.ATTENDANCE_DATA_PATH) return process.env.ATTENDANCE_DATA_PATH
@@ -150,4 +164,4 @@ export function appendAudit(
   if (data.audit_log.length > 200) data.audit_log.length = 200
 }
 
-export { VALID_ALERTS, DEFAULT_ALERT }
+export { VALID_ALERTS, DEFAULT_ALERT, COURSE_DURATIONS }

@@ -37,6 +37,7 @@ export default function AdminAttendancePage() {
   const [newLady, setNewLady] = useState('')
   const [newRoom, setNewRoom] = useState('')
   const [newDelegateId, setNewDelegateId] = useState('')
+  const [newDelegateLabel, setNewDelegateLabel] = useState('')
   const [newStaffId, setNewStaffId] = useState('')
   const [newStaffLabel, setNewStaffLabel] = useState('')
   const [storeName, setStoreName] = useState('간지')
@@ -215,6 +216,7 @@ export default function AdminAttendancePage() {
 /방시작수정 1T 22:33 · /방종료 1T · /방연장 1T
 /운영자추가 ID · /스탭추가 ID · /권한목록
 /언니이름변경 하나 하니 · /룸이름변경 1T 2T · /방추가 1T 사월 · /방빼 1T 이슬`}
+            </pre>
           </div>
         </div>
       )}

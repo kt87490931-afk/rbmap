@@ -13,7 +13,14 @@ function getSupabaseAdmin(): SupabaseClient {
   if (!url || !key) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY가 없습니다.')
   }
-  _client = createClient(url, key)
+  _client = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      // Next.js fetch 캐시가 cron_control 등 설정값을 붙잡는 것 방지
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, { ...init, cache: 'no-store' }),
+    },
+  })
   return _client
 }
 

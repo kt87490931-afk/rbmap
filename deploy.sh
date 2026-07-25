@@ -101,6 +101,8 @@ if [ -f "$CRON_SCRIPT" ]; then
     echo "Cron 추가됨: 20분마다 리뷰 생성 (0,20,40분)"
   fi
 fi
+# 모든 cron 래퍼 실행권한 보장 (git checkout 후 +x 유실 방지)
+chmod +x "${SCRIPT_DIR}/scripts"/cron-*.sh 2>/dev/null || true
 if [ -f "$PUBLISH_CRON_SCRIPT" ]; then
   chmod +x "$PUBLISH_CRON_SCRIPT"
   CURRENT=$(crontab -l 2>/dev/null || true)
@@ -109,6 +111,11 @@ if [ -f "$PUBLISH_CRON_SCRIPT" ]; then
     echo "Cron 추가됨: 매일 00:00 리뷰 자동공개 (랜덤 5건)"
   else
     echo "리뷰 자동공개 Cron 이미 설정됨."
+  fi
+  if [ ! -x "$PUBLISH_CRON_SCRIPT" ]; then
+    echo "경고: cron-publish-reviews.sh 실행권한 없음 — chmod +x 필요"
+  else
+    echo "리뷰 자동공개 스크립트 실행권한 OK."
   fi
 fi
 

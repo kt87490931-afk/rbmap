@@ -51,8 +51,11 @@ if [ -d .next/standalone/data/hosting ]; then
   cp -a .next/standalone/data/hosting/. "$HOSTING_DIR/" 2>/dev/null || true
 fi
 cp -r .next/static .next/standalone/.next/static 2>/dev/null || true
+# standalone/public 은 빌드 시 이미 생성됨 — public/. 로 복사해야 public/public 중첩이 안 생김
+rm -rf .next/standalone/public/public
 if [ -d public ]; then
-  cp -r public .next/standalone/public 2>/dev/null || true
+  mkdir -p .next/standalone/public
+  cp -r public/. .next/standalone/public/ 2>/dev/null || true
 fi
 # 환경변수 복사 — PM2 dotenv는 .env.production만 로드하므로 반드시 .env.production으로 복사
 if [ -f .env.production ]; then

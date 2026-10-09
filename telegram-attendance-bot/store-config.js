@@ -46,10 +46,8 @@ function loadStoreRuntime() {
     adminIds = readEnvList('ATTENDANCE_ADMIN_IDS', 'ADMIN_IDS');
   }
 
-  let channelId = process.env[store.channelIdEnv] || '';
-  if (!channelId && storeId === 'ganji') {
-    channelId = process.env.TELEGRAM_CHANNEL_ID || '';
-  }
+  // TELEGRAM_CHANNEL_ID(rbmap 알림 채널)로 fallback 하지 않음 — 매장별 변수만 사용
+  const channelId = process.env[store.channelIdEnv] || '';
 
   return { storeId, store, dataPath, token, adminIds, channelId };
 }

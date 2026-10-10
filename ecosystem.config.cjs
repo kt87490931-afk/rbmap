@@ -6,28 +6,6 @@ const botEnvBase = {
   DOTENV_CONFIG_PATH: path.join(__dirname, '.env.production'),
 };
 
-function attendanceBotApp(name, storeId, dataSubdir) {
-  return {
-    name,
-    script: 'bot.js',
-    cwd: path.join(__dirname, 'telegram-attendance-bot'),
-    node_args: '-r dotenv/config',
-    env: {
-      ...botEnvBase,
-      STORE_ID: storeId,
-      ATTENDANCE_DATA_PATH: path.join(__dirname, 'data', dataSubdir, 'attendance-data.json'),
-    },
-    instances: 1,
-    exec_mode: 'fork',
-    max_memory_restart: '200M',
-    error_file: path.join(__dirname, 'logs', `${name}-error.log`),
-    out_file: path.join(__dirname, 'logs', `${name}-out.log`),
-    merge_logs: true,
-    time: true,
-    autorestart: true,
-  };
-}
-
 module.exports = {
   apps: [
     {
@@ -49,8 +27,6 @@ module.exports = {
       merge_logs: true,
       time: true,
     },
-    attendanceBotApp('attendance-bot-ganji', 'ganji', 'ganji'),
-    attendanceBotApp('attendance-bot-benz', 'benz', 'benz'),
     {
       name: 'consult-bot',
       script: 'bot.js',

@@ -1,6 +1,5 @@
 # dependencies
 /node_modules
-/telegram-attendance-bot/node_modules
 /telegram-consult-bot/node_modules
 /.pnp
 .pnp.js

@@ -16,16 +16,9 @@ fi
 # 1. 의존성 설치
 echo "[1/6] npm install..."
 npm ci
-echo "[1b/6] attendance-bot npm ci..."
-(cd telegram-attendance-bot && npm ci --omit=dev)
-echo "[1c/6] consult-bot npm ci..."
+echo "[1b/6] consult-bot npm ci..."
 (cd telegram-consult-bot && npm ci --omit=dev)
-mkdir -p data/ganji data/benz data/consult
-# 기존 단일 JSON → ganji 이전 (1회)
-if [ -f data/attendance-data.json ] && [ ! -f data/ganji/attendance-data.json ]; then
-  cp data/attendance-data.json data/ganji/attendance-data.json
-  echo "  → data/ganji/attendance-data.json 으로 기존 데이터 복사"
-fi
+mkdir -p data/consult
 
 # 2. 빌드
 echo "[2/6] npm run build..."
@@ -74,7 +67,7 @@ mkdir -p logs
 # 5. PM2 재시작
 echo "[4/6] PM2 재시작..."
 if pm2 describe rbmap > /dev/null 2>&1; then
-  pm2 delete attendance-bot 2>/dev/null || true
+  pm2 delete attendance-bot attendance-bot-ganji attendance-bot-benz 2>/dev/null || true
   pm2 reload ecosystem.config.cjs
   if ! pm2 describe consult-bot > /dev/null 2>&1; then
     pm2 start ecosystem.config.cjs --only consult-bot
@@ -130,7 +123,7 @@ fi
 
 # 7. 상태 확인
 echo "[6/6] PM2 상태..."
-pm2 status rbmap attendance-bot-ganji attendance-bot-benz consult-bot 2>/dev/null || pm2 status rbmap
+pm2 status rbmap consult-bot 2>/dev/null || pm2 status rbmap
 
 echo ""
 echo "== 배포 완료 =="

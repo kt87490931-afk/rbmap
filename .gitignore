@@ -1,6 +1,7 @@
 # dependencies
 /node_modules
 /telegram-attendance-bot/node_modules
+/telegram-consult-bot/node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
@@ -43,6 +44,7 @@ next-env.d.ts
 /data/attendance-data.json
 /data/attendance-data.json.tmp
 /data/attendance-data.json.broken-*
+/data/consult/
 /storage/hosting/
 /public/h/**
 !/public/h/.gitkeep

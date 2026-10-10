@@ -51,5 +51,23 @@ module.exports = {
     },
     attendanceBotApp('attendance-bot-ganji', 'ganji', 'ganji'),
     attendanceBotApp('attendance-bot-benz', 'benz', 'benz'),
+    {
+      name: 'consult-bot',
+      script: 'bot.js',
+      cwd: path.join(__dirname, 'telegram-consult-bot'),
+      node_args: '-r dotenv/config',
+      env: {
+        ...botEnvBase,
+        CONSULT_DATA_PATH: path.join(__dirname, 'data', 'consult', 'consult-data.json'),
+      },
+      instances: 1,
+      exec_mode: 'fork',
+      max_memory_restart: '200M',
+      error_file: path.join(__dirname, 'logs', 'consult-bot-error.log'),
+      out_file: path.join(__dirname, 'logs', 'consult-bot-out.log'),
+      merge_logs: true,
+      time: true,
+      autorestart: true,
+    },
   ],
 };

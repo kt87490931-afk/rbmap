@@ -1,0 +1,13 @@
+{
+  "name": "telegram-consult-bot",
+  "version": "1.0.0",
+  "description": "텔레그램 상담봇 — 자동응답 메뉴, 피해 접수, 관리자 답장 중계 (룸빵여지도 서버)",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}
